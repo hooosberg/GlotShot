@@ -72,6 +72,49 @@ app.whenReady().then(() => {
     }
   });
 
+  // IPC: Select Files (支持多选文件)
+  ipcMain.handle('select-files', async (event, options) => {
+    const { defaultPath, multiSelections = true, filters } = options || {};
+    const result = await dialog.showOpenDialog({
+      properties: ['openFile', ...(multiSelections ? ['multiSelections'] : [])],
+      defaultPath,
+      filters: filters || [{ name: 'Images', extensions: ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'] }]
+    });
+    return result.filePaths;
+  });
+
+  // IPC: Read specific files by paths
+  ipcMain.handle('read-files', async (event, filePaths) => {
+    try {
+      if (!filePaths || filePaths.length === 0) {
+        return { success: false, images: [], error: 'No files provided' };
+      }
+
+      const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp'];
+      const images = [];
+
+      for (const fullPath of filePaths) {
+        if (!fs.existsSync(fullPath)) continue;
+
+        const ext = path.extname(fullPath).toLowerCase();
+        if (imageExtensions.includes(ext)) {
+          const data = fs.readFileSync(fullPath);
+          const base64 = `data:image/${ext.slice(1)};base64,${data.toString('base64')}`;
+          images.push({
+            name: path.basename(fullPath),
+            path: fullPath,
+            data: base64
+          });
+        }
+      }
+
+      return { success: true, images };
+    } catch (e) {
+      console.error('Read files failed:', e);
+      return { success: false, images: [], error: e.message };
+    }
+  });
+
   // IPC: Save Files
   ipcMain.handle('save-files', async (event, { basePath, files }) => {
     try {

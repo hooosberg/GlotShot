@@ -21,11 +21,15 @@
     "appId": "com.maohuhu.appstorebuilder",
     "productName": "GlotShot",
     "mac": {
+      "electronLanguages": [
+        "en",
+        "zh-CN"
+      ],
       "category": "public.app-category.graphics-design",
       "target": [
         "dmg"
       ],
-      "icon": "public/icon/AppIcon_1024x1024.png"
+      "icon": "public/icon/DMG_Icon_1024x1024.png"
     },
     "dmg": {
       "background": "assets/dmg_background.png",

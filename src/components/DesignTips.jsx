@@ -8,14 +8,15 @@ const DesignTips = ({ tips, mode, className = '' }) => {
     if (!tips?.length) return null;
 
     const isScreenshotMode = mode === 'screenshot';
+    // 使用透明毛玻璃背景，悬浮在预览区上方
     const bgColor = isScreenshotMode
-        ? 'bg-blue-900/20 border-blue-700/30'
-        : 'bg-amber-900/20 border-amber-700/30';
+        ? 'bg-blue-500/10 border-blue-500/20 backdrop-blur-md'
+        : 'bg-amber-500/10 border-amber-500/20 backdrop-blur-md';
     const iconColor = isScreenshotMode ? 'text-blue-400' : 'text-amber-400';
     const bulletColor = isScreenshotMode ? 'text-blue-500/60' : 'text-amber-500/60';
 
     return (
-        <div className={`${bgColor} border rounded-lg p-3 ${className}`}>
+        <div className={`${bgColor} border rounded-lg p-3 shadow-lg ${className}`}>
             <div className="flex items-center gap-2 mb-2">
                 {isScreenshotMode ? (
                     <Info className={`w-4 h-4 ${iconColor}`} />

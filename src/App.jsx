@@ -28,9 +28,9 @@ const PRESETS = [
 
 // 内置背景图片 (public/背景/)
 const BUILTIN_BACKGROUNDS = [
-  { id: 'builtin1', name: '金色', src: '/背景/金色.png' },
-  { id: 'builtin2', name: '壁纸', src: '/背景/wallpaper003.png' },
-  { id: 'builtin3', name: '渐变', src: '/背景/ChatGPT Image 2025年6月2日 12_55_05.png' },
+  { id: 'builtin1', name: '金色', src: './背景/金色.png' },
+  { id: 'builtin2', name: '壁纸', src: './背景/wallpaper003.png' },
+  { id: 'builtin3', name: '渐变', src: './背景/ChatGPT Image 2025年6月2日 12_55_05.png' },
 ];
 
 // Platform presets for promotional images (官方规格)
@@ -479,8 +479,18 @@ const App = () => {
 
   const [activeSceneId, setActiveSceneId] = useState(1);
   const [previewLanguage, setPreviewLanguage] = useState('primary'); // 'primary' or 'secondary'
+  const [selectedSceneIds, setSelectedSceneIds] = useState(new Set()); // 多选状态
+  const [importProgress, setImportProgress] = useState({ active: false, current: 0, total: 0, message: '' }); // 导入进度
   const canvasRef = useRef(null);
-  const activeScene = scenes.find(s => s.id === activeSceneId) || scenes[0];
+  // 确保 activeScene 始终有效，并有默认 settings
+  const activeScene = scenes.find(s => s.id === activeSceneId) || scenes[0] || {
+    id: 1,
+    name: '场景 1',
+    screenshot: null,
+    titleCN: '',
+    titleEN: '',
+    settings: { ...DEFAULT_SCENE_SETTINGS }
+  };
 
   // Persist scenes to localStorage
   useEffect(() => {
@@ -747,58 +757,151 @@ const App = () => {
 
   // --- HANDLERS ---
 
+  // 处理截图导入 - 支持 Electron 两步选择或普通文件上传
   const handleBatchUpload = async (e) => {
-    const files = Array.from(e.target.files);
-    if (files.length === 0) return;
+    let imagesToImport = [];
 
-    // Filter images
-    const imageFiles = files.filter(file => file.type.startsWith('image/'));
-    if (imageFiles.length === 0) return;
+    // 判断是来自 Electron 还是普通文件上传
+    if (e && e.target && e.target.files) {
+      // 普通文件上传模式
+      const files = Array.from(e.target.files);
+      if (files.length === 0) return;
 
-    // Check if we should replace the default empty scene
-    // Default scene has no screenshot (null) and is the only one
+      const imageFiles = files.filter(file => file.type.startsWith('image/'));
+      if (imageFiles.length === 0) return;
+
+      for (const file of imageFiles) {
+        const reader = new FileReader();
+        const dataUrl = await new Promise(resolve => {
+          reader.onload = (evt) => resolve(evt.target.result);
+          reader.readAsDataURL(file);
+        });
+        imagesToImport.push({
+          name: file.name.replace(/\.[^/.]+$/, ""),
+          data: dataUrl
+        });
+      }
+    } else {
+      return;
+    }
+
+    await importScreenshots(imagesToImport);
+  };
+
+  // Electron 直接选择图片文件（支持多选）
+  const handleElectronBatchUpload = async () => {
+    if (!window.electron) {
+      alert("文件选择功能仅在 Electron 应用中可用");
+      return;
+    }
+
+    // 直接弹出文件选择器，用户可以自由导航到任何文件夹并选择文件
+    const filePaths = await window.electron.selectFiles({ multiSelections: true });
+    if (!filePaths || filePaths.length === 0) return;
+
+    // 读取选中的文件
+    const result = await window.electron.readFiles(filePaths);
+    if (!result.success || result.images.length === 0) {
+      alert("无法读取选中的图片文件");
+      return;
+    }
+
+    const imagesToImport = result.images.map(img => ({
+      name: img.name.replace(/\.[^/.]+$/, ""),
+      data: img.data
+    }));
+
+    await importScreenshots(imagesToImport);
+  };
+
+  // 导入截图的核心逻辑 - 支持重名确认和进度显示
+  const importScreenshots = async (imagesToImport) => {
+    if (imagesToImport.length === 0) return;
+
+    // 检查重名文件
+    const existingNames = new Set(scenes.filter(s => s.screenshot).map(s => s.name));
+    const duplicates = imagesToImport.filter(img => existingNames.has(img.name));
+
+    let imagesToProcess = imagesToImport;
+
+    // 如果有重名文件，询问用户
+    if (duplicates.length > 0) {
+      const duplicateNames = duplicates.map(d => d.name).slice(0, 5).join('\n• ');
+      const moreCount = duplicates.length > 5 ? `\n...还有 ${duplicates.length - 5} 个` : '';
+      const confirmMsg = `以下 ${duplicates.length} 个截图已存在：\n• ${duplicateNames}${moreCount}\n\n是否覆盖这些截图？\n\n点击"确定"覆盖，点击"取消"跳过重复的`;
+
+      if (!window.confirm(confirmMsg)) {
+        // 用户选择跳过重复的
+        imagesToProcess = imagesToImport.filter(img => !existingNames.has(img.name));
+        if (imagesToProcess.length === 0) {
+          alert('没有新的截图需要导入');
+          return;
+        }
+      }
+    }
+
+    // 开始导入，显示进度条
+    setImportProgress({ active: true, current: 0, total: imagesToProcess.length, message: '准备导入...' });
+
+    // 检查是否是默认空场景
     const isDefaultState = scenes.length === 1 && !scenes[0].screenshot;
 
-    const newScenes = [];
-    // If replacing default state, start IDs from 1, else continue from max ID
+    // 处理重名覆盖
+    let updatedScenes = isDefaultState ? [] : [...scenes];
     let startId = isDefaultState ? 1 : (Math.max(...scenes.map(s => s.id), 0) + 1);
 
-    for (const file of imageFiles) {
-      const nameWithoutExt = file.name.replace(/\.[^/.]+$/, "");
+    for (let i = 0; i < imagesToProcess.length; i++) {
+      const img = imagesToProcess[i];
+      const nameWithoutExt = img.name;
+
+      // 更新进度
+      setImportProgress({
+        active: true,
+        current: i + 1,
+        total: imagesToProcess.length,
+        message: `正在导入: ${nameWithoutExt}`
+      });
 
       // Auto translate if enabled
       let enTitle = "";
       if (ollamaConfig.isConnected && ollamaConfig.autoTranslate) {
-        // Use globalSettings.secondaryLang as target
         enTitle = await translateText(nameWithoutExt, globalSettings.secondaryLang);
       }
 
-      const reader = new FileReader();
-      const dataUrl = await new Promise(resolve => {
-        reader.onload = (evt) => resolve(evt.target.result);
-        reader.readAsDataURL(file);
-      });
+      // 检查是否存在同名场景
+      const existingIndex = updatedScenes.findIndex(s => s.name === nameWithoutExt);
 
-      newScenes.push({
-        id: startId++,
+      const newScene = {
+        id: existingIndex >= 0 ? updatedScenes[existingIndex].id : startId++,
         name: nameWithoutExt,
-        screenshot: dataUrl,
+        screenshot: img.data,
         titleCN: nameWithoutExt,
-        titleEN: enTitle || nameWithoutExt, // Fallback to CN name if no translation
-        settings: { ...scenes[0].settings } // Inherit settings from the first scene (or default)
-      });
+        titleEN: enTitle || nameWithoutExt,
+        settings: existingIndex >= 0 ? updatedScenes[existingIndex].settings : { ...scenes[0]?.settings || DEFAULT_SCENE_SETTINGS }
+      };
+
+      if (existingIndex >= 0) {
+        // 覆盖已存在的场景
+        updatedScenes[existingIndex] = newScene;
+      } else {
+        updatedScenes.push(newScene);
+      }
     }
 
-    if (isDefaultState) {
-      setScenes(newScenes);
-    } else {
-      setScenes(prev => [...prev, ...newScenes]);
-    }
+    setScenes(updatedScenes);
 
     // Switch to first new scene
-    if (newScenes.length > 0) {
-      setActiveSceneId(newScenes[0].id);
+    if (imagesToProcess.length > 0) {
+      const firstImported = updatedScenes.find(s => s.name === imagesToProcess[0].name);
+      if (firstImported) {
+        setActiveSceneId(firstImported.id);
+      }
     }
+
+    // 隐藏进度条
+    setTimeout(() => {
+      setImportProgress({ active: false, current: 0, total: 0, message: '' });
+    }, 500);
   };
 
   const handleBgUpload = (e) => {
@@ -812,29 +915,40 @@ const App = () => {
     }
   };
 
+  // 背景图片导入 - 直接选择文件（支持多选），支持重名覆盖
   const handleDirectoryBgUpload = async () => {
     if (!window.electron) {
-      alert("文件夹选择功能仅在 Electron 应用中可用");
+      alert("文件选择功能仅在 Electron 应用中可用");
       return;
     }
 
-    const dirPath = await window.electron.selectDirectory();
-    if (!dirPath) return;
+    // 直接弹出文件选择器
+    const filePaths = await window.electron.selectFiles({ multiSelections: true });
+    if (!filePaths || filePaths.length === 0) return;
 
-    setBackgroundFolderPath(dirPath);
-
-    const result = await window.electron.readDirectoryImages(dirPath);
-    if (result.success && result.images.length > 0) {
-      setUploadedBackgrounds(result.images);
-      // Auto-select first image
-      setGlobalSettings(prev => ({
-        ...prev,
-        backgroundType: 'upload',
-        backgroundUpload: result.images[0].data
-      }));
-    } else if (result.images.length === 0) {
-      alert("该文件夹中没有找到图片文件");
+    // 读取选中的文件
+    const result = await window.electron.readFiles(filePaths);
+    if (!result.success || result.images.length === 0) {
+      alert("无法读取选中的图片文件");
+      return;
     }
+
+    // 导入并覆盖同名背景
+    setUploadedBackgrounds(prev => {
+      const existingNames = new Map(prev.map(bg => [bg.name, bg]));
+      // 覆盖同名文件
+      for (const img of result.images) {
+        existingNames.set(img.name, img);
+      }
+      return Array.from(existingNames.values());
+    });
+
+    // Auto-select first image
+    setGlobalSettings(prev => ({
+      ...prev,
+      backgroundType: 'upload',
+      backgroundUpload: result.images[0].data
+    }));
   };
 
 
@@ -865,12 +979,74 @@ const App = () => {
 
   const deleteScene = (id) => {
     if (scenes.length === 1) {
-      // Don't delete last one, just clear it
-      setScenes([{ ...DEFAULT_SCENE_SETTINGS, id: scenes[0].id, screenshot: null, name: '场景 1', titleCN: '', titleEN: '' }]);
+      // Don't delete last one, just clear it - 确保有完整的 settings
+      setScenes([{
+        id: scenes[0].id,
+        screenshot: null,
+        name: '场景 1',
+        titleCN: '',
+        titleEN: '',
+        settings: { ...DEFAULT_SCENE_SETTINGS }
+      }]);
       return;
     }
     setScenes(prev => prev.filter(s => s.id !== id));
+    setSelectedSceneIds(prev => {
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
     if (activeSceneId === id) setActiveSceneId(scenes[0].id);
+  };
+
+  // 多选删除
+  const deleteSelectedScenes = () => {
+    if (selectedSceneIds.size === 0) return;
+    if (!window.confirm(`确定要删除选中的 ${selectedSceneIds.size} 个场景吗？`)) return;
+
+    // 如果全部选中，保留一个空场景 - 确保有完整的 settings
+    if (selectedSceneIds.size >= scenes.filter(s => s.screenshot).length) {
+      setScenes([{
+        id: 1,
+        screenshot: null,
+        name: '场景 1',
+        titleCN: '',
+        titleEN: '',
+        settings: { ...DEFAULT_SCENE_SETTINGS }
+      }]);
+      setActiveSceneId(1);
+    } else {
+      const remaining = scenes.filter(s => !selectedSceneIds.has(s.id));
+      setScenes(remaining);
+      if (selectedSceneIds.has(activeSceneId)) {
+        setActiveSceneId(remaining[0]?.id || 1);
+      }
+    }
+    setSelectedSceneIds(new Set());
+  };
+
+  // 切换选中状态
+  const toggleSceneSelection = (id, e) => {
+    e.stopPropagation();
+    setSelectedSceneIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
+  // 全选/取消全选 - 只操作有截图的场景
+  const toggleSelectAll = () => {
+    const validScenes = scenes.filter(s => s.screenshot);
+    if (selectedSceneIds.size === validScenes.length && validScenes.length > 0) {
+      setSelectedSceneIds(new Set());
+    } else {
+      setSelectedSceneIds(new Set(validScenes.map(s => s.id)));
+    }
   };
 
   const saveConfig = () => {
@@ -971,7 +1147,9 @@ const App = () => {
               <button
                 onClick={() => setPlatformDropdownOpen(!platformDropdownOpen)}
                 className="flex items-center gap-2 bg-gray-800/80 hover:bg-gray-700/80 px-3 py-1.5 rounded-lg text-xs font-medium transition border border-gray-700/50"
+                title="尺寸预设"
               >
+                <span className="text-gray-500 text-[10px]">尺寸预设</span>
                 <Monitor className="w-3.5 h-3.5 text-blue-400" />
                 <span className="text-gray-200">{getCurrentPlatformName()}</span>
                 {platformDropdownOpen ? <ChevronUp className="w-3 h-3 text-gray-400" /> : <ChevronDown className="w-3 h-3 text-gray-400" />}
@@ -1306,31 +1484,57 @@ const App = () => {
               {/* Scene List */}
               <div className="flex-1 overflow-y-auto p-4 bg-gray-900 slim-scrollbar">
                 <div className="flex justify-between items-center mb-3">
-                  <h3 className="text-xs uppercase text-gray-400 font-semibold">截图列表 ({scenes.length})</h3>
-                  <div className="relative group">
-                    <input type="file" multiple webkitdirectory="" accept="image/*"
-                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onChange={handleBatchUpload}
-                    />
+                  <div className="flex items-center gap-2">
+                    {scenes.filter(s => s.screenshot).length > 0 && (
+                      <input
+                        type="checkbox"
+                        checked={selectedSceneIds.size === scenes.filter(s => s.screenshot).length && scenes.filter(s => s.screenshot).length > 0}
+                        onChange={toggleSelectAll}
+                        className="rounded bg-gray-800 border-gray-700 text-blue-500 cursor-pointer"
+                        title="全选/取消全选"
+                      />
+                    )}
+                    <h3 className="text-xs uppercase text-gray-400 font-semibold">截图列表 ({scenes.filter(s => s.screenshot).length})</h3>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {/* 批量删除按钮 */}
+                    {selectedSceneIds.size > 0 && (
+                      <button
+                        onClick={deleteSelectedScenes}
+                        className="p-1.5 bg-red-600 hover:bg-red-500 text-white rounded transition text-[10px] flex items-center gap-1"
+                        title={`删除选中的 ${selectedSceneIds.size} 项`}
+                      >
+                        <Trash2 className="w-3 h-3" />
+                        <span>{selectedSceneIds.size}</span>
+                      </button>
+                    )}
+                    {/* 导入按钮 - 使用 Electron 两步选择 */}
                     <button
-                      className="p-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded transition shadow-lg shadow-blue-900/50">
+                      onClick={handleElectronBatchUpload}
+                      className="p-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded transition shadow-lg shadow-blue-900/50"
+                      title="导入截图（选择文件夹后选择文件）"
+                    >
                       <FolderInput className="w-4 h-4" />
                     </button>
                   </div>
                 </div>
 
                 <div className="space-y-2 pb-20">
-                  {scenes.map(scene => (
+                  {/* 只显示有截图的场景，隐藏空截图占位 */}
+                  {scenes.filter(scene => scene.screenshot).map(scene => (
                     <div key={scene.id} onClick={() => setActiveSceneId(scene.id)}
-                      className={`group p-2 rounded-lg cursor-pointer flex items-center gap-3 border transition-all ${activeSceneId === scene.id ? 'bg-gray-800 border-blue-500/50 shadow-lg' : 'bg-gray-900 border-gray-800 hover:bg-gray-800 hover:border-gray-700'}`}
+                      className={`group p-2 rounded-lg cursor-pointer flex items-center gap-3 border transition-all ${selectedSceneIds.has(scene.id) ? 'bg-blue-900/30 border-blue-500/50' : activeSceneId === scene.id ? 'bg-gray-800 border-blue-500/50 shadow-lg' : 'bg-gray-900 border-gray-800 hover:bg-gray-800 hover:border-gray-700'}`}
                     >
+                      {/* 多选 Checkbox */}
+                      <input
+                        type="checkbox"
+                        checked={selectedSceneIds.has(scene.id)}
+                        onChange={(e) => toggleSceneSelection(scene.id, e)}
+                        onClick={(e) => e.stopPropagation()}
+                        className="rounded bg-gray-800 border-gray-700 text-blue-500 cursor-pointer flex-shrink-0"
+                      />
                       <div className="w-8 h-12 bg-gray-950 rounded overflow-hidden flex-shrink-0 border border-gray-700 relative">
-                        {scene.screenshot ? (
-                          <img src={scene.screenshot} className="w-full h-full object-cover" alt="" />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-gray-700">
-                            <ImageIcon size={10} />
-                          </div>
-                        )}
+                        <img src={scene.screenshot} className="w-full h-full object-cover" alt="" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className={`text-sm font-medium truncate ${activeSceneId === scene.id ? 'text-white' : 'text-gray-400'}`}>{scene.name || '未命名场景'}</div>
@@ -1343,26 +1547,33 @@ const App = () => {
                       </button>
                     </div>
                   ))}
+                  {/* 如果没有有效截图，显示空状态提示 */}
+                  {scenes.filter(s => s.screenshot).length === 0 && (
+                    <div className="text-center py-8 text-gray-500 text-xs">
+                      <ImageIcon className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                      <p>点击右上角按钮导入截图</p>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
 
             {/* CENTER - Canvas Preview */}
             <div className="flex-1 flex flex-col relative bg-gray-950">
-              {/* Design Tips Area */}
-              {(() => {
-                const currentPreset = [...PLATFORM_PRESETS, ...customSizePresets].find(p => p.id === selectedPlatform);
-                if (currentPreset?.designTips?.length > 0) {
-                  return (
-                    <div className="px-4 pt-3 pb-0">
-                      <DesignTips tips={currentPreset.designTips} mode={currentPreset.mode || 'poster'} />
-                    </div>
-                  );
-                }
-                return null;
-              })()}
-
-              <div className="flex-1 overflow-hidden p-4 flex items-center justify-center" style={{ background: 'radial-gradient(circle at center, rgba(30,41,59,0.5) 0%, rgba(15,23,42,1) 100%)' }}>
+              {/* Preview Area with Design Tips floating */}
+              <div className="flex-1 overflow-hidden p-4 flex items-center justify-center relative" style={{ background: 'radial-gradient(circle at center, rgba(30,41,59,0.5) 0%, rgba(15,23,42,1) 100%)' }}>
+                {/* Design Tips - 悬浮在预览区上方 */}
+                {(() => {
+                  const currentPreset = [...PLATFORM_PRESETS, ...customSizePresets].find(p => p.id === selectedPlatform);
+                  if (currentPreset?.designTips?.length > 0) {
+                    return (
+                      <div className="absolute top-4 left-4 right-4 z-10">
+                        <DesignTips tips={currentPreset.designTips} mode={currentPreset.mode || 'poster'} />
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
                 {/* Canvas Container - Auto-fit */}
                 <div className="relative shadow-2xl ring-1 ring-gray-700 rounded-lg overflow-hidden"
                   style={{
@@ -1612,147 +1823,172 @@ const App = () => {
                     />
                   </div>
 
-                  {/* 中文文字样式 */}
-                  <div className="pt-4 border-t border-gray-800">
-                    <h4 className="text-[10px] uppercase text-blue-400 font-semibold mb-3">
-                      {LANGUAGES.find(l => l.code === globalSettings.primaryLang)?.nativeName || '主标题'} 样式
-                    </h4>
-                    <div className="space-y-3">
-                      {/* Font Selection */}
-                      <div>
-                        <div className="text-[10px] text-gray-400 mb-1">字体</div>
-                        <select
-                          value={globalSettings.fontCN}
-                          onChange={(e) => setGlobalSettings(s => ({ ...s, fontCN: e.target.value }))}
-                          className="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1 text-xs text-gray-200"
-                        >
-                          {FONTS_CN.map(f => <option key={f.id} value={f.value}>{f.name}</option>)}
-                        </select>
-                      </div>
-                      {/* Color Selection */}
-                      <div>
-                        <div className="text-[10px] text-gray-400 mb-1">颜色</div>
-                        <div className="flex gap-1.5 flex-wrap">
-                          {TEXT_COLORS.map(c => (
-                            <button
-                              key={c.id}
-                              onClick={() => setGlobalSettings(s => ({ ...s, textColorCN: c.id }))}
-                              className={`w-6 h-6 rounded-md border-2 transition ${globalSettings.textColorCN === c.id ? 'border-blue-500 scale-110' : 'border-gray-700 hover:border-gray-500'}`}
-                              style={{ background: c.gradient ? `linear-gradient(135deg, ${c.gradient[0]}, ${c.gradient[1]})` : c.value }}
-                              title={c.name}
+                  {/* 主语言文字样式 - 只在预览主语言时显示 */}
+                  {previewLanguage === 'primary' && (
+                    <div className="pt-4 border-t border-gray-800">
+                      <h4 className="text-[10px] uppercase text-blue-400 font-semibold mb-3">
+                        {LANGUAGES.find(l => l.code === globalSettings.primaryLang)?.nativeName || '主标题'} 样式
+                      </h4>
+                      <div className="space-y-3">
+                        {/* Font Selection */}
+                        <div>
+                          <div className="text-[10px] text-gray-400 mb-1">字体</div>
+                          <select
+                            value={globalSettings.fontCN}
+                            onChange={(e) => setGlobalSettings(s => ({ ...s, fontCN: e.target.value }))}
+                            className="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1 text-xs text-gray-200"
+                          >
+                            {FONTS_CN.map(f => <option key={f.id} value={f.value}>{f.name}</option>)}
+                          </select>
+                        </div>
+                        {/* Color Selection */}
+                        <div>
+                          <div className="text-[10px] text-gray-400 mb-1">颜色</div>
+                          <div className="flex gap-1.5 flex-wrap">
+                            {TEXT_COLORS.map(c => (
+                              <button
+                                key={c.id}
+                                onClick={() => setGlobalSettings(s => ({ ...s, textColorCN: c.id }))}
+                                className={`w-6 h-6 rounded-md border-2 transition ${globalSettings.textColorCN === c.id ? 'border-blue-500 scale-110' : 'border-gray-700 hover:border-gray-500'}`}
+                                style={{ background: c.gradient ? `linear-gradient(135deg, ${c.gradient[0]}, ${c.gradient[1]})` : c.value }}
+                                title={c.name}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                        {/* Size */}
+                        <div className="group">
+                          <div className="flex justify-between text-[10px] text-gray-400 mb-1">字体大小 <span>{activeScene.settings.textSizeCN}</span></div>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="range" min="40" max="300" step="5"
+                              value={activeScene.settings.textSizeCN}
+                              onChange={(e) => updateSceneSettings('textSizeCN', parseInt(e.target.value))}
+                              className="flex-1 h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
                             />
-                          ))}
+                            <button onClick={() => resetSceneSetting('textSizeCN')} className="p-1 text-gray-500 hover:text-blue-400 opacity-0 group-hover:opacity-100 transition"><RotateCcw className="w-3 h-3" /></button>
+                          </div>
                         </div>
-                      </div>
-                      {/* Size */}
-                      <div className="group">
-                        <div className="flex justify-between text-[10px] text-gray-400 mb-1">字体大小 <span>{activeScene.settings.textSizeCN}</span></div>
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="range" min="40" max="300" step="5"
-                            value={activeScene.settings.textSizeCN}
-                            onChange={(e) => updateSceneSettings('textSizeCN', parseInt(e.target.value))}
-                            className="flex-1 h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
-                          />
-                          <button onClick={() => resetSceneSetting('textSizeCN')} className="p-1 text-gray-500 hover:text-blue-400 opacity-0 group-hover:opacity-100 transition"><RotateCcw className="w-3 h-3" /></button>
-                        </div>
-                      </div>
-                      {/* Y Position */}
-                      <div className="group">
-                        <div className="flex justify-between text-[10px] text-gray-400 mb-1">垂直位置 (Y) <span>{activeScene.settings.textYCN}</span></div>
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="range" min="50" max="1000" step="10"
-                            value={activeScene.settings.textYCN}
-                            onChange={(e) => updateSceneSettings('textYCN', parseInt(e.target.value))}
-                            className="flex-1 h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
-                          />
-                          <button onClick={() => resetSceneSetting('textYCN')} className="p-1 text-gray-500 hover:text-blue-400 opacity-0 group-hover:opacity-100 transition"><RotateCcw className="w-3 h-3" /></button>
+                        {/* Y Position */}
+                        <div className="group">
+                          <div className="flex justify-between text-[10px] text-gray-400 mb-1">垂直位置 (Y) <span>{activeScene.settings.textYCN}</span></div>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="range" min="50" max="1000" step="10"
+                              value={activeScene.settings.textYCN}
+                              onChange={(e) => updateSceneSettings('textYCN', parseInt(e.target.value))}
+                              className="flex-1 h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                            />
+                            <button onClick={() => resetSceneSetting('textYCN')} className="p-1 text-gray-500 hover:text-blue-400 opacity-0 group-hover:opacity-100 transition"><RotateCcw className="w-3 h-3" /></button>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
+                  )}
 
 
-                  {/* 英文文字样式 */}
-                  <div className="pt-4 border-t border-gray-800">
-                    <h4 className="text-[10px] uppercase text-blue-400 font-semibold mb-3">
-                      {globalSettings.secondaryLang === 'none' ? '副标题' : LANGUAGES.find(l => l.code === globalSettings.secondaryLang)?.nativeName} 样式
-                    </h4>
-                    <div className="space-y-3">
-                      {/* Font Selection */}
-                      <div>
-                        <div className="text-[10px] text-gray-400 mb-1">Font</div>
-                        <select
-                          value={globalSettings.fontEN}
-                          onChange={(e) => setGlobalSettings(s => ({ ...s, fontEN: e.target.value }))}
-                          className="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1 text-xs text-gray-200"
-                        >
-                          {FONTS_EN.map(f => <option key={f.id} value={f.value}>{f.name}</option>)}
-                        </select>
-                      </div>
-                      {/* Uppercase Option */}
-                      <div>
-                        <label className="flex items-center gap-2 text-xs text-gray-400 cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={globalSettings.textUppercase}
-                            onChange={(e) => setGlobalSettings(s => ({ ...s, textUppercase: e.target.checked }))}
-                            className="rounded bg-gray-800 border-gray-700 text-blue-500"
-                          />
-                          全部大写 (UPPERCASE)
-                        </label>
-                      </div>
-                      {/* Color Selection */}
-                      <div>
-                        <div className="text-[10px] text-gray-400 mb-1">Color</div>
-                        <div className="flex gap-1.5 flex-wrap">
-                          {TEXT_COLORS.map(c => (
-                            <button
-                              key={c.id}
-                              onClick={() => setGlobalSettings(s => ({ ...s, textColorEN: c.id }))}
-                              className={`w-6 h-6 rounded-md border-2 transition ${globalSettings.textColorEN === c.id ? 'border-blue-500 scale-110' : 'border-gray-700 hover:border-gray-500'}`}
-                              style={{ background: c.gradient ? `linear-gradient(135deg, ${c.gradient[0]}, ${c.gradient[1]})` : c.value }}
-                              title={c.name}
+                  {/* 副语言文字样式 - 只在预览副语言时显示 */}
+                  {previewLanguage === 'secondary' && globalSettings.secondaryLang !== 'none' && (
+                    <div className="pt-4 border-t border-gray-800">
+                      <h4 className="text-[10px] uppercase text-blue-400 font-semibold mb-3">
+                        {LANGUAGES.find(l => l.code === globalSettings.secondaryLang)?.nativeName || '副标题'} 样式
+                      </h4>
+                      <div className="space-y-3">
+                        {/* Font Selection */}
+                        <div>
+                          <div className="text-[10px] text-gray-400 mb-1">Font</div>
+                          <select
+                            value={globalSettings.fontEN}
+                            onChange={(e) => setGlobalSettings(s => ({ ...s, fontEN: e.target.value }))}
+                            className="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1 text-xs text-gray-200"
+                          >
+                            {FONTS_EN.map(f => <option key={f.id} value={f.value}>{f.name}</option>)}
+                          </select>
+                        </div>
+                        {/* Uppercase Option */}
+                        <div>
+                          <label className="flex items-center gap-2 text-xs text-gray-400 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={globalSettings.textUppercase}
+                              onChange={(e) => setGlobalSettings(s => ({ ...s, textUppercase: e.target.checked }))}
+                              className="rounded bg-gray-800 border-gray-700 text-blue-500"
                             />
-                          ))}
+                            全部大写 (UPPERCASE)
+                          </label>
                         </div>
-                      </div>
-                      {/* Size */}
-                      <div className="group">
-                        <div className="flex justify-between text-[10px] text-gray-400 mb-1">字体大小 <span>{activeScene.settings.textSizeEN}</span></div>
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="range" min="40" max="300" step="5"
-                            value={activeScene.settings.textSizeEN}
-                            onChange={(e) => updateSceneSettings('textSizeEN', parseInt(e.target.value))}
-                            className="flex-1 h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
-                          />
-                          <button onClick={() => resetSceneSetting('textSizeEN')} className="p-1 text-gray-500 hover:text-blue-400 opacity-0 group-hover:opacity-100 transition"><RotateCcw className="w-3 h-3" /></button>
+                        {/* Color Selection */}
+                        <div>
+                          <div className="text-[10px] text-gray-400 mb-1">Color</div>
+                          <div className="flex gap-1.5 flex-wrap">
+                            {TEXT_COLORS.map(c => (
+                              <button
+                                key={c.id}
+                                onClick={() => setGlobalSettings(s => ({ ...s, textColorEN: c.id }))}
+                                className={`w-6 h-6 rounded-md border-2 transition ${globalSettings.textColorEN === c.id ? 'border-blue-500 scale-110' : 'border-gray-700 hover:border-gray-500'}`}
+                                style={{ background: c.gradient ? `linear-gradient(135deg, ${c.gradient[0]}, ${c.gradient[1]})` : c.value }}
+                                title={c.name}
+                              />
+                            ))}
+                          </div>
                         </div>
-                      </div>
-                      {/* Y Position */}
-                      <div className="group">
-                        <div className="flex justify-between text-[10px] text-gray-400 mb-1">垂直位置 (Y) <span>{activeScene.settings.textYEN}</span></div>
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="range" min="50" max="1000" step="10"
-                            value={activeScene.settings.textYEN}
-                            onChange={(e) => updateSceneSettings('textYEN', parseInt(e.target.value))}
-                            className="flex-1 h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
-                          />
-                          <button onClick={() => resetSceneSetting('textYEN')} className="p-1 text-gray-500 hover:text-blue-400 opacity-0 group-hover:opacity-100 transition"><RotateCcw className="w-3 h-3" /></button>
+                        {/* Size */}
+                        <div className="group">
+                          <div className="flex justify-between text-[10px] text-gray-400 mb-1">字体大小 <span>{activeScene.settings.textSizeEN}</span></div>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="range" min="40" max="300" step="5"
+                              value={activeScene.settings.textSizeEN}
+                              onChange={(e) => updateSceneSettings('textSizeEN', parseInt(e.target.value))}
+                              className="flex-1 h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                            />
+                            <button onClick={() => resetSceneSetting('textSizeEN')} className="p-1 text-gray-500 hover:text-blue-400 opacity-0 group-hover:opacity-100 transition"><RotateCcw className="w-3 h-3" /></button>
+                          </div>
+                        </div>
+                        {/* Y Position */}
+                        <div className="group">
+                          <div className="flex justify-between text-[10px] text-gray-400 mb-1">垂直位置 (Y) <span>{activeScene.settings.textYEN}</span></div>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="range" min="50" max="1000" step="10"
+                              value={activeScene.settings.textYEN}
+                              onChange={(e) => updateSceneSettings('textYEN', parseInt(e.target.value))}
+                              className="flex-1 h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                            />
+                            <button onClick={() => resetSceneSetting('textYEN')} className="p-1 text-gray-500 hover:text-blue-400 opacity-0 group-hover:opacity-100 transition"><RotateCcw className="w-3 h-3" /></button>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
+                  )}
                 </div>
               </div>
             </div>
           </div>
         )}
+
+      {/* 底部进度条 */}
+      {importProgress.active && (
+        <div className="fixed bottom-0 left-0 right-0 bg-gray-900 border-t border-gray-800 px-4 py-2 z-50">
+          <div className="flex items-center gap-3">
+            <div className="flex-1">
+              <div className="flex justify-between text-xs text-gray-400 mb-1">
+                <span>{importProgress.message}</span>
+                <span>{importProgress.current} / {importProgress.total}</span>
+              </div>
+              <div className="h-1.5 bg-gray-800 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-blue-500 transition-all duration-300 ease-out"
+                  style={{ width: `${(importProgress.current / importProgress.total) * 100}%` }}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
 export default App;
+
