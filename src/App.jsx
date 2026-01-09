@@ -1,0 +1,1550 @@
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { Upload, Download, Image as ImageIcon, Type, FolderInput, Plus, Trash2, Globe, Settings, Copy, RefreshCw, Cpu, Monitor, RotateCcw, Save, Archive, ChevronDown, ChevronRight, ChevronUp, AlignLeft, AlignCenter, AlignRight, Palette } from 'lucide-react';
+import './App.css';
+import useClickOutside from './hooks/useClickOutside';
+
+// Default constants
+const DEFAULT_WIDTH = 2880;
+const DEFAULT_HEIGHT = 1800;
+
+// Built-in backgrounds - 渐变配色
+const PRESETS = [
+  { id: 'bg1', name: '深海蓝调', value: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)' },
+  { id: 'bg2', name: '极光紫', value: 'linear-gradient(135deg, #2e1065 0%, #7c3aed 100%)' },
+  { id: 'bg3', name: '日落橙', value: 'linear-gradient(135deg, #c2410c 0%, #fb923c 100%)' },
+  { id: 'bg4', name: '清新绿', value: 'linear-gradient(135deg, #064e3b 0%, #10b981 100%)' },
+  { id: 'bg5', name: '高级灰', value: 'linear-gradient(135deg, #374151 0%, #111827 100%)' },
+  { id: 'bg6', name: '梅子黄', value: 'linear-gradient(135deg, #92400e 0%, #fbbf24 100%)' },
+  { id: 'bg7', name: '樱花粉', value: 'linear-gradient(135deg, #be185d 0%, #f472b6 100%)' },
+  { id: 'bg8', name: '海洋青', value: 'linear-gradient(135deg, #155e75 0%, #22d3ee 100%)' },
+  { id: 'bg9', name: '薯莉紫', value: 'linear-gradient(135deg, #4c1d95 0%, #c4b5fd 100%)' },
+  { id: 'bg10', name: '薄荷凉', value: 'linear-gradient(135deg, #065f46 0%, #6ee7b7 100%)' },
+  { id: 'bg11', name: '灰蓝调', value: 'linear-gradient(135deg, #1e3a5f 0%, #3b82f6 100%)' },
+  { id: 'bg12', name: '暮光金', value: 'linear-gradient(135deg, #78350f 0%, #f59e0b 100%)' },
+];
+
+// 内置背景图片 (public/背景/)
+const BUILTIN_BACKGROUNDS = [
+  { id: 'builtin1', name: '金色', src: '/背景/金色.png' },
+  { id: 'builtin2', name: '壁纸', src: '/背景/wallpaper003.png' },
+  { id: 'builtin3', name: '渐变', src: '/背景/ChatGPT Image 2025年6月2日 12_55_05.png' },
+];
+
+// Platform presets for promotional images
+const PLATFORM_PRESETS = [
+  { id: 'mac', name: 'Mac App Store', width: 2880, height: 1800, category: 'Apple' },
+  { id: 'iphone-6.7', name: 'iPhone 6.7"', width: 1290, height: 2796, category: 'Apple' },
+  { id: 'iphone-6.5', name: 'iPhone 6.5"', width: 1242, height: 2688, category: 'Apple' },
+  { id: 'iphone-5.5', name: 'iPhone 5.5"', width: 1242, height: 2208, category: 'Apple' },
+  { id: 'ipad-12.9', name: 'iPad 12.9"', width: 2048, height: 2732, category: 'Apple' },
+  { id: 'ipad-11', name: 'iPad 11"', width: 1668, height: 2388, category: 'Apple' },
+  { id: 'android', name: 'Google Play', width: 1080, height: 1920, category: 'Android' },
+  { id: 'steam', name: 'Steam 截图', width: 1920, height: 1080, category: 'Steam' },
+  { id: 'steam-capsule', name: 'Steam 主胶囊', width: 1232, height: 706, category: 'Steam' },
+];
+
+// Font presets - 衍线字体 + 无衍线字体
+const FONTS_CN = [
+  { id: 'system', name: '系统默认', value: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif', type: 'sans' },
+  { id: 'source-han-sans', name: '思源黑体', value: '"Source Han Sans SC", sans-serif', type: 'sans' },
+  { id: 'pingfang', name: '苹方', value: '"PingFang SC", sans-serif', type: 'sans' },
+  { id: 'source-han-serif', name: '思源宋体', value: '"Source Han Serif SC", "Noto Serif SC", serif', type: 'serif' },
+  { id: 'kaiti', name: '华文楷体', value: '"STKaiti", "KaiTi", serif', type: 'serif' },
+];
+
+const FONTS_EN = [
+  { id: 'system', name: 'System Default', value: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif', type: 'sans' },
+  { id: 'inter', name: 'Inter', value: '"Inter", sans-serif', type: 'sans' },
+  { id: 'sf-pro', name: 'SF Pro', value: '"SF Pro Display", sans-serif', type: 'sans' },
+  { id: 'playfair', name: 'Playfair Display', value: '"Playfair Display", Georgia, serif', type: 'serif' },
+  { id: 'georgia', name: 'Georgia', value: '"Georgia", "Times New Roman", serif', type: 'serif' },
+];
+
+// Text color presets - 海报设计常用配色
+const TEXT_COLORS = [
+  { id: 'white', name: '经典白', value: '#FFFFFF' },
+  { id: 'neon-pink', name: '霓虹粉', value: '#FF6B9D' },
+  { id: 'apple-blue', name: '苹果蓝', value: '#007AFF' },
+  { id: 'mint-green', name: '薄荷绿', value: '#00D4AA' },
+  { id: 'rose-gold', name: '玖瑰金', value: '#E8B4B8' },
+  { id: 'sunset-orange', name: '日落橙', value: '#FF6B35' },
+  { id: 'gradient-blue', name: '渐变蓝', value: '#60A5FA', gradient: ['#60A5FA', '#3B82F6'] },
+  { id: 'gradient-purple', name: '渐变紫', value: '#A78BFA', gradient: ['#A78BFA', '#8B5CF6'] },
+  { id: 'gradient-gold', name: '渐变金', value: '#FCD34D', gradient: ['#FCD34D', '#F59E0B'] },
+];
+
+// 描边颜色预设
+const STROKE_COLORS = [
+  { id: 'black', name: '黑色', value: 'rgba(0, 0, 0, 0.8)' },
+  { id: 'dark-gray', name: '深灰', value: 'rgba(30, 30, 30, 0.8)' },
+  { id: 'white', name: '白色', value: 'rgba(255, 255, 255, 0.8)' },
+  { id: 'blue', name: '蓝色', value: 'rgba(59, 130, 246, 0.8)' },
+  { id: 'purple', name: '紫色', value: 'rgba(139, 92, 246, 0.8)' },
+];
+
+// 全球语言列表
+const LANGUAGES = [
+  { code: 'zh-CN', name: '简体中文', nativeName: '简体中文', flag: '🇨🇳' },
+  { code: 'zh-TW', name: '繁體中文', nativeName: '繁體中文', flag: '🇹🇼' },
+  { code: 'en', name: 'English', nativeName: 'English', flag: '🇺🇸' },
+  { code: 'ja', name: '日本語', nativeName: '日本語', flag: '🇯🇵' },
+  { code: 'ko', name: '한국어', nativeName: '한국어', flag: '🇰🇷' },
+  { code: 'fr', name: 'Français', nativeName: 'Français', flag: '🇫🇷' },
+  { code: 'de', name: 'Deutsch', nativeName: 'Deutsch', flag: '🇩🇪' },
+  { code: 'es', name: 'Español', nativeName: 'Español', flag: '🇪🇸' },
+  { code: 'pt', name: 'Português', nativeName: 'Português', flag: '🇵🇹' },
+  { code: 'it', name: 'Italiano', nativeName: 'Italiano', flag: '🇮🇹' },
+  { code: 'ru', name: 'Русский', nativeName: 'Русский', flag: '🇷🇺' },
+  { code: 'ar', name: 'العربية', nativeName: 'العربية', flag: '🇸🇦' },
+  { code: 'hi', name: 'हिन्दी', nativeName: 'हिन्दी', flag: '🇮🇳' },
+  { code: 'th', name: 'ไทย', nativeName: 'ไทย', flag: '🇹🇭' },
+  { code: 'vi', name: 'Tiếng Việt', nativeName: 'Tiếng Việt', flag: '🇻🇳' },
+  { code: 'id', name: 'Bahasa Indonesia', nativeName: 'Indonesia', flag: '🇮🇩' },
+  { code: 'ms', name: 'Bahasa Melayu', nativeName: 'Melayu', flag: '🇲🇾' },
+  { code: 'nl', name: 'Nederlands', nativeName: 'Nederlands', flag: '🇳🇱' },
+  { code: 'pl', name: 'Polski', nativeName: 'Polski', flag: '🇵🇱' },
+  { code: 'tr', name: 'Türkçe', nativeName: 'Türkçe', flag: '🇹🇷' },
+  { code: 'uk', name: 'Українська', nativeName: 'Українська', flag: '🇺🇦' },
+  { code: 'cs', name: 'Čeština', nativeName: 'Čeština', flag: '🇨🇿' },
+  { code: 'sv', name: 'Svenska', nativeName: 'Svenska', flag: '🇸🇪' },
+  { code: 'da', name: 'Dansk', nativeName: 'Dansk', flag: '🇩🇰' },
+  { code: 'fi', name: 'Suomi', nativeName: 'Suomi', flag: '🇫🇮' },
+  { code: 'no', name: 'Norsk', nativeName: 'Norsk', flag: '🇳🇴' },
+  { code: 'el', name: 'Ελληνικά', nativeName: 'Ελληνικά', flag: '🇬🇷' },
+  { code: 'he', name: 'עברית', nativeName: 'עברית', flag: '🇮🇱' },
+  { code: 'ro', name: 'Română', nativeName: 'Română', flag: '🇷🇴' },
+  { code: 'hu', name: 'Magyar', nativeName: 'Magyar', flag: '🇭🇺' },
+  { code: 'none', name: '不使用翻译', nativeName: '—', flag: '🚫' },
+];
+
+
+const DEFAULT_SCENE_SETTINGS = {
+  screenshotScale: 0.8,
+  screenshotY: 400,
+  screenshotX: 0,
+  screenshotShadow: true, // 截图阴影开关
+  // 中文文字设置
+  textYCN: 150,
+  textSizeCN: 120,
+  // 英文文字设置
+  textYEN: 150,
+  textSizeEN: 100,
+};
+
+const App = () => {
+  // Global Settings with localStorage persistence
+  const [globalSettings, setGlobalSettings] = useState(() => {
+    try {
+      const saved = localStorage.getItem('appstore_builder_global');
+      if (saved) {
+        return {
+          ...{
+            width: DEFAULT_WIDTH,
+            height: DEFAULT_HEIGHT,
+            backgroundType: 'preset',
+            backgroundValue: PRESETS[0].value,
+            backgroundUpload: null,
+            // Text styling
+            textAlign: 'center',
+            fontCN: FONTS_CN[0].value,
+            fontEN: FONTS_EN[0].value,
+            textColorCN: TEXT_COLORS[0].id,
+            textColorEN: TEXT_COLORS[0].id,
+            // Text effects
+            textShadow: true,
+            textStroke: false,
+            strokeColor: STROKE_COLORS[0].id,
+            fadeStart: 0.7,
+            fadeOpacity: 0.25,
+            textUppercase: false,
+            primaryLang: (() => {
+              try {
+                const sys = navigator.language;
+                const match = LANGUAGES.find(l => l.code === sys || (sys.startsWith(l.code) && l.code !== 'none'));
+                return match ? match.code : 'zh-CN';
+              } catch { return 'zh-CN'; }
+            })(),
+            secondaryLang: 'en',
+          }, ...JSON.parse(saved)
+        };
+      }
+    } catch { }
+    return {
+      width: DEFAULT_WIDTH,
+      height: DEFAULT_HEIGHT,
+      backgroundType: 'preset',
+      backgroundValue: PRESETS[0].value,
+      backgroundUpload: null,
+      // Text styling
+      textAlign: 'center',
+      fontCN: FONTS_CN[0].value,
+      fontEN: FONTS_EN[0].value,
+      textColorCN: TEXT_COLORS[0].id,
+      textColorEN: TEXT_COLORS[0].id,
+      // Text effects
+      textShadow: true,
+      textStroke: false,
+      strokeColor: STROKE_COLORS[0].id,
+      // Text fade control (bottom gradient)
+      fadeStart: 0.7,
+      fadeOpacity: 0.25,
+      // Text transform
+      textUppercase: false,
+      // Multi-language settings
+      primaryLang: 'zh-CN',
+      secondaryLang: 'en',
+    };
+  });
+
+  // Uploaded backgrounds - stored in localStorage as base64
+  const [uploadedBackgrounds, setUploadedBackgrounds] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('appstore_builder_backgrounds')) || [];
+    } catch { return []; }
+  });
+  const [backgroundFolderPath, setBackgroundFolderPath] = useState('');
+
+  // UI state for collapsible sections
+  const [bgExpanded, setBgExpanded] = useState(true);
+  const [platformDropdownOpen, setPlatformDropdownOpen] = useState(false);
+  const [langSettingsOpen, setLangSettingsOpen] = useState(false);
+  const [selectedPlatform, setSelectedPlatform] = useState('mac');
+
+  // Refs for click outside
+  const platformDropdownRef = useRef(null);
+  const langSettingsRef = useRef(null);
+  const savePresetModalRef = useRef(null);
+
+  useClickOutside(platformDropdownRef, () => setPlatformDropdownOpen(false));
+  useClickOutside(langSettingsRef, () => setLangSettingsOpen(false));
+  useClickOutside(savePresetModalRef, () => setShowSavePresetModal(false));
+
+  // Persist globalSettings to localStorage
+  useEffect(() => {
+    const { backgroundUpload, ...settingsToSave } = globalSettings;
+    localStorage.setItem('appstore_builder_global', JSON.stringify(settingsToSave));
+  }, [globalSettings]);
+
+  // Persist uploaded backgrounds to localStorage
+  useEffect(() => {
+    // Limit to last 20 backgrounds to avoid localStorage size issues
+    const toSave = uploadedBackgrounds.slice(-20);
+    try {
+      localStorage.setItem('appstore_builder_backgrounds', JSON.stringify(toSave));
+    } catch (e) {
+      console.warn('Failed to save backgrounds to localStorage', e);
+    }
+  }, [uploadedBackgrounds]);
+
+  // Config Management
+  const [savedConfigs, setSavedConfigs] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('appstore_builder_configs')) || [];
+    } catch { return []; }
+  });
+  const [configName, setConfigName] = useState('');
+
+  // Custom Size Presets (user-defined)
+  const [customSizePresets, setCustomSizePresets] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('appstore_builder_custom_sizes')) || [];
+    } catch { return []; }
+  });
+  const [showSavePresetModal, setShowSavePresetModal] = useState(false);
+  const [newPresetName, setNewPresetName] = useState('');
+
+  // Save custom size preset
+  const saveCustomSizePreset = () => {
+    if (!newPresetName.trim()) return;
+    const newPreset = {
+      id: `custom-${Date.now()}`,
+      name: newPresetName.trim(),
+      width: globalSettings.width,
+      height: globalSettings.height,
+      category: '自定义'
+    };
+    const updated = [...customSizePresets, newPreset];
+    setCustomSizePresets(updated);
+    localStorage.setItem('appstore_builder_custom_sizes', JSON.stringify(updated));
+    setNewPresetName('');
+    setShowSavePresetModal(false);
+    setSelectedPlatform(newPreset.id);
+  };
+
+  const deleteCustomSizePreset = (id) => {
+    const updated = customSizePresets.filter(p => p.id !== id);
+    setCustomSizePresets(updated);
+    localStorage.setItem('appstore_builder_custom_sizes', JSON.stringify(updated));
+  };
+
+
+  // Ollama Settings
+  const [ollamaConfig, setOllamaConfig] = useState({
+    host: 'http://localhost:11434',
+    model: '',
+    availableModels: [],
+    isConnected: false,
+    autoTranslate: true
+  });
+
+  // Scenes Management - stored in localStorage with base64 screenshots
+  const [scenes, setScenes] = useState(() => {
+    try {
+      const saved = localStorage.getItem('appstore_builder_scenes');
+      if (saved) {
+        return JSON.parse(saved);
+      }
+    } catch { }
+    return [{
+      id: 1,
+      name: '首页展示',
+      screenshot: null,
+      titleCN: '智能续写，激发无限灵感',
+      titleEN: 'Smart Continue, Infinite Inspiration',
+      settings: { ...DEFAULT_SCENE_SETTINGS }
+    }];
+  });
+
+  const [activeSceneId, setActiveSceneId] = useState(1);
+  const [previewLanguage, setPreviewLanguage] = useState('primary'); // 'primary' or 'secondary'
+  const canvasRef = useRef(null);
+  const activeScene = scenes.find(s => s.id === activeSceneId) || scenes[0];
+
+  // Persist scenes to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('appstore_builder_scenes', JSON.stringify(scenes));
+    } catch (e) {
+      console.warn('Failed to save scenes to localStorage', e);
+    }
+  }, [scenes]);
+
+  // --- OLLAMA INTEGRATION ---
+
+  const checkOllamaConnection = async () => {
+    try {
+      const response = await fetch(`${ollamaConfig.host}/api/tags`);
+      if (response.ok) {
+        const data = await response.json();
+        const models = data.models.map(m => m.name);
+        setOllamaConfig(prev => ({
+          ...prev,
+          isConnected: true,
+          availableModels: models,
+          model: prev.model || models[0] || ''
+        }));
+      } else {
+        throw new Error('Failed to connect');
+      }
+    } catch (error) {
+      console.error("Ollama connection failed:", error);
+      setOllamaConfig(prev => ({ ...prev, isConnected: false }));
+    }
+  };
+
+  useEffect(() => {
+    checkOllamaConnection();
+  }, []);
+
+  const translateText = async (text, targetLangCode = 'en') => {
+    if (!ollamaConfig.isConnected || !ollamaConfig.model) return text;
+
+    try {
+      // Find language name
+      const targetLang = LANGUAGES.find(l => l.code === targetLangCode);
+      const targetLangName = targetLang ? targetLang.name : 'English';
+
+      const prompt = `Translate the following mobile app feature title into ${targetLangName}. Keep it concise, marketing style. Only output the ${targetLangName} text, no explanations. Text: "${text}"`;
+
+      const response = await fetch(`${ollamaConfig.host}/api/generate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: ollamaConfig.model,
+          prompt: prompt,
+          stream: false
+        })
+      });
+
+      const data = await response.json();
+      return data.response.trim().replace(/^"|"$/g, '');
+    } catch (e) {
+      console.error("Translation error:", e);
+      return "";
+    }
+  };
+
+  // --- CANVAS LOGIC ---
+
+  const loadImage = (src) => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.crossOrigin = "Anonymous";
+      img.onload = () => resolve(img);
+      img.onerror = reject;
+      img.src = src;
+    });
+  };
+
+  const drawCanvas = useCallback(async (canvas, scene, language, isExport = false) => {
+    if (!canvas || !scene) return;
+    const ctx = canvas.getContext('2d');
+    const { width, height, backgroundType, backgroundValue, backgroundUpload } = globalSettings;
+
+    canvas.width = width;
+    canvas.height = height;
+
+    // 1. Draw Background
+    if ((backgroundType === 'upload' || backgroundType === 'builtin') && backgroundUpload) {
+      try {
+        const bgImg = await loadImage(backgroundUpload);
+        const ratio = Math.max(width / bgImg.width, height / bgImg.height);
+        const centerShift_x = (width - bgImg.width * ratio) / 2;
+        const centerShift_y = (height - bgImg.height * ratio) / 2;
+        ctx.drawImage(bgImg, 0, 0, bgImg.width, bgImg.height, centerShift_x, centerShift_y, bgImg.width * ratio, bgImg.height * ratio);
+      } catch (e) {
+        ctx.fillStyle = '#1e293b';
+        ctx.fillRect(0, 0, width, height);
+      }
+    } else {
+      // Parse gradient from CSS linear-gradient string
+      const g = ctx.createLinearGradient(0, 0, width, height);
+      const gradientMatch = backgroundValue.match(/#[a-fA-F0-9]{6}/g);
+      if (gradientMatch && gradientMatch.length >= 2) {
+        g.addColorStop(0, gradientMatch[0]);
+        g.addColorStop(1, gradientMatch[1]);
+      } else {
+        g.addColorStop(0, '#334155');
+        g.addColorStop(1, '#475569');
+      }
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, width, height);
+    }
+
+    // 2. Draw Text (Middle Layer) - 支持多语言系统
+    // 确定当前显示的语言类型 (primary 或 secondary)
+    const isPrimaryLang = language === 'primary' || language === 'CN';
+    let text = isPrimaryLang ? scene.titleCN : scene.titleEN;
+
+    // 如果是翻译语言且开启大写，应用大写转换
+    if (!isPrimaryLang && globalSettings.textUppercase && text) {
+      text = text.toUpperCase();
+    }
+
+    if (text) {
+      // 根据语言选择对应的字体设置
+      const fontSize = isPrimaryLang
+        ? (scene.settings.textSizeCN || 120)
+        : (scene.settings.textSizeEN || 100);
+      const textY = isPrimaryLang
+        ? (scene.settings.textYCN || 150)
+        : (scene.settings.textYEN || 150);
+
+      // Get font from globalSettings
+      const fontFamily = isPrimaryLang ? globalSettings.fontCN : globalSettings.fontEN;
+      ctx.font = `bold ${fontSize}px ${fontFamily}`;
+
+      // Get text alignment
+      const textAlign = globalSettings.textAlign || 'center';
+      ctx.textAlign = textAlign;
+      ctx.textBaseline = 'top';
+
+      // Calculate X position based on alignment
+      let textX;
+      if (textAlign === 'left') {
+        textX = width * 0.1; // 10% padding from left
+      } else if (textAlign === 'right') {
+        textX = width * 0.9; // 10% padding from right
+      } else {
+        textX = width / 2;
+      }
+
+      // Get color settings
+      const colorId = isPrimaryLang ? globalSettings.textColorCN : globalSettings.textColorEN;
+      const colorPreset = TEXT_COLORS.find(c => c.id === colorId) || TEXT_COLORS[0];
+
+      // Apply text shadow if enabled
+      if (globalSettings.textShadow) {
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+        ctx.shadowBlur = fontSize * 0.15;
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = fontSize * 0.05;
+      }
+
+      // Apply color with bottom fade effect - use fadeStart and fadeOpacity
+      const fadeStart = globalSettings.fadeStart || 0.7;
+      const fadeOpacity = globalSettings.fadeOpacity || 0.25;
+      const fadeHex = Math.round(fadeOpacity * 255).toString(16).padStart(2, '0');
+
+      const gradient = ctx.createLinearGradient(0, textY, 0, textY + fontSize);
+      if (colorPreset.gradient) {
+        gradient.addColorStop(0, colorPreset.gradient[0]);
+        gradient.addColorStop(fadeStart, colorPreset.gradient[1]);
+        gradient.addColorStop(1, colorPreset.gradient[1] + fadeHex);
+      } else {
+        gradient.addColorStop(0, colorPreset.value);
+        gradient.addColorStop(fadeStart, colorPreset.value);
+        gradient.addColorStop(1, colorPreset.value + fadeHex);
+      }
+      ctx.fillStyle = gradient;
+
+      // Draw stroke if enabled - use selected stroke color
+      if (globalSettings.textStroke) {
+        const strokeColorPreset = STROKE_COLORS.find(c => c.id === globalSettings.strokeColor) || STROKE_COLORS[0];
+        ctx.strokeStyle = strokeColorPreset.value;
+        ctx.lineWidth = fontSize * 0.03;
+        ctx.lineJoin = 'round';
+      }
+
+      // Split text by newlines and draw each line
+      const lines = text.split('\n');
+      const lineHeight = fontSize * 1.2; // 120% line height
+
+      lines.forEach((line, index) => {
+        const lineY = textY + (index * lineHeight);
+
+        // Update gradient for each line position
+        const lineGradient = ctx.createLinearGradient(0, lineY, 0, lineY + fontSize);
+        if (colorPreset.gradient) {
+          lineGradient.addColorStop(0, colorPreset.gradient[0]);
+          lineGradient.addColorStop(fadeStart, colorPreset.gradient[1]);
+          lineGradient.addColorStop(1, colorPreset.gradient[1] + fadeHex);
+        } else {
+          lineGradient.addColorStop(0, colorPreset.value);
+          lineGradient.addColorStop(fadeStart, colorPreset.value);
+          lineGradient.addColorStop(1, colorPreset.value + fadeHex);
+        }
+        ctx.fillStyle = lineGradient;
+
+        // Draw stroke first if enabled
+        if (globalSettings.textStroke) {
+          ctx.strokeText(line, textX, lineY);
+        }
+
+        // Draw fill
+        ctx.fillText(line, textX, lineY);
+      });
+
+      // Reset shadow
+      ctx.shadowColor = 'transparent';
+      ctx.shadowBlur = 0;
+      ctx.shadowOffsetX = 0;
+      ctx.shadowOffsetY = 0;
+    }
+
+
+
+    // 3. Draw Screenshot (Top Layer)
+    if (scene.screenshot) {
+      try {
+        const ssImg = await loadImage(scene.screenshot);
+        const baseScale = scene.settings.screenshotScale || 0.8;
+        const targetWidth = width * 0.6 * baseScale;
+        const ratio = targetWidth / ssImg.width;
+        const targetHeight = ssImg.height * ratio;
+
+        const x = (width - targetWidth) / 2 + (scene.settings.screenshotX || 0);
+        const y = (scene.settings.screenshotY || 400);
+
+        // Shadow - controlled by screenshotShadow setting
+        if (scene.settings.screenshotShadow !== false) {
+          ctx.shadowColor = "rgba(0, 0, 0, 0.4)";
+          ctx.shadowBlur = 50;
+          ctx.shadowOffsetY = 30;
+        }
+
+        ctx.drawImage(ssImg, x, y, targetWidth, targetHeight);
+
+        // Reset shadow
+        ctx.shadowColor = "transparent";
+        ctx.shadowBlur = 0;
+        ctx.shadowOffsetY = 0;
+      } catch (e) {
+        console.error("Error loading screenshot", e);
+      }
+    }
+
+  }, [globalSettings]);
+
+  useEffect(() => {
+    if (activeScene && canvasRef.current) {
+      drawCanvas(canvasRef.current, activeScene, previewLanguage);
+    }
+  }, [activeScene, globalSettings, previewLanguage, drawCanvas]);
+
+
+  // --- HANDLERS ---
+
+  const handleBatchUpload = async (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length === 0) return;
+
+    // Filter images
+    const imageFiles = files.filter(file => file.type.startsWith('image/'));
+    if (imageFiles.length === 0) return;
+
+    const newScenes = [];
+    let startId = Math.max(...scenes.map(s => s.id), 0) + 1;
+
+    for (const file of imageFiles) {
+      const nameWithoutExt = file.name.replace(/\.[^/.]+$/, "");
+
+      // Auto translate if enabled
+      let enTitle = "";
+      if (ollamaConfig.isConnected && ollamaConfig.autoTranslate) {
+        // Use globalSettings.secondaryLang as target
+        enTitle = await translateText(nameWithoutExt, globalSettings.secondaryLang);
+      }
+
+      const reader = new FileReader();
+      const dataUrl = await new Promise(resolve => {
+        reader.onload = (evt) => resolve(evt.target.result);
+        reader.readAsDataURL(file);
+      });
+
+      newScenes.push({
+        id: startId++,
+        name: nameWithoutExt,
+        screenshot: dataUrl,
+        titleCN: nameWithoutExt,
+        titleEN: enTitle || nameWithoutExt, // Fallback to CN name if no translation
+        settings: { ...scenes[0].settings } // Inherit current defaults or active scene settings
+      });
+    }
+
+    // Append to existing scenes
+    setScenes(prev => [...prev, ...newScenes]);
+
+    // Switch to first new scene
+    if (newScenes.length > 0) {
+      setActiveSceneId(newScenes[0].id);
+    }
+  };
+
+  const handleBgUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        setGlobalSettings(prev => ({ ...prev, backgroundType: 'upload', backgroundUpload: evt.target.result }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleDirectoryBgUpload = async () => {
+    if (!window.electron) {
+      alert("文件夹选择功能仅在 Electron 应用中可用");
+      return;
+    }
+
+    const dirPath = await window.electron.selectDirectory();
+    if (!dirPath) return;
+
+    setBackgroundFolderPath(dirPath);
+
+    const result = await window.electron.readDirectoryImages(dirPath);
+    if (result.success && result.images.length > 0) {
+      setUploadedBackgrounds(result.images);
+      // Auto-select first image
+      setGlobalSettings(prev => ({
+        ...prev,
+        backgroundType: 'upload',
+        backgroundUpload: result.images[0].data
+      }));
+    } else if (result.images.length === 0) {
+      alert("该文件夹中没有找到图片文件");
+    }
+  };
+
+
+  const updateScene = (id, updates) => {
+    setScenes(prev => prev.map(s => s.id === id ? { ...s, ...updates } : s));
+  };
+
+  const updateSceneSettings = (key, value) => {
+    setScenes(prev => prev.map(s => s.id === activeSceneId ? {
+      ...s,
+      settings: { ...s.settings, [key]: value }
+    } : s));
+  };
+
+  const resetSceneSetting = (key) => {
+    updateSceneSettings(key, DEFAULT_SCENE_SETTINGS[key]);
+  }
+
+  // Apply current scene settings to ALL scenes
+  const applySettingsToAll = () => {
+    if (!window.confirm("确定要将当前截图大小、位置和文字布局应用到所有场景吗？")) return;
+    const currentSettings = activeScene.settings;
+    setScenes(prev => prev.map(s => ({
+      ...s,
+      settings: { ...currentSettings }
+    })));
+  };
+
+  const deleteScene = (id) => {
+    if (scenes.length === 1) {
+      // Don't delete last one, just clear it
+      setScenes([{ ...DEFAULT_SCENE_SETTINGS, id: scenes[0].id, screenshot: null, name: '场景 1', titleCN: '', titleEN: '' }]);
+      return;
+    }
+    setScenes(prev => prev.filter(s => s.id !== id));
+    if (activeSceneId === id) setActiveSceneId(scenes[0].id);
+  };
+
+  const saveConfig = () => {
+    if (!configName) return alert("请输入配置名称");
+    const newConfig = { name: configName, settings: activeScene.settings };
+    const updated = [...savedConfigs, newConfig];
+    setSavedConfigs(updated);
+    localStorage.setItem('appstore_builder_configs', JSON.stringify(updated));
+    setConfigName('');
+    alert("配置已保存");
+  };
+
+  const loadConfig = (config) => {
+    if (window.confirm(`加载配置 "${config.name}"？将覆盖当前场景设置`)) {
+      setScenes(prev => prev.map(s => s.id === activeSceneId ? {
+        ...s,
+        settings: { ...config.settings }
+      } : s));
+    }
+  };
+
+  const deleteConfig = (index) => {
+    const updated = savedConfigs.filter((_, i) => i !== index);
+    setSavedConfigs(updated);
+    localStorage.setItem('appstore_builder_configs', JSON.stringify(updated));
+  }
+
+
+  // --- EXPORT LOGIC ---
+  const handleExportAll = async () => {
+    // 1. Select Directory via Electron
+    if (!window.electron) return alert("Output directory selection is only available in Electron app.");
+
+    const basePath = await window.electron.selectDirectory();
+    if (!basePath) return; // User cancelled
+
+    const tempCanvas = document.createElement('canvas');
+    const exportFiles = [];
+
+    // Helper to get Blob
+    const getCanvasData = async (scene, lang) => {
+      await drawCanvas(tempCanvas, scene, lang, true);
+      return tempCanvas.toDataURL('image/jpeg', 0.9);
+    };
+
+    alert(`开始导出到: ${basePath}...`);
+
+    for (const scene of scenes) {
+      if (!scene.screenshot) continue;
+
+      const cnData = await getCanvasData(scene, 'CN');
+      exportFiles.push({ path: `中文/${scene.name}.jpg`, data: cnData });
+
+      const enData = await getCanvasData(scene, 'EN');
+      exportFiles.push({ path: `English/${scene.name}.jpg`, data: enData });
+    }
+
+    // 2. Save via Electron
+    const result = await window.electron.saveFiles({ basePath, files: exportFiles });
+
+    if (result.success) {
+      alert("导出成功！\nExport Completed Successfully!");
+    } else {
+      alert("导出失败: " + result.error);
+    }
+  };
+
+  // Platform preset change handler
+  const handlePlatformChange = (preset) => {
+    setSelectedPlatform(preset.id);
+    setGlobalSettings(prev => ({
+      ...prev,
+      width: preset.width,
+      height: preset.height
+    }));
+    setPlatformDropdownOpen(false);
+  };
+
+  // Get current platform name
+  const getCurrentPlatformName = () => {
+    const preset = PLATFORM_PRESETS.find(p => p.id === selectedPlatform);
+    return preset ? preset.name : '自定义';
+  };
+
+  return (
+    <div className="flex flex-col h-screen bg-gray-950 text-white font-sans overflow-hidden no-scrollbar">
+
+      {/* GLOBAL TOP TITLE BAR */}
+      <div className="global-titlebar h-12 flex items-center justify-between px-4 shrink-0 drag-region">
+        {/* Left section with platform dropdown */}
+        <div className="flex items-center gap-4 no-drag" style={{ marginLeft: '70px' }}>
+          {/* Platform Preset Dropdown */}
+          <div className="relative" ref={platformDropdownRef}>
+            <button
+              onClick={() => setPlatformDropdownOpen(!platformDropdownOpen)}
+              className="flex items-center gap-2 bg-gray-800/80 hover:bg-gray-700/80 px-3 py-1.5 rounded-lg text-xs font-medium transition border border-gray-700/50"
+            >
+              <Monitor className="w-3.5 h-3.5 text-blue-400" />
+              <span className="text-gray-200">{getCurrentPlatformName()}</span>
+              {platformDropdownOpen ? <ChevronUp className="w-3 h-3 text-gray-400" /> : <ChevronDown className="w-3 h-3 text-gray-400" />}
+            </button>
+
+            {platformDropdownOpen && (
+              <div className="absolute top-full left-0 mt-1 w-64 bg-gray-800/95 backdrop-blur-xl rounded-lg border border-gray-700/50 shadow-2xl z-50 py-1 overflow-hidden max-h-80 overflow-y-auto slim-scrollbar">
+                {['Apple', 'Android', 'Steam'].map(category => (
+                  <div key={category}>
+                    <div className="px-3 py-1.5 text-[10px] uppercase text-gray-500 font-semibold bg-gray-900/50">{category}</div>
+                    {PLATFORM_PRESETS.filter(p => p.category === category).map(preset => (
+                      <button
+                        key={preset.id}
+                        onClick={() => handlePlatformChange(preset)}
+                        className={`w-full flex items-center justify-between px-3 py-2 text-xs hover:bg-gray-700/50 transition ${selectedPlatform === preset.id ? 'text-blue-400 bg-blue-900/20' : 'text-gray-300'}`}
+                      >
+                        <span>{preset.name}</span>
+                        <span className="text-[10px] text-gray-500 font-mono">{preset.width}×{preset.height}</span>
+                      </button>
+                    ))}
+                  </div>
+                ))}
+                {/* Custom Presets */}
+                {customSizePresets.length > 0 && (
+                  <div>
+                    <div className="px-3 py-1.5 text-[10px] uppercase text-gray-500 font-semibold bg-gray-900/50">自定义</div>
+                    {customSizePresets.map(preset => (
+                      <div key={preset.id} className="flex items-center group">
+                        <button
+                          onClick={() => handlePlatformChange(preset)}
+                          className={`flex-1 flex items-center justify-between px-3 py-2 text-xs hover:bg-gray-700/50 transition ${selectedPlatform === preset.id ? 'text-blue-400 bg-blue-900/20' : 'text-gray-300'}`}
+                        >
+                          <span>{preset.name}</span>
+                          <span className="text-[10px] text-gray-500 font-mono">{preset.width}×{preset.height}</span>
+                        </button>
+                        <button
+                          onClick={() => deleteCustomSizePreset(preset.id)}
+                          className="p-1 text-red-400 opacity-0 group-hover:opacity-100 hover:bg-red-900/30 rounded mr-1 transition"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Canvas Size Display with Save Button */}
+          <div className="relative flex items-center gap-2 text-xs text-gray-400 bg-gray-800/50 px-3 py-1.5 rounded-lg border border-gray-700/50">
+            <span className="text-gray-500">W:</span>
+            <input type="number" className="bg-transparent w-14 text-gray-200 focus:outline-none text-center"
+              value={globalSettings.width} onChange={(e) => setGlobalSettings(s => ({ ...s, width: parseInt(e.target.value) || 100 }))}
+            />
+            <span className="text-gray-600">×</span>
+            <span className="text-gray-500">H:</span>
+            <input type="number" className="bg-transparent w-14 text-gray-200 focus:outline-none text-center"
+              value={globalSettings.height} onChange={(e) => setGlobalSettings(s => ({ ...s, height: parseInt(e.target.value) || 100 }))}
+            />
+            <button
+              onClick={() => setShowSavePresetModal(!showSavePresetModal)}
+              className="ml-1 p-1 text-gray-500 hover:text-blue-400 hover:bg-gray-700/50 rounded transition"
+              title="保存为预设"
+            >
+              <Save className="w-3.5 h-3.5" />
+            </button>
+
+            {/* Save Preset Dropdown */}
+            {showSavePresetModal && (
+              <div className="absolute top-full left-0 mt-1 bg-gray-800 rounded-lg p-3 w-56 border border-gray-700 shadow-xl z-50" ref={savePresetModalRef}>
+                <div className="text-xs text-gray-400 mb-2">{globalSettings.width}×{globalSettings.height}</div>
+                <input
+                  type="text"
+                  value={newPresetName}
+                  onChange={(e) => setNewPresetName(e.target.value)}
+                  placeholder="输入预设名称..."
+                  className="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1.5 text-xs text-gray-200 mb-2"
+                  autoFocus
+                  onKeyDown={(e) => e.key === 'Enter' && saveCustomSizePreset()}
+                />
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setShowSavePresetModal(false)}
+                    className="flex-1 px-2 py-1 text-[10px] text-gray-400 hover:text-white bg-gray-700 hover:bg-gray-600 rounded transition"
+                  >
+                    取消
+                  </button>
+                  <button
+                    onClick={saveCustomSizePreset}
+                    className="flex-1 px-2 py-1 text-[10px] text-white bg-blue-600 hover:bg-blue-500 rounded transition"
+                  >
+                    保存
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div> {/* Close Left Section */}
+
+        {/* Center section with language toggle */}
+        <div className="flex items-center gap-3 no-drag">
+          {/* Language Preview Toggle */}
+          <div className="flex bg-gray-800/80 rounded-lg p-0.5 border border-gray-700/50">
+            <button
+              onClick={() => setPreviewLanguage('primary')}
+              className={`px-3 py-1 text-xs font-medium rounded-md transition flex items-center gap-1 ${previewLanguage === 'primary' ? 'bg-gray-700 text-white shadow' : 'text-gray-400 hover:text-gray-200'}`}
+            >
+              {LANGUAGES.find(l => l.code === globalSettings.primaryLang)?.flag} {LANGUAGES.find(l => l.code === globalSettings.primaryLang)?.nativeName}
+            </button>
+            {globalSettings.secondaryLang !== 'none' && (
+              <button
+                onClick={() => setPreviewLanguage('secondary')}
+                className={`px-3 py-1 text-xs font-medium rounded-md transition flex items-center gap-1 ${previewLanguage === 'secondary' ? 'bg-gray-700 text-white shadow' : 'text-gray-400 hover:text-gray-200'}`}
+              >
+                {LANGUAGES.find(l => l.code === globalSettings.secondaryLang)?.flag} {LANGUAGES.find(l => l.code === globalSettings.secondaryLang)?.nativeName}
+              </button>
+            )}
+          </div>
+
+          {/* Language Settings Dropdown */}
+          <div className="relative" ref={langSettingsRef}>
+            <button
+              onClick={() => setLangSettingsOpen(!langSettingsOpen)}
+              className="p-1.5 bg-gray-800/80 hover:bg-gray-700/80 rounded-lg text-gray-400 hover:text-white transition border border-gray-700/50"
+              title="语言设置"
+            >
+              <Globe className="w-4 h-4" />
+            </button>
+
+            {langSettingsOpen && (
+              <div className="absolute top-full right-0 mt-1 w-72 bg-gray-800/95 backdrop-blur-xl rounded-lg border border-gray-700/50 shadow-2xl z-50 p-3 space-y-3">
+                <div className="flex items-center justify-between border-b border-gray-700/50 pb-2">
+                  <div className="text-xs text-gray-400 font-semibold flex items-center gap-2">
+                    <Globe className="w-3.5 h-3.5" /> 语言设置
+                  </div>
+                  <button
+                    onClick={() => {
+                      // Auto detect system language
+                      const sysLangCode = navigator.language;
+                      const matchedLang = LANGUAGES.find(l => l.code === sysLangCode || (sysLangCode.startsWith(l.code) && l.code !== 'none'))?.code || 'en';
+                      setGlobalSettings(s => ({ ...s, primaryLang: matchedLang, secondaryLang: 'en' }));
+                    }}
+                    className="text-[10px] text-blue-400 hover:text-blue-300 flex items-center gap-1"
+                  >
+                    <Monitor className="w-3 h-3" /> 跟随系统
+                  </button>
+                </div>
+
+                {/* Primary Language */}
+                <div>
+                  <label className="text-[10px] text-gray-500 block mb-1">主语言 (Primary)</label>
+                  <select
+                    value={globalSettings.primaryLang}
+                    onChange={(e) => setGlobalSettings(s => ({ ...s, primaryLang: e.target.value }))}
+                    className="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1.5 text-xs text-gray-200"
+                  >
+                    {LANGUAGES.filter(l => l.code !== 'none').map(lang => (
+                      <option key={lang.code} value={lang.code}>{lang.flag} {lang.nativeName}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Secondary Language */}
+                <div>
+                  <label className="text-[10px] text-gray-500 block mb-1">翻译语言 (Secondary)</label>
+                  <select
+                    value={globalSettings.secondaryLang}
+                    onChange={(e) => setGlobalSettings(s => ({ ...s, secondaryLang: e.target.value }))}
+                    className="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1.5 text-xs text-gray-200"
+                  >
+                    {LANGUAGES.map(lang => (
+                      <option key={lang.code} value={lang.code}>{lang.flag} {lang.nativeName}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="text-[9px] text-gray-600 pt-2 border-t border-gray-700/50">
+                  选择「不使用翻译」可仅导出单一语言版本
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Right section with export button */}
+        <div className="flex items-center gap-3 no-drag">
+          <button onClick={handleExportAll}
+            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-1.5 rounded-lg text-xs font-medium transition shadow-lg shadow-blue-900/30">
+            <Download className="w-3.5 h-3.5" /> 导出全部
+          </button>
+        </div>
+      </div>
+
+      {/* MAIN CONTENT AREA */}
+      <div className="flex flex-1 overflow-hidden">
+
+        {/* LEFT SIDEBAR */}
+        <div className="w-80 bg-gray-900 border-r border-gray-800 flex flex-col flex-shrink-0 z-20 shadow-xl">
+
+          {/* Ollama Settings */}
+          <div className="px-4 py-3 border-b border-gray-800 bg-gray-900/50">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2 text-xs font-semibold text-gray-400 uppercase">
+                <Cpu className="w-3 h-3" /> 本地 AI 翻译 (Ollama)
+              </div>
+              <div className={`w-2 h-2 rounded-full ${ollamaConfig.isConnected ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]' : 'bg-red-500'}`}></div>
+            </div>
+
+            {!ollamaConfig.isConnected ? (
+              <div className="space-y-2">
+                <input className="w-full text-xs bg-gray-800 border border-gray-700 rounded p-1 text-gray-300"
+                  value={ollamaConfig.host} onChange={(e) => setOllamaConfig(s => ({ ...s, host: e.target.value }))}
+                  placeholder="http://localhost:11434"
+                />
+                <button onClick={checkOllamaConnection}
+                  className="w-full text-xs bg-blue-900/50 hover:bg-blue-800 text-blue-200 py-1 rounded border border-blue-800 transition">
+                  连接 Ollama
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <select className="w-full text-xs bg-gray-800 border border-gray-700 rounded p-1" value={ollamaConfig.model}
+                  onChange={(e) => setOllamaConfig(s => ({ ...s, model: e.target.value }))}
+                >
+                  {ollamaConfig.availableModels.map(m => <option key={m} value={m}>{m}</option>)}
+                </select>
+                <div className="flex items-center gap-2">
+                  <input type="checkbox" id="autoTrans" checked={ollamaConfig.autoTranslate} onChange={(e) => setOllamaConfig(s => ({ ...s, autoTranslate: e.target.checked }))}
+                    className="rounded bg-gray-800 border-gray-700"
+                  />
+                  <label htmlFor="autoTrans" className="text-xs text-gray-400">导入时自动翻译文件名</label>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Background Settings */}
+          <div className="p-4 border-b border-gray-800">
+            <button
+              onClick={() => setBgExpanded(!bgExpanded)}
+              className="w-full text-xs uppercase text-gray-400 font-semibold mb-2 flex items-center gap-2 hover:text-gray-200 transition"
+            >
+              <ChevronDown className={`w-3 h-3 transition-transform ${bgExpanded ? '' : '-rotate-90'}`} />
+              <ImageIcon className="w-4 h-4" /> 全局背景
+              {uploadedBackgrounds.length > 0 && (
+                <span className="ml-auto text-[10px] text-gray-500 font-normal">
+                  ({uploadedBackgrounds.length} 张)
+                </span>
+              )}
+            </button>
+
+            {bgExpanded && (
+              <>
+                <div className="grid grid-cols-6 gap-2 mb-3">
+                  {PRESETS.map(p => (
+                    <button key={p.id} onClick={() => setGlobalSettings(s => ({ ...s, backgroundType: 'preset', backgroundValue: p.value }))}
+                      className={`w-full h-8 rounded-md transition-all ${globalSettings.backgroundValue === p.value && globalSettings.backgroundType === 'preset' ? 'ring-2 ring-blue-500 scale-110 z-10' : 'opacity-70 hover:opacity-100'}`}
+                      style={{ background: p.value }}
+                      title={p.name}
+                    />
+                  ))}
+                </div>
+
+                {/* Built-in Background Images */}
+                <div className="mb-3">
+                  <p className="text-[10px] text-gray-500 mb-2">内置背景图片</p>
+                  <div className="grid grid-cols-3 gap-2">
+                    {BUILTIN_BACKGROUNDS.map(bg => (
+                      <button
+                        key={bg.id}
+                        onClick={() => setGlobalSettings(s => ({ ...s, backgroundType: 'builtin', backgroundUpload: bg.src }))}
+                        className={`w-full h-12 rounded-md transition-all overflow-hidden ${globalSettings.backgroundUpload === bg.src && globalSettings.backgroundType === 'builtin' ? 'ring-2 ring-blue-500 scale-105' : 'opacity-70 hover:opacity-100'}`}
+                        title={bg.name}
+                      >
+                        <img src={bg.src} alt={bg.name} className="w-full h-full object-cover" />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Uploaded Background Thumbnails */}
+                {uploadedBackgrounds.length > 0 && (
+                  <div className="mb-3">
+                    <p className="text-[10px] text-gray-500 mb-2">已链接背景图片</p>
+                    <div className="grid grid-cols-5 gap-2">
+                      {uploadedBackgrounds.slice(0, 10).map((bg, idx) => (
+                        <button
+                          key={idx}
+                          onClick={() => setGlobalSettings(s => ({ ...s, backgroundType: 'upload', backgroundUpload: bg.data }))}
+                          className={`w-full h-8 rounded-md transition-all overflow-hidden ${globalSettings.backgroundUpload === bg.data && globalSettings.backgroundType === 'upload' ? 'ring-2 ring-blue-500 scale-110 z-10' : 'opacity-70 hover:opacity-100'}`}
+                          title={bg.name}
+                        >
+                          <img src={bg.data} alt={bg.name} className="w-full h-full object-cover" />
+                        </button>
+                      ))}
+                      {uploadedBackgrounds.length > 10 && (
+                        <div className="w-full h-8 rounded-md bg-gray-800 flex items-center justify-center text-[10px] text-gray-500">
+                          +{uploadedBackgrounds.length - 10}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                <button
+                  onClick={handleDirectoryBgUpload}
+                  className={`flex items-center justify-center w-full p-2 text-xs bg-gray-800 rounded cursor-pointer hover:bg-gray-700 border border-gray-700 transition ${globalSettings.backgroundType === 'upload' ? 'border-blue-500 text-blue-400' : 'text-gray-400'}`}
+                >
+                  <FolderInput className="w-3 h-3 mr-2" /> 链接背景文件夹
+                </button>
+                {backgroundFolderPath && (
+                  <p className="text-[9px] text-gray-500 mt-1 text-center font-mono truncate" title={backgroundFolderPath}>
+                    {backgroundFolderPath.split('/').slice(-2).join('/')}
+                  </p>
+                )}
+              </>
+            )}
+          </div>
+
+          {/* Scene List */}
+          <div className="flex-1 overflow-y-auto p-4 bg-gray-900 slim-scrollbar">
+            <div className="flex justify-between items-center mb-3">
+              <h3 className="text-xs uppercase text-gray-400 font-semibold">场景列表 ({scenes.length})</h3>
+              <div className="relative group">
+                <input type="file" multiple webkitdirectory="" accept="image/*"
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onChange={handleBatchUpload}
+                />
+                <button
+                  className="p-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded transition shadow-lg shadow-blue-900/50">
+                  <FolderInput className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            <div className="space-y-2 pb-20">
+              {scenes.map(scene => (
+                <div key={scene.id} onClick={() => setActiveSceneId(scene.id)}
+                  className={`group p-2 rounded-lg cursor-pointer flex items-center gap-3 border transition-all ${activeSceneId === scene.id ? 'bg-gray-800 border-blue-500/50 shadow-lg' : 'bg-gray-900 border-gray-800 hover:bg-gray-800 hover:border-gray-700'}`}
+                >
+                  <div className="w-8 h-12 bg-gray-950 rounded overflow-hidden flex-shrink-0 border border-gray-700 relative">
+                    {scene.screenshot ? (
+                      <img src={scene.screenshot} className="w-full h-full object-cover" alt="" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-gray-700">
+                        <ImageIcon size={10} />
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className={`text-sm font-medium truncate ${activeSceneId === scene.id ? 'text-white' : 'text-gray-400'}`}>{scene.name || '未命名场景'}</div>
+                    <div className="text-[10px] text-gray-600 truncate">{scene.titleEN || '...'}</div>
+                  </div>
+                  <button onClick={(e) => { e.stopPropagation(); deleteScene(scene.id); }}
+                    className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-red-500/20 hover:text-red-400 text-gray-600 rounded transition"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* CENTER - Canvas Preview */}
+        <div className="flex-1 flex flex-col relative bg-gray-950">
+
+          <div className="flex-1 overflow-hidden p-4 flex items-center justify-center" style={{ background: 'radial-gradient(circle at center, rgba(30,41,59,0.5) 0%, rgba(15,23,42,1) 100%)' }}>
+            {/* Canvas Container - Auto-fit */}
+            <div className="relative shadow-2xl ring-1 ring-gray-700 rounded-lg overflow-hidden"
+              style={{
+                aspectRatio: `${globalSettings.width}/${globalSettings.height}`,
+                maxWidth: '100%',
+                maxHeight: '100%',
+                width: 'auto',
+                height: 'auto'
+              }}
+            >
+              <canvas ref={canvasRef} className="w-full h-full object-contain bg-gray-800 block" />
+              {/* Overlay Info */}
+              <div className="absolute top-2 right-2 px-2 py-0.5 bg-black/60 backdrop-blur rounded text-[9px] text-gray-400 pointer-events-none">
+                {globalSettings.width} × {globalSettings.height}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* RIGHT SIDEBAR - Edit Active Scene */}
+        <div className="w-72 bg-gray-900 border-l border-gray-800 flex flex-col flex-shrink-0 shadow-xl z-20 no-scrollbar overflow-y-auto">
+          <div className="p-5 border-b border-gray-800">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-sm font-bold text-gray-100">参数调整</h2>
+              <button onClick={applySettingsToAll} title="将当前的位置/大小设置应用到所有场景"
+                className="text-xs flex items-center gap-1 text-blue-400 hover:text-blue-300 bg-blue-900/20 hover:bg-blue-900/40 px-2 py-1 rounded transition border border-blue-900/50">
+                <Copy className="w-3 h-3" /> 应用到所有
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              {/* Saved Configs */}
+              <div className="bg-gray-800/50 rounded-lg p-3 border border-gray-700/50 mb-4">
+                <label className="text-[10px] uppercase text-gray-500 font-semibold mb-2 block flex items-center gap-2">
+                  <Archive className="w-3 h-3" /> 布局预设
+                </label>
+                <div className="flex gap-1 mb-2">
+                  <input
+                    type="text"
+                    value={configName}
+                    onChange={(e) => setConfigName(e.target.value)}
+                    placeholder="新预设名称..."
+                    className="flex-1 min-w-0 bg-gray-900 text-xs border border-gray-700 rounded px-2 py-1"
+                  />
+                  <button onClick={saveConfig} className="p-1 bg-blue-900/50 text-blue-300 rounded border border-blue-800 hover:bg-blue-800"><Save className="w-3 h-3" /></button>
+                </div>
+                <div className="max-h-24 overflow-y-auto space-y-1">
+                  {savedConfigs.map((config, idx) => (
+                    <div key={idx} className="flex items-center justify-between text-xs bg-gray-900/50 p-1 rounded group">
+                      <span onClick={() => loadConfig(config)} className="text-gray-300 cursor-pointer hover:text-white flex-1 truncate">{config.name}</span>
+                      <button onClick={() => deleteConfig(idx)} className="text-red-500 opacity-0 group-hover:opacity-100"><Trash2 className="w-3 h-3" /></button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Screenshot Controls */}
+              <div className="bg-gray-800/50 rounded-lg p-3 border border-gray-700/50">
+                <label className="text-[10px] uppercase text-gray-500 font-semibold mb-2 block flex items-center gap-2">
+                  <Settings className="w-3 h-3" /> 截图布局
+                </label>
+                <div className="space-y-3">
+                  <div className="group">
+                    <div className="flex justify-between text-[10px] text-gray-400 mb-1">
+                      缩放 <span>{Math.round(activeScene.settings.screenshotScale * 100)}%</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <input type="range" min="0.3" max="3.0" step="0.01" value={activeScene.settings.screenshotScale}
+                        onChange={(e) => updateSceneSettings('screenshotScale', parseFloat(e.target.value))}
+                        className="flex-1 h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                      />
+                      <button onClick={() => resetSceneSetting('screenshotScale')} className="p-1 text-gray-500 hover:text-blue-400 opacity-0 group-hover:opacity-100 transition"><RotateCcw className="w-3 h-3" /></button>
+                    </div>
+                  </div>
+                  <div className="group">
+                    <div className="flex justify-between text-[10px] text-gray-400 mb-1">垂直位置 (Y) <span>{activeScene.settings.screenshotY}</span></div>
+                    <div className="flex items-center gap-2">
+                      <input type="range" min="0" max="1500" step="10" value={activeScene.settings.screenshotY} onChange={(e) =>
+                        updateSceneSettings('screenshotY', parseInt(e.target.value))}
+                        className="flex-1 h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                      />
+                      <button onClick={() => resetSceneSetting('screenshotY')} className="p-1 text-gray-500 hover:text-blue-400 opacity-0 group-hover:opacity-100 transition"><RotateCcw className="w-3 h-3" /></button>
+                    </div>
+                  </div>
+                  <div className="group">
+                    <div className="flex justify-between text-[10px] text-gray-400 mb-1">水平位置 (X) <span>{activeScene.settings.screenshotX}</span></div>
+                    <div className="flex items-center gap-2">
+                      <input type="range" min="-1000" max="1000" step="10" value={activeScene.settings.screenshotX}
+                        onChange={(e) => updateSceneSettings('screenshotX', parseInt(e.target.value))}
+                        className="flex-1 h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                      />
+                      <button onClick={() => resetSceneSetting('screenshotX')} className="p-1 text-gray-500 hover:text-blue-400 opacity-0 group-hover:opacity-100 transition"><RotateCcw className="w-3 h-3" /></button>
+                    </div>
+                  </div>
+                  {/* Screenshot Shadow Toggle */}
+                  <div className="pt-2 mt-2 border-t border-gray-700/50">
+                    <label className="flex items-center gap-2 text-xs text-gray-400 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={activeScene.settings.screenshotShadow !== false}
+                        onChange={(e) => updateSceneSettings('screenshotShadow', e.target.checked)}
+                        className="rounded bg-gray-800 border-gray-700 text-blue-500"
+                      />
+                      截图阴影
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Text Settings */}
+          <div className="p-5">
+            <h3 className="text-[10px] uppercase text-gray-500 font-semibold mb-4 flex items-center gap-2">
+              <Type className="w-3 h-3" /> 文案 & 翻译
+            </h3>
+
+            <div className="space-y-4">
+              {/* Global Text Controls */}
+              <div className="bg-gray-800/50 rounded-lg p-3 border border-gray-700/50">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-[10px] uppercase text-gray-500 font-semibold">对齐方式</span>
+                  <div className="flex bg-gray-900 rounded-md p-0.5">
+                    <button
+                      onClick={() => setGlobalSettings(s => ({ ...s, textAlign: 'left' }))}
+                      className={`p-1.5 rounded transition ${globalSettings.textAlign === 'left' ? 'bg-gray-700 text-white' : 'text-gray-500 hover:text-gray-300'}`}
+                    >
+                      <AlignLeft className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={() => setGlobalSettings(s => ({ ...s, textAlign: 'center' }))}
+                      className={`p-1.5 rounded transition ${globalSettings.textAlign === 'center' ? 'bg-gray-700 text-white' : 'text-gray-500 hover:text-gray-300'}`}
+                    >
+                      <AlignCenter className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={() => setGlobalSettings(s => ({ ...s, textAlign: 'right' }))}
+                      className={`p-1.5 rounded transition ${globalSettings.textAlign === 'right' ? 'bg-gray-700 text-white' : 'text-gray-500 hover:text-gray-300'}`}
+                    >
+                      <AlignRight className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+                {/* Text Effects */}
+                <div className="flex items-center gap-4 mt-3 pt-3 border-t border-gray-700/50">
+                  <label className="flex items-center gap-2 text-xs text-gray-400 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={globalSettings.textShadow}
+                      onChange={(e) => setGlobalSettings(s => ({ ...s, textShadow: e.target.checked }))}
+                      className="rounded bg-gray-800 border-gray-700 text-blue-500"
+                    />
+                    阴影
+                  </label>
+                  <label className="flex items-center gap-2 text-xs text-gray-400 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={globalSettings.textStroke}
+                      onChange={(e) => setGlobalSettings(s => ({ ...s, textStroke: e.target.checked }))}
+                      className="rounded bg-gray-800 border-gray-700 text-blue-500"
+                    />
+                    描边
+                  </label>
+                </div>
+                {/* Stroke Color - only show when stroke is enabled */}
+                {globalSettings.textStroke && (
+                  <div className="mt-2">
+                    <div className="text-[10px] text-gray-400 mb-1">描边颜色</div>
+                    <div className="flex gap-1.5">
+                      {STROKE_COLORS.map(c => (
+                        <button
+                          key={c.id}
+                          onClick={() => setGlobalSettings(s => ({ ...s, strokeColor: c.id }))}
+                          className={`w-5 h-5 rounded-md border-2 transition ${globalSettings.strokeColor === c.id ? 'border-blue-500 scale-110' : 'border-gray-600 hover:border-gray-500'}`}
+                          style={{ background: c.value }}
+                          title={c.name}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {/* Text Fade Control */}
+                <div className="mt-3 pt-3 border-t border-gray-700/50 space-y-2">
+                  <div className="text-[10px] text-gray-500 font-semibold">文字渐变控制</div>
+                  <div>
+                    <div className="flex justify-between text-[10px] text-gray-400 mb-1">渐变位置 <span>{Math.round(globalSettings.fadeStart * 100)}%</span></div>
+                    <input
+                      type="range" min="0.3" max="1" step="0.05"
+                      value={globalSettings.fadeStart}
+                      onChange={(e) => setGlobalSettings(s => ({ ...s, fadeStart: parseFloat(e.target.value) }))}
+                      className="w-full h-1 bg-gray-700 rounded-lg accent-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <div className="flex justify-between text-[10px] text-gray-400 mb-1">底部透明度 <span>{Math.round(globalSettings.fadeOpacity * 100)}%</span></div>
+                    <input
+                      type="range" min="0" max="1" step="0.05"
+                      value={globalSettings.fadeOpacity}
+                      onChange={(e) => setGlobalSettings(s => ({ ...s, fadeOpacity: parseFloat(e.target.value) }))}
+                      className="w-full h-1 bg-gray-700 rounded-lg accent-blue-500"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Chinese Title */}
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">
+                  {LANGUAGES.find(l => l.code === globalSettings.primaryLang)?.nativeName || '主标题'} (Primary)
+                </label>
+                <textarea
+                  rows={2}
+                  value={activeScene.titleCN}
+                  onChange={(e) => {
+                    const newTitle = e.target.value;
+                    // 同步更新 name（去掉换行符显示在列表）
+                    updateScene(activeScene.id, { titleCN: newTitle, name: newTitle.replace(/\n/g, ' ') });
+                  }}
+                  className="w-full bg-gray-800 border border-gray-700 rounded p-2 text-xs text-gray-200 focus:border-blue-500 outline-none resize-none transition"
+                  placeholder="支持多行文字..."
+                />
+              </div>
+
+              {/* English Title */}
+              <div className="relative">
+                <label className="block text-xs text-gray-400 mb-1 flex justify-between items-center">
+                  <span>
+                    {globalSettings.secondaryLang === 'none' ? '副标题 (可选)' : LANGUAGES.find(l => l.code === globalSettings.secondaryLang)?.nativeName} (Secondary)
+                  </span>
+                  <button
+                    onClick={async () => {
+                      const trans = await translateText(activeScene.titleCN, globalSettings.secondaryLang);
+                      updateScene(activeScene.id, { titleEN: trans });
+                    }}
+                    disabled={!ollamaConfig.isConnected || globalSettings.secondaryLang === 'none'}
+                    className={`text-[10px] flex items-center gap-1 px-1.5 py-0.5 rounded transition ${ollamaConfig.isConnected && globalSettings.secondaryLang !== 'none' ? 'bg-blue-600 text-white hover:bg-blue-500' : 'bg-gray-700 text-gray-500 cursor-not-allowed'}`}
+                  >
+                    <RefreshCw className="w-3 h-3" /> 重新翻译
+                  </button>
+                </label>
+                <textarea
+                  rows={2}
+                  value={activeScene.titleEN}
+                  onChange={(e) => updateScene(activeScene.id, { titleEN: e.target.value })}
+                  className="w-full bg-gray-800 border border-gray-700 rounded p-2 text-xs text-gray-200 focus:border-blue-500 outline-none resize-none transition"
+                  placeholder="Supports multiple lines..."
+                />
+              </div>
+
+              {/* 中文文字样式 */}
+              <div className="pt-4 border-t border-gray-800">
+                <h4 className="text-[10px] uppercase text-blue-400 font-semibold mb-3">
+                  {LANGUAGES.find(l => l.code === globalSettings.primaryLang)?.nativeName || '主标题'} 样式
+                </h4>
+                <div className="space-y-3">
+                  {/* Font Selection */}
+                  <div>
+                    <div className="text-[10px] text-gray-400 mb-1">字体</div>
+                    <select
+                      value={globalSettings.fontCN}
+                      onChange={(e) => setGlobalSettings(s => ({ ...s, fontCN: e.target.value }))}
+                      className="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1 text-xs text-gray-200"
+                    >
+                      {FONTS_CN.map(f => <option key={f.id} value={f.value}>{f.name}</option>)}
+                    </select>
+                  </div>
+                  {/* Color Selection */}
+                  <div>
+                    <div className="text-[10px] text-gray-400 mb-1">颜色</div>
+                    <div className="flex gap-1.5 flex-wrap">
+                      {TEXT_COLORS.map(c => (
+                        <button
+                          key={c.id}
+                          onClick={() => setGlobalSettings(s => ({ ...s, textColorCN: c.id }))}
+                          className={`w-6 h-6 rounded-md border-2 transition ${globalSettings.textColorCN === c.id ? 'border-blue-500 scale-110' : 'border-gray-700 hover:border-gray-500'}`}
+                          style={{ background: c.gradient ? `linear-gradient(135deg, ${c.gradient[0]}, ${c.gradient[1]})` : c.value }}
+                          title={c.name}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                  {/* Size */}
+                  <div className="group">
+                    <div className="flex justify-between text-[10px] text-gray-400 mb-1">字体大小 <span>{activeScene.settings.textSizeCN}</span></div>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="range" min="40" max="300" step="5"
+                        value={activeScene.settings.textSizeCN}
+                        onChange={(e) => updateSceneSettings('textSizeCN', parseInt(e.target.value))}
+                        className="flex-1 h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                      />
+                      <button onClick={() => resetSceneSetting('textSizeCN')} className="p-1 text-gray-500 hover:text-blue-400 opacity-0 group-hover:opacity-100 transition"><RotateCcw className="w-3 h-3" /></button>
+                    </div>
+                  </div>
+                  {/* Y Position */}
+                  <div className="group">
+                    <div className="flex justify-between text-[10px] text-gray-400 mb-1">垂直位置 (Y) <span>{activeScene.settings.textYCN}</span></div>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="range" min="50" max="1000" step="10"
+                        value={activeScene.settings.textYCN}
+                        onChange={(e) => updateSceneSettings('textYCN', parseInt(e.target.value))}
+                        className="flex-1 h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                      />
+                      <button onClick={() => resetSceneSetting('textYCN')} className="p-1 text-gray-500 hover:text-blue-400 opacity-0 group-hover:opacity-100 transition"><RotateCcw className="w-3 h-3" /></button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+
+              {/* 英文文字样式 */}
+              <div className="pt-4 border-t border-gray-800">
+                <h4 className="text-[10px] uppercase text-blue-400 font-semibold mb-3">
+                  {globalSettings.secondaryLang === 'none' ? '副标题' : LANGUAGES.find(l => l.code === globalSettings.secondaryLang)?.nativeName} 样式
+                </h4>
+                <div className="space-y-3">
+                  {/* Font Selection */}
+                  <div>
+                    <div className="text-[10px] text-gray-400 mb-1">Font</div>
+                    <select
+                      value={globalSettings.fontEN}
+                      onChange={(e) => setGlobalSettings(s => ({ ...s, fontEN: e.target.value }))}
+                      className="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1 text-xs text-gray-200"
+                    >
+                      {FONTS_EN.map(f => <option key={f.id} value={f.value}>{f.name}</option>)}
+                    </select>
+                  </div>
+                  {/* Uppercase Option */}
+                  <div>
+                    <label className="flex items-center gap-2 text-xs text-gray-400 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={globalSettings.textUppercase}
+                        onChange={(e) => setGlobalSettings(s => ({ ...s, textUppercase: e.target.checked }))}
+                        className="rounded bg-gray-800 border-gray-700 text-blue-500"
+                      />
+                      全部大写 (UPPERCASE)
+                    </label>
+                  </div>
+                  {/* Color Selection */}
+                  <div>
+                    <div className="text-[10px] text-gray-400 mb-1">Color</div>
+                    <div className="flex gap-1.5 flex-wrap">
+                      {TEXT_COLORS.map(c => (
+                        <button
+                          key={c.id}
+                          onClick={() => setGlobalSettings(s => ({ ...s, textColorEN: c.id }))}
+                          className={`w-6 h-6 rounded-md border-2 transition ${globalSettings.textColorEN === c.id ? 'border-blue-500 scale-110' : 'border-gray-700 hover:border-gray-500'}`}
+                          style={{ background: c.gradient ? `linear-gradient(135deg, ${c.gradient[0]}, ${c.gradient[1]})` : c.value }}
+                          title={c.name}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                  {/* Size */}
+                  <div className="group">
+                    <div className="flex justify-between text-[10px] text-gray-400 mb-1">字体大小 <span>{activeScene.settings.textSizeEN}</span></div>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="range" min="40" max="300" step="5"
+                        value={activeScene.settings.textSizeEN}
+                        onChange={(e) => updateSceneSettings('textSizeEN', parseInt(e.target.value))}
+                        className="flex-1 h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                      />
+                      <button onClick={() => resetSceneSetting('textSizeEN')} className="p-1 text-gray-500 hover:text-blue-400 opacity-0 group-hover:opacity-100 transition"><RotateCcw className="w-3 h-3" /></button>
+                    </div>
+                  </div>
+                  {/* Y Position */}
+                  <div className="group">
+                    <div className="flex justify-between text-[10px] text-gray-400 mb-1">垂直位置 (Y) <span>{activeScene.settings.textYEN}</span></div>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="range" min="50" max="1000" step="10"
+                        value={activeScene.settings.textYEN}
+                        onChange={(e) => updateSceneSettings('textYEN', parseInt(e.target.value))}
+                        className="flex-1 h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                      />
+                      <button onClick={() => resetSceneSetting('textYEN')} className="p-1 text-gray-500 hover:text-blue-400 opacity-0 group-hover:opacity-100 transition"><RotateCcw className="w-3 h-3" /></button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div> {/* End of MAIN CONTENT AREA */}
+    </div>
+  );
+};
+
+export default App;

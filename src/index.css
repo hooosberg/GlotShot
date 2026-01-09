@@ -1,0 +1,8 @@
+@import "tailwindcss";
+
+/* Custom scrollbar for dark mode if needed */
+body {
+  margin: 0;
+  background-color: #020617;
+  /* gray-950 */
+}

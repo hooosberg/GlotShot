@@ -1,0 +1,626 @@
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { Upload, Download, Image as ImageIcon, Type, FolderInput, Plus, Trash2, Globe, Settings, Copy, RefreshCw, Cpu,
+Monitor } from 'lucide-react';
+
+// Default constants
+const DEFAULT_WIDTH = 2880;
+const DEFAULT_HEIGHT = 1800;
+
+// Built-in backgrounds
+const PRESETS = [
+{ id: 'bg1', name: '深海蓝调', value: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)' },
+{ id: 'bg2', name: '极光紫', value: 'linear-gradient(135deg, #2e1065 0%, #7c3aed 100%)' },
+{ id: 'bg3', name: '日落橙', value: 'linear-gradient(135deg, #c2410c 0%, #fb923c 100%)' },
+{ id: 'bg4', name: '清新绿', value: 'linear-gradient(135deg, #064e3b 0%, #10b981 100%)' },
+{ id: 'bg5', name: '高级灰', value: 'linear-gradient(135deg, #374151 0%, #111827 100%)' },
+];
+
+const App = () => {
+// Global Settings
+const [globalSettings, setGlobalSettings] = useState({
+width: DEFAULT_WIDTH,
+height: DEFAULT_HEIGHT,
+backgroundType: 'preset', // 'preset' or 'upload'
+backgroundValue: PRESETS[0].value, // gradient string or image dataURL
+backgroundUpload: null,
+});
+
+// Ollama Settings
+const [ollamaConfig, setOllamaConfig] = useState({
+host: 'http://localhost:11434',
+model: '',
+availableModels: [],
+isConnected: false,
+autoTranslate: true
+});
+
+// Scenes Management
+const [scenes, setScenes] = useState([
+{
+id: 1,
+name: '首页展示',
+screenshot: null,
+titleCN: '智能续写，激发无限灵感',
+titleEN: 'Smart Continue, Infinite Inspiration',
+settings: {
+screenshotScale: 0.8,
+screenshotY: 400,
+screenshotX: 0,
+textY: 150,
+textSize: 120,
+}
+}
+]);
+
+const [activeSceneId, setActiveSceneId] = useState(1);
+const [previewLanguage, setPreviewLanguage] = useState('CN'); // 'CN' or 'EN'
+const canvasRef = useRef(null);
+const activeScene = scenes.find(s => s.id === activeSceneId) || scenes[0];
+
+// --- OLLAMA INTEGRATION ---
+
+const checkOllamaConnection = async () => {
+try {
+const response = await fetch(`${ollamaConfig.host}/api/tags`);
+if (response.ok) {
+const data = await response.json();
+const models = data.models.map(m => m.name);
+setOllamaConfig(prev => ({
+...prev,
+isConnected: true,
+availableModels: models,
+model: prev.model || models[0] || ''
+}));
+} else {
+throw new Error('Failed to connect');
+}
+} catch (error) {
+console.error("Ollama connection failed:", error);
+setOllamaConfig(prev => ({ ...prev, isConnected: false }));
+}
+};
+
+useEffect(() => {
+checkOllamaConnection();
+}, []);
+
+const translateText = async (text) => {
+if (!ollamaConfig.isConnected || !ollamaConfig.model) return text;
+
+try {
+const prompt = `Translate the following mobile app feature title into English. Keep it concise, marketing style. Only
+output the English text, no explanations. Text: "${text}"`;
+
+const response = await fetch(`${ollamaConfig.host}/api/generate`, {
+method: 'POST',
+headers: { 'Content-Type': 'application/json' },
+body: JSON.stringify({
+model: ollamaConfig.model,
+prompt: prompt,
+stream: false
+})
+});
+
+const data = await response.json();
+return data.response.trim().replace(/^"|"$/g, '');
+} catch (e) {
+console.error("Translation error:", e);
+return "";
+}
+};
+
+// --- CANVAS LOGIC ---
+
+const loadImage = (src) => {
+return new Promise((resolve, reject) => {
+const img = new Image();
+img.crossOrigin = "Anonymous";
+img.onload = () => resolve(img);
+img.onerror = reject;
+img.src = src;
+});
+};
+
+const drawCanvas = useCallback(async (canvas, scene, language, isExport = false) => {
+if (!canvas || !scene) return;
+const ctx = canvas.getContext('2d');
+const { width, height, backgroundType, backgroundValue, backgroundUpload } = globalSettings;
+
+canvas.width = width;
+canvas.height = height;
+
+// 1. Draw Background
+if (backgroundType === 'upload' && backgroundUpload) {
+try {
+const bgImg = await loadImage(backgroundUpload);
+const ratio = Math.max(width / bgImg.width, height / bgImg.height);
+const centerShift_x = (width - bgImg.width * ratio) / 2;
+const centerShift_y = (height - bgImg.height * ratio) / 2;
+ctx.drawImage(bgImg, 0, 0, bgImg.width, bgImg.height, centerShift_x, centerShift_y, bgImg.width * ratio, bgImg.height *
+ratio);
+} catch (e) {
+ctx.fillStyle = '#1e293b';
+ctx.fillRect(0, 0, width, height);
+}
+} else {
+// Gradient Simulation
+const g = ctx.createLinearGradient(0, 0, width, height);
+if (backgroundValue.includes('#0f172a')) { g.addColorStop(0, '#0f172a'); g.addColorStop(1, '#1e293b'); }
+else if (backgroundValue.includes('#2e1065')) { g.addColorStop(0, '#2e1065'); g.addColorStop(1, '#7c3aed'); }
+else if (backgroundValue.includes('#c2410c')) { g.addColorStop(0, '#c2410c'); g.addColorStop(1, '#fb923c'); }
+else if (backgroundValue.includes('#064e3b')) { g.addColorStop(0, '#064e3b'); g.addColorStop(1, '#10b981'); }
+else if (backgroundValue.includes('#374151')) { g.addColorStop(0, '#374151'); g.addColorStop(1, '#111827'); }
+else { g.addColorStop(0, '#334155'); g.addColorStop(1, '#475569'); }
+ctx.fillStyle = g;
+ctx.fillRect(0, 0, width, height);
+}
+
+// 2. Draw Text (Now rendered BEFORE Screenshot to ensure Screenshot is ON TOP as requested)
+const text = language === 'CN' ? scene.titleCN : scene.titleEN;
+if (text) {
+const fontSize = scene.settings.textSize || 120;
+ctx.font = `bold ${fontSize}px "PingFang SC", "Microsoft YaHei", sans-serif`;
+ctx.textAlign = 'center';
+ctx.textBaseline = 'top';
+
+const textX = width / 2;
+const textY = scene.settings.textY || 150;
+
+// Gradient Text Effect (Bottom transparent, Top solid)
+const gradient = ctx.createLinearGradient(0, textY, 0, textY + fontSize);
+gradient.addColorStop(0, 'rgba(255, 255, 255, 1)');
+gradient.addColorStop(1, 'rgba(255, 255, 255, 0.4)');
+
+ctx.fillStyle = gradient;
+ctx.fillText(text, textX, textY);
+}
+
+// 3. Draw Screenshot (Top Layer)
+if (scene.screenshot) {
+try {
+const ssImg = await loadImage(scene.screenshot);
+const baseScale = scene.settings.screenshotScale || 0.8;
+const targetWidth = width * 0.6 * baseScale;
+const ratio = targetWidth / ssImg.width;
+const targetHeight = ssImg.height * ratio;
+
+const x = (width - targetWidth) / 2 + (scene.settings.screenshotX || 0);
+const y = (scene.settings.screenshotY || 400);
+
+// Shadow
+ctx.shadowColor = "rgba(0, 0, 0, 0.4)";
+ctx.shadowBlur = 50;
+ctx.shadowOffsetY = 30;
+
+ctx.drawImage(ssImg, x, y, targetWidth, targetHeight);
+
+// Reset shadow
+ctx.shadowColor = "transparent";
+ctx.shadowBlur = 0;
+ctx.shadowOffsetY = 0;
+} catch (e) {
+console.error("Error loading screenshot", e);
+}
+}
+
+}, [globalSettings]);
+
+useEffect(() => {
+if (activeScene && canvasRef.current) {
+drawCanvas(canvasRef.current, activeScene, previewLanguage);
+}
+}, [activeScene, globalSettings, previewLanguage, drawCanvas]);
+
+
+// --- HANDLERS ---
+
+const handleBatchUpload = async (e) => {
+const files = Array.from(e.target.files);
+if (files.length === 0) return;
+
+// Filter images
+const imageFiles = files.filter(file => file.type.startsWith('image/'));
+
+const newScenes = [];
+let startId = Math.max(...scenes.map(s => s.id), 0) + 1;
+
+for (const file of imageFiles) {
+const nameWithoutExt = file.name.replace(/\.[^/.]+$/, "");
+
+// Auto translate if enabled
+let enTitle = "";
+if (ollamaConfig.isConnected && ollamaConfig.autoTranslate) {
+enTitle = await translateText(nameWithoutExt);
+}
+
+const reader = new FileReader();
+const dataUrl = await new Promise(resolve => {
+reader.onload = (evt) => resolve(evt.target.result);
+reader.readAsDataURL(file);
+});
+
+newScenes.push({
+id: startId++,
+name: nameWithoutExt,
+screenshot: dataUrl,
+titleCN: nameWithoutExt,
+titleEN: enTitle || nameWithoutExt, // Fallback to CN name if no translation
+settings: { ...scenes[0].settings } // Inherit current defaults or active scene settings
+});
+}
+
+// Append to existing scenes
+setScenes(prev => [...prev, ...newScenes]);
+
+// Switch to first new scene
+if (newScenes.length > 0) {
+setActiveSceneId(newScenes[0].id);
+}
+};
+
+const handleBgUpload = (e) => {
+const file = e.target.files[0];
+if (file) {
+const reader = new FileReader();
+reader.onload = (evt) => {
+setGlobalSettings(prev => ({ ...prev, backgroundType: 'upload', backgroundUpload: evt.target.result }));
+};
+reader.readAsDataURL(file);
+}
+};
+
+const updateScene = (id, updates) => {
+setScenes(prev => prev.map(s => s.id === id ? { ...s, ...updates } : s));
+};
+
+const updateSceneSettings = (key, value) => {
+setScenes(prev => prev.map(s => s.id === activeSceneId ? {
+...s,
+settings: { ...s.settings, [key]: value }
+} : s));
+};
+
+// Apply current scene settings to ALL scenes
+const applySettingsToAll = () => {
+if (!window.confirm("确定要将当前截图大小、位置和文字布局应用到所有场景吗？")) return;
+const currentSettings = activeScene.settings;
+setScenes(prev => prev.map(s => ({
+...s,
+settings: { ...currentSettings }
+})));
+};
+
+const deleteScene = (id) => {
+if (scenes.length === 1) {
+// Don't delete last one, just clear it
+setScenes([{ ...scenes[0], screenshot: null, name: '场景 1', titleCN: '', titleEN: '' }]);
+return;
+}
+setScenes(prev => prev.filter(s => s.id !== id));
+if (activeSceneId === id) setActiveSceneId(scenes[0].id);
+};
+
+const handleExportAll = async () => {
+const tempCanvas = document.createElement('canvas');
+const download = (dataUrl, filename) => {
+const link = document.createElement('a');
+link.download = filename;
+link.href = dataUrl;
+link.click();
+};
+
+alert('开始生成... 浏览器可能会询问下载权限');
+
+for (const scene of scenes) {
+if (!scene.screenshot) continue;
+await drawCanvas(tempCanvas, scene, 'CN', true);
+download(tempCanvas.toDataURL('image/jpeg', 0.9), `${scene.name}_CN.jpg`);
+await drawCanvas(tempCanvas, scene, 'EN', true);
+download(tempCanvas.toDataURL('image/jpeg', 0.9), `${scene.name}_EN.jpg`);
+}
+};
+
+return (
+<div className="flex h-screen bg-gray-950 text-white font-sans overflow-hidden">
+
+  {/* LEFT SIDEBAR */}
+  <div className="w-80 bg-gray-900 border-r border-gray-800 flex flex-col flex-shrink-0 z-20 shadow-xl">
+    <div className="p-4 border-b border-gray-800">
+      <h1 className="text-xl font-bold flex items-center gap-2 text-blue-400">
+        <Monitor className="w-6 h-6" />
+        AppStore Builder
+      </h1>
+    </div>
+
+    {/* Ollama Settings */}
+    <div className="px-4 py-3 border-b border-gray-800 bg-gray-900/50">
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-2 text-xs font-semibold text-gray-400 uppercase">
+          <Cpu className="w-3 h-3" /> 本地 AI 翻译 (Ollama)
+        </div>
+        <div className={`w-2 h-2 rounded-full ${ollamaConfig.isConnected
+          ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]' : 'bg-red-500' }`}></div>
+      </div>
+
+      {!ollamaConfig.isConnected ? (
+      <div className="space-y-2">
+        <input className="w-full text-xs bg-gray-800 border border-gray-700 rounded p-1 text-gray-300"
+          value={ollamaConfig.host} onChange={(e)=> setOllamaConfig(s => ({...s, host: e.target.value}))}
+        placeholder="http://localhost:11434"
+        />
+        <button onClick={checkOllamaConnection}
+          className="w-full text-xs bg-blue-900/50 hover:bg-blue-800 text-blue-200 py-1 rounded border border-blue-800 transition">
+          连接 Ollama
+        </button>
+        <p className="text-[10px] text-gray-500 mt-1">需设置 OLLAMA_ORIGINS="*"</p>
+      </div>
+      ) : (
+      <div className="space-y-2">
+        <select className="w-full text-xs bg-gray-800 border border-gray-700 rounded p-1" value={ollamaConfig.model}
+          onChange={(e)=> setOllamaConfig(s => ({...s, model: e.target.value}))}
+          >
+          {ollamaConfig.availableModels.map(m => <option key={m} value={m}>{m}</option>)}
+        </select>
+        <div className="flex items-center gap-2">
+          <input type="checkbox" id="autoTrans" checked={ollamaConfig.autoTranslate} onChange={(e)=> setOllamaConfig(s
+          => ({...s, autoTranslate: e.target.checked}))}
+          className="rounded bg-gray-800 border-gray-700"
+          />
+          <label htmlFor="autoTrans" className="text-xs text-gray-400">导入时自动翻译文件名</label>
+        </div>
+      </div>
+      )}
+    </div>
+
+    {/* Background Settings */}
+    <div className="p-4 border-b border-gray-800">
+      <h3 className="text-xs uppercase text-gray-400 font-semibold mb-3 flex items-center gap-2">
+        <ImageIcon className="w-4 h-4" /> 全局背景
+      </h3>
+      <div className="grid grid-cols-5 gap-2 mb-3">
+        {PRESETS.map(p => (
+        <button key={p.id} onClick={()=> setGlobalSettings(s => ({...s, backgroundType: 'preset', backgroundValue:
+          p.value}))}
+          className={`w-full h-8 rounded-md transition-all ${globalSettings.backgroundValue === p.value &&
+          globalSettings.backgroundType === 'preset' ? 'ring-2 ring-blue-500 scale-110 z-10' : 'opacity-70
+          hover:opacity-100'}`}
+          style={{ background: p.value }}
+          title={p.name}
+          />
+          ))}
+      </div>
+      <div className="relative">
+        <input type="file" accept="image/*" onChange={handleBgUpload} className="hidden" id="bg-upload" />
+        <label htmlFor="bg-upload" className={`flex items-center justify-center w-full p-2 text-xs bg-gray-800 rounded
+          cursor-pointer hover:bg-gray-700 border border-gray-700 transition ${globalSettings.backgroundType==='upload'
+          ? 'border-blue-500 text-blue-400' : 'text-gray-400' }`}>
+          <Upload className="w-3 h-3 mr-2" /> 选择背景图
+        </label>
+      </div>
+    </div>
+
+    {/* Scene List */}
+    <div className="flex-1 overflow-y-auto p-4 bg-gray-900">
+      <div className="flex justify-between items-center mb-3">
+        <h3 className="text-xs uppercase text-gray-400 font-semibold">场景列表 ({scenes.length})</h3>
+        <div className="relative group">
+          <input type="file" multiple accept="image/*"
+            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onChange={handleBatchUpload} //
+            @ts-ignore webkitdirectory="" />
+          <button
+            className="p-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded transition shadow-lg shadow-blue-900/50">
+            <FolderInput className="w-4 h-4" />
+          </button>
+          {/* Fallback standard input for non-webkit if needed, but usually one input handles multiple selection well
+          enough */}
+          <input type="file" multiple accept="image/*"
+            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onChange={handleBatchUpload} />
+        </div>
+      </div>
+
+      <div className="space-y-2 pb-20">
+        {scenes.map(scene => (
+        <div key={scene.id} onClick={()=> setActiveSceneId(scene.id)}
+          className={`group p-2 rounded-lg cursor-pointer flex items-center gap-3 border transition-all ${activeSceneId
+          === scene.id ? 'bg-gray-800 border-blue-500/50 shadow-lg' : 'bg-gray-900 border-gray-800 hover:bg-gray-800
+          hover:border-gray-700'}`}
+          >
+          <div className="w-8 h-12 bg-gray-950 rounded overflow-hidden flex-shrink-0 border border-gray-700 relative">
+            {scene.screenshot ? (
+            <img src={scene.screenshot} className="w-full h-full object-cover" alt="" />
+            ) : (
+            <div className="w-full h-full flex items-center justify-center text-gray-700">
+              <ImageIcon size={10} />
+            </div>
+            )}
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className={`text-sm font-medium truncate ${activeSceneId===scene.id ? 'text-white' : 'text-gray-400'
+              }`}>{scene.name || '未命名场景'}</div>
+            <div className="text-[10px] text-gray-600 truncate">{scene.titleEN || '...'}</div>
+          </div>
+          <button onClick={(e)=> { e.stopPropagation(); deleteScene(scene.id); }}
+            className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-red-500/20 hover:text-red-400 text-gray-600
+            rounded transition"
+            >
+            <Trash2 className="w-3 h-3" />
+          </button>
+        </div>
+        ))}
+      </div>
+    </div>
+  </div>
+
+  {/* CENTER - Canvas Preview */}
+  <div className="flex-1 flex flex-col relative bg-gray-950">
+    <div
+      className="h-16 border-b border-gray-800 flex items-center justify-between px-6 bg-gray-900/80 backdrop-blur-md z-10">
+      <div className="flex items-center gap-4">
+        <div className="flex bg-gray-800 rounded-lg p-1">
+          <button onClick={()=> setPreviewLanguage('CN')} className={`px-3 py-1.5 text-xs font-medium rounded-md
+            transition ${previewLanguage === 'CN' ? 'bg-gray-700 text-white shadow' : 'text-gray-400
+            hover:text-gray-200'}`}>中文 CN</button>
+          <button onClick={()=> setPreviewLanguage('EN')} className={`px-3 py-1.5 text-xs font-medium rounded-md
+            transition ${previewLanguage === 'EN' ? 'bg-gray-700 text-white shadow' : 'text-gray-400
+            hover:text-gray-200'}`}>English</button>
+        </div>
+
+        {/* Canvas Size Inputs */}
+        <div
+          className="flex items-center gap-2 text-xs text-gray-400 bg-gray-800/50 px-2 py-1 rounded border border-gray-800">
+          <span className="text-gray-500">W:</span>
+          <input type="number" className="bg-transparent w-12 text-gray-200 focus:outline-none"
+            value={globalSettings.width} onChange={(e)=> setGlobalSettings(s => ({...s, width: parseInt(e.target.value)
+          || 100}))}
+          />
+          <span className="text-gray-600">x</span>
+          <span className="text-gray-500">H:</span>
+          <input type="number" className="bg-transparent w-12 text-gray-200 focus:outline-none"
+            value={globalSettings.height} onChange={(e)=> setGlobalSettings(s => ({...s, height:
+          parseInt(e.target.value) || 100}))}
+          />
+        </div>
+      </div>
+
+      <button onClick={handleExportAll}
+        className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-5 py-2 rounded-lg text-sm font-medium transition shadow-lg shadow-blue-900/20">
+        <Download className="w-4 h-4" /> 导出全部图片
+      </button>
+    </div>
+
+    <div
+      className="flex-1 overflow-hidden p-8 flex items-center justify-center bg-[url('https://www.transparenttextures.com/patterns/dark-matter.png')]">
+      {/* Canvas Container */}
+      <div className="relative shadow-2xl ring-1 ring-gray-800" style={{ aspectRatio:
+        `${globalSettings.width}/${globalSettings.height}`, height: '90%' , maxHeight: '800px' }}>
+        <canvas ref={canvasRef} className="w-full h-full object-contain bg-gray-800 block rounded-sm" />
+        {/* Overlay Info */}
+        <div
+          className="absolute top-2 right-2 px-2 py-1 bg-black/50 backdrop-blur rounded text-[10px] text-gray-300 pointer-events-none">
+          {globalSettings.width} x {globalSettings.height}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {/* RIGHT SIDEBAR - Edit Active Scene */}
+  <div className="w-80 bg-gray-900 border-l border-gray-800 flex flex-col overflow-y-auto shadow-xl z-20">
+    <div className="p-5 border-b border-gray-800">
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-sm font-bold text-gray-100">参数调整</h2>
+        <button onClick={applySettingsToAll} title="将当前的位置/大小设置应用到所有场景"
+          className="text-xs flex items-center gap-1 text-blue-400 hover:text-blue-300 bg-blue-900/20 hover:bg-blue-900/40 px-2 py-1 rounded transition border border-blue-900/50">
+          <Copy className="w-3 h-3" /> 应用到所有
+        </button>
+      </div>
+
+      <div className="space-y-4">
+        {/* Scene Name */}
+        <div>
+          <label className="text-[10px] uppercase text-gray-500 font-semibold mb-1 block">场景名称</label>
+          <input type="text" value={activeScene.name} onChange={(e)=> updateScene(activeScene.id, { name: e.target.value
+          })}
+          className="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1.5 text-xs text-gray-200
+          focus:border-blue-500 outline-none transition"
+          />
+        </div>
+
+        {/* Screenshot Controls */}
+        <div className="bg-gray-800/50 rounded-lg p-3 border border-gray-700/50">
+          <label className="text-[10px] uppercase text-gray-500 font-semibold mb-2 block flex items-center gap-2">
+            <Settings className="w-3 h-3" /> 截图布局
+          </label>
+          <div className="space-y-3">
+            <div>
+              <div className="flex justify-between text-[10px] text-gray-400 mb-1">缩放
+                <span>{Math.round(activeScene.settings.screenshotScale * 100)}%</span></div>
+              <input type="range" min="0.3" max="1.5" step="0.01" value={activeScene.settings.screenshotScale}
+                onChange={(e)=> updateSceneSettings('screenshotScale', parseFloat(e.target.value))}
+              className="w-full h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+              />
+            </div>
+            <div>
+              <div className="flex justify-between text-[10px] text-gray-400 mb-1">垂直位置 (Y)</div>
+              <input type="range" min="0" max="1500" step="10" value={activeScene.settings.screenshotY} onChange={(e)=>
+              updateSceneSettings('screenshotY', parseInt(e.target.value))}
+              className="w-full h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+              />
+            </div>
+            <div>
+              <div className="flex justify-between text-[10px] text-gray-400 mb-1">水平位置 (X)</div>
+              <input type="range" min="-1000" max="1000" step="10" value={activeScene.settings.screenshotX}
+                onChange={(e)=> updateSceneSettings('screenshotX', parseInt(e.target.value))}
+              className="w-full h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {/* Text Settings */}
+    <div className="p-5">
+      <h3 className="text-[10px] uppercase text-gray-500 font-semibold mb-4 flex items-center gap-2">
+        <Type className="w-3 h-3" /> 文案 & 翻译
+      </h3>
+
+      <div className="space-y-4">
+        <div>
+          <label className="block text-xs text-gray-400 mb-1">中文标题 (CN)</label>
+          <textarea rows={2} value={activeScene.titleCN} onChange={(e)=> updateScene(activeScene.id, { titleCN: e.target.value })}
+                className="w-full bg-gray-800 border border-gray-700 rounded p-2 text-xs text-gray-200 focus:border-blue-500 outline-none resize-none transition"
+              />
+            </div>
+            
+            <div className="relative">
+              <label className="block text-xs text-gray-400 mb-1 flex justify-between items-center">
+                英文标题 (EN)
+                <button 
+                  onClick={async () => {
+                    const trans = await translateText(activeScene.titleCN);
+                    updateScene(activeScene.id, { titleEN: trans });
+                  }}
+                  disabled={!ollamaConfig.isConnected}
+                  className={`text-[10px] flex items-center gap-1 px-1.5 py-0.5 rounded transition ${ollamaConfig.isConnected ? 'bg-blue-600 text-white hover:bg-blue-500' : 'bg-gray-700 text-gray-500 cursor-not-allowed'}`}
+                >
+                  <RefreshCw className="w-3 h-3" /> 重新翻译
+                </button>
+              </label>
+              <textarea 
+                rows={2}
+                value={activeScene.titleEN}
+                onChange={(e) => updateScene(activeScene.id, { titleEN: e.target.value })}
+                className="w-full bg-gray-800 border border-gray-700 rounded p-2 text-xs text-gray-200 focus:border-blue-500 outline-none resize-none transition"
+              />
+            </div>
+
+            <div className="pt-4 border-t border-gray-800">
+               <div className="space-y-3">
+                  <div>
+                   <div className="flex justify-between text-[10px] text-gray-400 mb-1">文字大小</div>
+                   <input 
+                     type="range" min="40" max="300" step="5"
+                     value={activeScene.settings.textSize}
+                     onChange={(e) => updateSceneSettings('textSize', parseInt(e.target.value))}
+                     className="w-full h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                   />
+                 </div>
+                 <div>
+                   <div className="flex justify-between text-[10px] text-gray-400 mb-1">文字垂直位置 (Y)</div>
+                   <input 
+                     type="range" min="50" max="1000" step="10"
+                     value={activeScene.settings.textY}
+                     onChange={(e) => updateSceneSettings('textY', parseInt(e.target.value))}
+                     className="w-full h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                   />
+                 </div>
+               </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default App;
