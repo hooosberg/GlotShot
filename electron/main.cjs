@@ -1,10 +1,12 @@
-const { app, BrowserWindow, ipcMain, shell, dialog } = require('electron');
+const { app, BrowserWindow, ipcMain, shell, dialog, Menu } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const isDev = process.env.NODE_ENV === 'development';
 
+let mainWindow;
+
 function createWindow() {
-  const mainWindow = new BrowserWindow({
+  mainWindow = new BrowserWindow({
     width: 1280,
     height: 800,
     webPreferences: {
@@ -29,7 +31,156 @@ function createWindow() {
   });
 }
 
+function createMenu() {
+  const isMac = process.platform === 'darwin';
+
+  const template = [
+    // { role: 'appMenu' }
+    ...(isMac ? [{
+      label: app.name,
+      submenu: [
+        {
+          label: '关于 GlotShot',
+          click: () => {
+            if (mainWindow) mainWindow.webContents.send('show-about');
+          }
+        },
+        { type: 'separator' },
+        {
+          label: '设置...',
+          accelerator: 'CmdOrCtrl+,',
+          click: () => {
+            if (mainWindow) mainWindow.webContents.send('show-settings');
+          }
+        },
+        { type: 'separator' },
+        { role: 'services' },
+        { type: 'separator' },
+        { role: 'hide' },
+        { role: 'hideOthers' },
+        { role: 'unhide' },
+        { type: 'separator' },
+        { role: 'quit' }
+      ]
+    }] : []),
+    // { role: 'fileMenu' }
+    {
+      label: '文件',
+      submenu: [
+        {
+          label: '导入截图...',
+          accelerator: 'CmdOrCtrl+O',
+          click: () => {
+            if (mainWindow) mainWindow.webContents.send('menu-import');
+          }
+        },
+        {
+          label: '导出全部...',
+          accelerator: 'CmdOrCtrl+E',
+          click: () => {
+            if (mainWindow) mainWindow.webContents.send('menu-export');
+          }
+        },
+        { type: 'separator' },
+        isMac ? { role: 'close' } : { role: 'quit' }
+      ]
+    },
+    // { role: 'editMenu' }
+    {
+      label: '编辑',
+      submenu: [
+        { role: 'undo', label: '撤销' },
+        { role: 'redo', label: '重做' },
+        { type: 'separator' },
+        { role: 'cut', label: '剪切' },
+        { role: 'copy', label: '复制' },
+        { role: 'paste', label: '粘贴' },
+        { role: 'delete', label: '删除' },
+        { role: 'selectAll', label: '全选' },
+        { type: 'separator' },
+        {
+          label: '语音听写',
+          role: 'startSpeaking'
+        },
+        {
+          label: '停止朗读',
+          role: 'stopSpeaking'
+        }
+      ]
+    },
+    // { role: 'viewMenu' }
+    {
+      label: '视图',
+      submenu: [
+        { role: 'reload' },
+        { role: 'forceReload' },
+        { role: 'toggleDevTools' },
+        { type: 'separator' },
+        { role: 'resetZoom' },
+        { role: 'zoomIn' },
+        { role: 'zoomOut' },
+        { type: 'separator' },
+        { role: 'togglefullscreen' }
+      ]
+    },
+    // { Mode Menu }
+    {
+      label: '模式',
+      submenu: [
+        {
+          label: '海报设计 (Poster Design)',
+          accelerator: 'CmdOrCtrl+1',
+          click: () => {
+            if (mainWindow) mainWindow.webContents.send('menu-mode-screenshot');
+          }
+        },
+        {
+          label: '图标设计 (Icon Design)',
+          accelerator: 'CmdOrCtrl+2',
+          click: () => {
+            if (mainWindow) mainWindow.webContents.send('menu-mode-icon');
+          }
+        }
+      ]
+    },
+    // { role: 'windowMenu' }
+    {
+      label: '窗口',
+      submenu: [
+        { role: 'minimize' },
+        { role: 'zoom' },
+        { type: 'separator' },
+        { role: 'front' },
+        { type: 'separator' },
+        { role: 'window' }
+      ]
+    },
+    {
+      role: 'help',
+      label: '帮助',
+      submenu: [
+        {
+          label: '访问 GitHub 仓库',
+          click: async () => {
+            await shell.openExternal('https://github.com/hooosberg/GlotShot');
+          }
+        },
+        {
+          label: '关于开发者 (hooosberg)',
+          click: async () => {
+            await shell.openExternal('https://github.com/hooosberg');
+          }
+        }
+      ]
+    }
+  ];
+
+  const menu = Menu.buildFromTemplate(template);
+  Menu.setApplicationMenu(menu);
+}
+
 app.whenReady().then(() => {
+  createMenu();
   createWindow();
 
   // IPC: Select Directory

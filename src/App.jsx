@@ -2,8 +2,8 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { Upload, Download, Image as ImageIcon, Type, FolderInput, Plus, Trash2, Globe, Settings, Copy, RefreshCw, Cpu, Monitor, RotateCcw, Save, Archive, ChevronDown, ChevronRight, ChevronUp, AlignLeft, AlignCenter, AlignRight, Palette } from 'lucide-react';
 import './App.css';
 import useClickOutside from './hooks/useClickOutside';
-import ModeSwitcher from './components/ModeSwitcher';
 import IconFabric from './components/IconFabric/IconFabric';
+import SettingsModal from './components/SettingsModal';
 import DesignTips from './components/DesignTips';
 
 // Default constants
@@ -334,6 +334,12 @@ const App = () => {
               } catch { return 'zh-CN'; }
             })(),
             secondaryLang: 'en',
+            uiLanguage: (() => {
+              try {
+                const sys = navigator.language;
+                return sys.startsWith('zh') ? 'zh-CN' : 'en';
+              } catch { return 'zh-CN'; }
+            })(),
           }, ...JSON.parse(saved)
         };
       }
@@ -362,6 +368,7 @@ const App = () => {
       // Multi-language settings
       primaryLang: 'zh-CN',
       secondaryLang: 'en',
+      uiLanguage: 'zh-CN',
     };
   });
 
@@ -371,6 +378,16 @@ const App = () => {
       return JSON.parse(localStorage.getItem('appstore_builder_backgrounds')) || [];
     } catch { return []; }
   });
+
+  // Theme Settings
+  const [theme, setTheme] = useState(() => {
+    return localStorage.getItem('app_theme') || 'dark';
+  });
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('app_theme', theme);
+  }, [theme]);
   const [backgroundFolderPath, setBackgroundFolderPath] = useState('');
 
   // UI state for collapsible sections
@@ -382,6 +399,11 @@ const App = () => {
   const [appMode, setAppMode] = useState('screenshot');
   const [selectedPlatform, setSelectedPlatform] = useState('mac');
 
+  // Modals
+  // Modals
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [settingsInitialTab, setSettingsInitialTab] = useState('start');
+
   // Refs for click outside
   const platformDropdownRef = useRef(null);
   const langSettingsRef = useRef(null);
@@ -390,6 +412,24 @@ const App = () => {
   useClickOutside(platformDropdownRef, () => setPlatformDropdownOpen(false));
   useClickOutside(langSettingsRef, () => setLangSettingsOpen(false));
   useClickOutside(savePresetModalRef, () => setShowSavePresetModal(false));
+
+  // Listen for IPC events from Main Process
+  useEffect(() => {
+    if (window.electron) {
+      window.electron.on('show-settings', () => {
+        setSettingsInitialTab('start');
+        setShowSettingsModal(true);
+      });
+      window.electron.on('show-about', () => {
+        setSettingsInitialTab('about');
+        setShowSettingsModal(true);
+      });
+      window.electron.on('menu-mode-screenshot', () => setAppMode('screenshot'));
+      window.electron.on('menu-mode-icon', () => setAppMode('icon'));
+      window.electron.on('menu-import', () => handleElectronBatchUpload());
+      window.electron.on('menu-export', () => handleExportAll());
+    }
+  }, []); // eslint-disable-line
 
   // Persist globalSettings to localStorage
   useEffect(() => {
@@ -1138,8 +1178,6 @@ const App = () => {
       <div className="global-titlebar h-12 flex items-center justify-between px-4 shrink-0 drag-region">
         {/* Left section with mode switcher and platform dropdown */}
         <div className="flex items-center gap-4 no-drag" style={{ marginLeft: '70px' }}>
-          {/* Mode Switcher */}
-          <ModeSwitcher activeMode={appMode} onModeChange={setAppMode} />
 
           {/* Platform Preset Dropdown - only show in screenshot mode */}
           {appMode === 'screenshot' && (
@@ -1347,9 +1385,29 @@ const App = () => {
               className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-1.5 rounded-lg text-xs font-medium transition shadow-lg shadow-blue-900/30">
               <Download className="w-3.5 h-3.5" /> 导出全部
             </button>
+            {/* SETTINGS BUTTON */}
+            <button
+              onClick={() => setShowSettingsModal(true)}
+              className="p-1.5 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition"
+              title="设置"
+            >
+              <Settings className="w-5 h-5" />
+            </button>
           </div>
         )}
       </div>
+
+      <SettingsModal
+        isOpen={showSettingsModal}
+        onClose={() => setShowSettingsModal(false)}
+        initialTab={settingsInitialTab}
+        globalSettings={globalSettings}
+        setGlobalSettings={setGlobalSettings}
+        appMode={appMode}
+        setAppMode={setAppMode}
+        theme={theme}
+        setTheme={setTheme}
+      />
 
       {/* MAIN CONTENT AREA - Conditional rendering based on mode */}
       {
