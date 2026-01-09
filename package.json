@@ -15,21 +15,43 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
+  "description": "App Store Preview Image Generator",
+  "author": "Maohuhu",
   "build": {
-    "appId": "com.maohuhu.glotshot",
+    "appId": "com.maohuhu.appstorebuilder",
     "productName": "GlotShot",
     "mac": {
       "category": "public.app-category.graphics-design",
       "target": [
         "dmg"
       ],
+      "icon": "public/icon/AppIcon_1024x1024.png"
+    },
+    "dmg": {
+      "background": "assets/dmg_background.png",
       "icon": "public/icon/DMG_Icon_1024x1024.png",
-      "hardenedRuntime": true,
-      "gatekeeperAssess": false
+      "iconSize": 100,
+      "contents": [
+        {
+          "x": 130,
+          "y": 220
+        },
+        {
+          "x": 410,
+          "y": 220,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ],
+      "window": {
+        "width": 540,
+        "height": 380
+      }
     },
     "files": [
       "dist/**/*",
-      "electron/**/*"
+      "electron/**/*",
+      "public/**/*"
     ],
     "directories": {
       "buildResources": "assets"
