@@ -16,13 +16,16 @@
     "react-dom": "^18.3.1"
   },
   "build": {
-    "appId": "com.maohuhu.appstorebuilder",
-    "productName": "AppStore Builder",
+    "appId": "com.maohuhu.glotshot",
+    "productName": "GlotShot",
     "mac": {
       "category": "public.app-category.graphics-design",
       "target": [
         "dmg"
-      ]
+      ],
+      "icon": "public/icon/DMG_Icon_1024x1024.png",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false
     },
     "files": [
       "dist/**/*",

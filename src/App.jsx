@@ -2,6 +2,9 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { Upload, Download, Image as ImageIcon, Type, FolderInput, Plus, Trash2, Globe, Settings, Copy, RefreshCw, Cpu, Monitor, RotateCcw, Save, Archive, ChevronDown, ChevronRight, ChevronUp, AlignLeft, AlignCenter, AlignRight, Palette } from 'lucide-react';
 import './App.css';
 import useClickOutside from './hooks/useClickOutside';
+import ModeSwitcher from './components/ModeSwitcher';
+import IconFabric from './components/IconFabric/IconFabric';
+import DesignTips from './components/DesignTips';
 
 // Default constants
 const DEFAULT_WIDTH = 2880;
@@ -30,17 +33,183 @@ const BUILTIN_BACKGROUNDS = [
   { id: 'builtin3', name: '渐变', src: '/背景/ChatGPT Image 2025年6月2日 12_55_05.png' },
 ];
 
-// Platform presets for promotional images
+// Platform presets for promotional images (官方规格)
 const PLATFORM_PRESETS = [
-  { id: 'mac', name: 'Mac App Store', width: 2880, height: 1800, category: 'Apple' },
-  { id: 'iphone-6.7', name: 'iPhone 6.7"', width: 1290, height: 2796, category: 'Apple' },
-  { id: 'iphone-6.5', name: 'iPhone 6.5"', width: 1242, height: 2688, category: 'Apple' },
-  { id: 'iphone-5.5', name: 'iPhone 5.5"', width: 1242, height: 2208, category: 'Apple' },
-  { id: 'ipad-12.9', name: 'iPad 12.9"', width: 2048, height: 2732, category: 'Apple' },
-  { id: 'ipad-11', name: 'iPad 11"', width: 1668, height: 2388, category: 'Apple' },
-  { id: 'android', name: 'Google Play', width: 1080, height: 1920, category: 'Android' },
-  { id: 'steam', name: 'Steam 截图', width: 1920, height: 1080, category: 'Steam' },
-  { id: 'steam-capsule', name: 'Steam 主胶囊', width: 1232, height: 706, category: 'Steam' },
+  // Apple - iPhone
+  {
+    id: 'iphone-6.9',
+    name: 'iPhone 6.9" (Pro Max)',
+    width: 1320, height: 2868,
+    category: 'Apple',
+    mode: 'poster',
+    designTips: [
+      '必须展示真实应用界面（in-app screenshots）',
+      '文字叠加层建议不超过图片的 20%',
+      '可添加背景、设备边框等设计元素',
+      '此处仅设计一张主图，App Store Connect 会自动缩放'
+    ]
+  },
+  {
+    id: 'iphone-6.7',
+    name: 'iPhone 6.7"',
+    width: 1290, height: 2796,
+    category: 'Apple',
+    mode: 'poster',
+    designTips: [
+      '必须展示真实应用界面',
+      '文字叠加层建议不超过 20%',
+      '可添加背景设计元素'
+    ]
+  },
+  {
+    id: 'iphone-6.5',
+    name: 'iPhone 6.5"',
+    width: 1242, height: 2688,
+    category: 'Apple',
+    mode: 'poster',
+    designTips: ['兼容旧机型，规格同上']
+  },
+  {
+    id: 'iphone-5.5',
+    name: 'iPhone 5.5"',
+    width: 1242, height: 2208,
+    category: 'Apple',
+    mode: 'poster',
+    designTips: ['兼容旧机型，规格同上']
+  },
+  // Apple - iPad
+  {
+    id: 'ipad-13',
+    name: 'iPad 13" (M4)',
+    width: 2064, height: 2752,
+    category: 'Apple',
+    mode: 'poster',
+    designTips: [
+      'iPad Pro 13" 最新尺寸',
+      '规格同 iPhone 截图要求'
+    ]
+  },
+  {
+    id: 'ipad-12.9',
+    name: 'iPad 12.9"',
+    width: 2048, height: 2732,
+    category: 'Apple',
+    mode: 'poster',
+    designTips: ['iPad Pro 12.9"，规格同上']
+  },
+  {
+    id: 'ipad-11',
+    name: 'iPad 11"',
+    width: 1668, height: 2388,
+    category: 'Apple',
+    mode: 'poster',
+    designTips: ['iPad Pro 11"，规格同上']
+  },
+  // Apple - Mac
+  {
+    id: 'mac',
+    name: 'Mac App Store',
+    width: 2880, height: 1800,
+    category: 'Apple',
+    mode: 'poster',
+    designTips: [
+      'macOS 应用截图',
+      '最小尺寸 1280×800',
+      '支持横屏展示'
+    ]
+  },
+  // Google Play
+  {
+    id: 'android-phone',
+    name: '手机截图',
+    width: 1080, height: 1920,
+    category: 'Google Play',
+    mode: 'poster',
+    designTips: [
+      '必须展示真实应用界面',
+      '文字说明不超过图片的 20%',
+      '需提供至少 4 张截图',
+      '可使用跨截图的连续设计'
+    ]
+  },
+  {
+    id: 'android-tablet',
+    name: '平板截图',
+    width: 1920, height: 1200,
+    category: 'Google Play',
+    mode: 'poster',
+    designTips: [
+      '16:10 横屏比例',
+      '规格同手机截图'
+    ]
+  },
+  {
+    id: 'android-feature',
+    name: 'Feature Graphic',
+    width: 1024, height: 500,
+    category: 'Google Play',
+    mode: 'poster',
+    designTips: [
+      '应用页顶部横幅，纯设计图',
+      '避免在边缘放置重要元素',
+      '不要包含价格、排名等促销信息',
+      '不需要放置应用截图'
+    ]
+  },
+  // Windows Store
+  {
+    id: 'windows-hd',
+    name: '桌面 1920×1080',
+    width: 1920, height: 1080,
+    category: 'Windows',
+    mode: 'poster',
+    designTips: [
+      '推荐尺寸',
+      '保持关键内容在上 2/3 区域',
+      '支持最多 10 张截图'
+    ]
+  },
+  {
+    id: 'windows-min',
+    name: '桌面 1366×768',
+    width: 1366, height: 768,
+    category: 'Windows',
+    mode: 'poster',
+    designTips: ['最小要求尺寸']
+  },
+  {
+    id: 'windows-4k',
+    name: '桌面 4K',
+    width: 3840, height: 2160,
+    category: 'Windows',
+    mode: 'poster',
+    designTips: ['高清 4K 支持']
+  },
+  // Steam
+  {
+    id: 'steam',
+    name: 'Steam 截图',
+    width: 1920, height: 1080,
+    category: 'Steam',
+    mode: 'poster',
+    designTips: [
+      '游戏内实际截图',
+      '16:9 横屏比例',
+      '展示核心玩法'
+    ]
+  },
+  {
+    id: 'steam-capsule',
+    name: 'Steam 主胶囊',
+    width: 1232, height: 706,
+    category: 'Steam',
+    mode: 'poster',
+    designTips: [
+      '商店页面主横幅',
+      '纯设计图，展示游戏品牌',
+      '避免小字体'
+    ]
+  },
 ];
 
 // Font presets - 衍线字体 + 无衍线字体
@@ -208,6 +377,9 @@ const App = () => {
   const [bgExpanded, setBgExpanded] = useState(true);
   const [platformDropdownOpen, setPlatformDropdownOpen] = useState(false);
   const [langSettingsOpen, setLangSettingsOpen] = useState(false);
+
+  // App mode: 'screenshot' for screenshot builder, 'icon' for icon factory
+  const [appMode, setAppMode] = useState('screenshot');
   const [selectedPlatform, setSelectedPlatform] = useState('mac');
 
   // Refs for click outside
@@ -583,8 +755,13 @@ const App = () => {
     const imageFiles = files.filter(file => file.type.startsWith('image/'));
     if (imageFiles.length === 0) return;
 
+    // Check if we should replace the default empty scene
+    // Default scene has no screenshot (null) and is the only one
+    const isDefaultState = scenes.length === 1 && !scenes[0].screenshot;
+
     const newScenes = [];
-    let startId = Math.max(...scenes.map(s => s.id), 0) + 1;
+    // If replacing default state, start IDs from 1, else continue from max ID
+    let startId = isDefaultState ? 1 : (Math.max(...scenes.map(s => s.id), 0) + 1);
 
     for (const file of imageFiles) {
       const nameWithoutExt = file.name.replace(/\.[^/.]+$/, "");
@@ -608,12 +785,15 @@ const App = () => {
         screenshot: dataUrl,
         titleCN: nameWithoutExt,
         titleEN: enTitle || nameWithoutExt, // Fallback to CN name if no translation
-        settings: { ...scenes[0].settings } // Inherit current defaults or active scene settings
+        settings: { ...scenes[0].settings } // Inherit settings from the first scene (or default)
       });
     }
 
-    // Append to existing scenes
-    setScenes(prev => [...prev, ...newScenes]);
+    if (isDefaultState) {
+      setScenes(newScenes);
+    } else {
+      setScenes(prev => [...prev, ...newScenes]);
+    }
 
     // Switch to first new scene
     if (newScenes.length > 0) {
@@ -780,769 +960,797 @@ const App = () => {
 
       {/* GLOBAL TOP TITLE BAR */}
       <div className="global-titlebar h-12 flex items-center justify-between px-4 shrink-0 drag-region">
-        {/* Left section with platform dropdown */}
+        {/* Left section with mode switcher and platform dropdown */}
         <div className="flex items-center gap-4 no-drag" style={{ marginLeft: '70px' }}>
-          {/* Platform Preset Dropdown */}
-          <div className="relative" ref={platformDropdownRef}>
-            <button
-              onClick={() => setPlatformDropdownOpen(!platformDropdownOpen)}
-              className="flex items-center gap-2 bg-gray-800/80 hover:bg-gray-700/80 px-3 py-1.5 rounded-lg text-xs font-medium transition border border-gray-700/50"
-            >
-              <Monitor className="w-3.5 h-3.5 text-blue-400" />
-              <span className="text-gray-200">{getCurrentPlatformName()}</span>
-              {platformDropdownOpen ? <ChevronUp className="w-3 h-3 text-gray-400" /> : <ChevronDown className="w-3 h-3 text-gray-400" />}
-            </button>
+          {/* Mode Switcher */}
+          <ModeSwitcher activeMode={appMode} onModeChange={setAppMode} />
 
-            {platformDropdownOpen && (
-              <div className="absolute top-full left-0 mt-1 w-64 bg-gray-800/95 backdrop-blur-xl rounded-lg border border-gray-700/50 shadow-2xl z-50 py-1 overflow-hidden max-h-80 overflow-y-auto slim-scrollbar">
-                {['Apple', 'Android', 'Steam'].map(category => (
-                  <div key={category}>
-                    <div className="px-3 py-1.5 text-[10px] uppercase text-gray-500 font-semibold bg-gray-900/50">{category}</div>
-                    {PLATFORM_PRESETS.filter(p => p.category === category).map(preset => (
-                      <button
-                        key={preset.id}
-                        onClick={() => handlePlatformChange(preset)}
-                        className={`w-full flex items-center justify-between px-3 py-2 text-xs hover:bg-gray-700/50 transition ${selectedPlatform === preset.id ? 'text-blue-400 bg-blue-900/20' : 'text-gray-300'}`}
-                      >
-                        <span>{preset.name}</span>
-                        <span className="text-[10px] text-gray-500 font-mono">{preset.width}×{preset.height}</span>
-                      </button>
-                    ))}
-                  </div>
-                ))}
-                {/* Custom Presets */}
-                {customSizePresets.length > 0 && (
-                  <div>
-                    <div className="px-3 py-1.5 text-[10px] uppercase text-gray-500 font-semibold bg-gray-900/50">自定义</div>
-                    {customSizePresets.map(preset => (
-                      <div key={preset.id} className="flex items-center group">
+          {/* Platform Preset Dropdown - only show in screenshot mode */}
+          {appMode === 'screenshot' && (
+            <div className="relative" ref={platformDropdownRef}>
+              <button
+                onClick={() => setPlatformDropdownOpen(!platformDropdownOpen)}
+                className="flex items-center gap-2 bg-gray-800/80 hover:bg-gray-700/80 px-3 py-1.5 rounded-lg text-xs font-medium transition border border-gray-700/50"
+              >
+                <Monitor className="w-3.5 h-3.5 text-blue-400" />
+                <span className="text-gray-200">{getCurrentPlatformName()}</span>
+                {platformDropdownOpen ? <ChevronUp className="w-3 h-3 text-gray-400" /> : <ChevronDown className="w-3 h-3 text-gray-400" />}
+              </button>
+
+              {platformDropdownOpen && (
+                <div className="absolute top-full left-0 mt-1 w-64 bg-gray-800/95 backdrop-blur-xl rounded-lg border border-gray-700/50 shadow-2xl z-50 py-1 overflow-hidden max-h-80 overflow-y-auto slim-scrollbar">
+                  {['Apple', 'Google Play', 'Windows', 'Steam'].map(category => (
+                    <div key={category}>
+                      <div className="px-3 py-1.5 text-[10px] uppercase text-gray-500 font-semibold bg-gray-900/50">{category}</div>
+                      {PLATFORM_PRESETS.filter(p => p.category === category).map(preset => (
                         <button
+                          key={preset.id}
                           onClick={() => handlePlatformChange(preset)}
-                          className={`flex-1 flex items-center justify-between px-3 py-2 text-xs hover:bg-gray-700/50 transition ${selectedPlatform === preset.id ? 'text-blue-400 bg-blue-900/20' : 'text-gray-300'}`}
+                          className={`w-full flex items-center justify-between px-3 py-2 text-xs hover:bg-gray-700/50 transition ${selectedPlatform === preset.id ? 'text-blue-400 bg-blue-900/20' : 'text-gray-300'}`}
                         >
                           <span>{preset.name}</span>
                           <span className="text-[10px] text-gray-500 font-mono">{preset.width}×{preset.height}</span>
                         </button>
-                        <button
-                          onClick={() => deleteCustomSizePreset(preset.id)}
-                          className="p-1 text-red-400 opacity-0 group-hover:opacity-100 hover:bg-red-900/30 rounded mr-1 transition"
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* Canvas Size Display with Save Button */}
-          <div className="relative flex items-center gap-2 text-xs text-gray-400 bg-gray-800/50 px-3 py-1.5 rounded-lg border border-gray-700/50">
-            <span className="text-gray-500">W:</span>
-            <input type="number" className="bg-transparent w-14 text-gray-200 focus:outline-none text-center"
-              value={globalSettings.width} onChange={(e) => setGlobalSettings(s => ({ ...s, width: parseInt(e.target.value) || 100 }))}
-            />
-            <span className="text-gray-600">×</span>
-            <span className="text-gray-500">H:</span>
-            <input type="number" className="bg-transparent w-14 text-gray-200 focus:outline-none text-center"
-              value={globalSettings.height} onChange={(e) => setGlobalSettings(s => ({ ...s, height: parseInt(e.target.value) || 100 }))}
-            />
-            <button
-              onClick={() => setShowSavePresetModal(!showSavePresetModal)}
-              className="ml-1 p-1 text-gray-500 hover:text-blue-400 hover:bg-gray-700/50 rounded transition"
-              title="保存为预设"
-            >
-              <Save className="w-3.5 h-3.5" />
-            </button>
-
-            {/* Save Preset Dropdown */}
-            {showSavePresetModal && (
-              <div className="absolute top-full left-0 mt-1 bg-gray-800 rounded-lg p-3 w-56 border border-gray-700 shadow-xl z-50" ref={savePresetModalRef}>
-                <div className="text-xs text-gray-400 mb-2">{globalSettings.width}×{globalSettings.height}</div>
-                <input
-                  type="text"
-                  value={newPresetName}
-                  onChange={(e) => setNewPresetName(e.target.value)}
-                  placeholder="输入预设名称..."
-                  className="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1.5 text-xs text-gray-200 mb-2"
-                  autoFocus
-                  onKeyDown={(e) => e.key === 'Enter' && saveCustomSizePreset()}
-                />
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setShowSavePresetModal(false)}
-                    className="flex-1 px-2 py-1 text-[10px] text-gray-400 hover:text-white bg-gray-700 hover:bg-gray-600 rounded transition"
-                  >
-                    取消
-                  </button>
-                  <button
-                    onClick={saveCustomSizePreset}
-                    className="flex-1 px-2 py-1 text-[10px] text-white bg-blue-600 hover:bg-blue-500 rounded transition"
-                  >
-                    保存
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        </div> {/* Close Left Section */}
-
-        {/* Center section with language toggle */}
-        <div className="flex items-center gap-3 no-drag">
-          {/* Language Preview Toggle */}
-          <div className="flex bg-gray-800/80 rounded-lg p-0.5 border border-gray-700/50">
-            <button
-              onClick={() => setPreviewLanguage('primary')}
-              className={`px-3 py-1 text-xs font-medium rounded-md transition flex items-center gap-1 ${previewLanguage === 'primary' ? 'bg-gray-700 text-white shadow' : 'text-gray-400 hover:text-gray-200'}`}
-            >
-              {LANGUAGES.find(l => l.code === globalSettings.primaryLang)?.flag} {LANGUAGES.find(l => l.code === globalSettings.primaryLang)?.nativeName}
-            </button>
-            {globalSettings.secondaryLang !== 'none' && (
-              <button
-                onClick={() => setPreviewLanguage('secondary')}
-                className={`px-3 py-1 text-xs font-medium rounded-md transition flex items-center gap-1 ${previewLanguage === 'secondary' ? 'bg-gray-700 text-white shadow' : 'text-gray-400 hover:text-gray-200'}`}
-              >
-                {LANGUAGES.find(l => l.code === globalSettings.secondaryLang)?.flag} {LANGUAGES.find(l => l.code === globalSettings.secondaryLang)?.nativeName}
-              </button>
-            )}
-          </div>
-
-          {/* Language Settings Dropdown */}
-          <div className="relative" ref={langSettingsRef}>
-            <button
-              onClick={() => setLangSettingsOpen(!langSettingsOpen)}
-              className="p-1.5 bg-gray-800/80 hover:bg-gray-700/80 rounded-lg text-gray-400 hover:text-white transition border border-gray-700/50"
-              title="语言设置"
-            >
-              <Globe className="w-4 h-4" />
-            </button>
-
-            {langSettingsOpen && (
-              <div className="absolute top-full right-0 mt-1 w-72 bg-gray-800/95 backdrop-blur-xl rounded-lg border border-gray-700/50 shadow-2xl z-50 p-3 space-y-3">
-                <div className="flex items-center justify-between border-b border-gray-700/50 pb-2">
-                  <div className="text-xs text-gray-400 font-semibold flex items-center gap-2">
-                    <Globe className="w-3.5 h-3.5" /> 语言设置
-                  </div>
-                  <button
-                    onClick={() => {
-                      // Auto detect system language
-                      const sysLangCode = navigator.language;
-                      const matchedLang = LANGUAGES.find(l => l.code === sysLangCode || (sysLangCode.startsWith(l.code) && l.code !== 'none'))?.code || 'en';
-                      setGlobalSettings(s => ({ ...s, primaryLang: matchedLang, secondaryLang: 'en' }));
-                    }}
-                    className="text-[10px] text-blue-400 hover:text-blue-300 flex items-center gap-1"
-                  >
-                    <Monitor className="w-3 h-3" /> 跟随系统
-                  </button>
-                </div>
-
-                {/* Primary Language */}
-                <div>
-                  <label className="text-[10px] text-gray-500 block mb-1">主语言 (Primary)</label>
-                  <select
-                    value={globalSettings.primaryLang}
-                    onChange={(e) => setGlobalSettings(s => ({ ...s, primaryLang: e.target.value }))}
-                    className="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1.5 text-xs text-gray-200"
-                  >
-                    {LANGUAGES.filter(l => l.code !== 'none').map(lang => (
-                      <option key={lang.code} value={lang.code}>{lang.flag} {lang.nativeName}</option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Secondary Language */}
-                <div>
-                  <label className="text-[10px] text-gray-500 block mb-1">翻译语言 (Secondary)</label>
-                  <select
-                    value={globalSettings.secondaryLang}
-                    onChange={(e) => setGlobalSettings(s => ({ ...s, secondaryLang: e.target.value }))}
-                    className="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1.5 text-xs text-gray-200"
-                  >
-                    {LANGUAGES.map(lang => (
-                      <option key={lang.code} value={lang.code}>{lang.flag} {lang.nativeName}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="text-[9px] text-gray-600 pt-2 border-t border-gray-700/50">
-                  选择「不使用翻译」可仅导出单一语言版本
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Right section with export button */}
-        <div className="flex items-center gap-3 no-drag">
-          <button onClick={handleExportAll}
-            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-1.5 rounded-lg text-xs font-medium transition shadow-lg shadow-blue-900/30">
-            <Download className="w-3.5 h-3.5" /> 导出全部
-          </button>
-        </div>
-      </div>
-
-      {/* MAIN CONTENT AREA */}
-      <div className="flex flex-1 overflow-hidden">
-
-        {/* LEFT SIDEBAR */}
-        <div className="w-80 bg-gray-900 border-r border-gray-800 flex flex-col flex-shrink-0 z-20 shadow-xl">
-
-          {/* Ollama Settings */}
-          <div className="px-4 py-3 border-b border-gray-800 bg-gray-900/50">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2 text-xs font-semibold text-gray-400 uppercase">
-                <Cpu className="w-3 h-3" /> 本地 AI 翻译 (Ollama)
-              </div>
-              <div className={`w-2 h-2 rounded-full ${ollamaConfig.isConnected ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]' : 'bg-red-500'}`}></div>
-            </div>
-
-            {!ollamaConfig.isConnected ? (
-              <div className="space-y-2">
-                <input className="w-full text-xs bg-gray-800 border border-gray-700 rounded p-1 text-gray-300"
-                  value={ollamaConfig.host} onChange={(e) => setOllamaConfig(s => ({ ...s, host: e.target.value }))}
-                  placeholder="http://localhost:11434"
-                />
-                <button onClick={checkOllamaConnection}
-                  className="w-full text-xs bg-blue-900/50 hover:bg-blue-800 text-blue-200 py-1 rounded border border-blue-800 transition">
-                  连接 Ollama
-                </button>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                <select className="w-full text-xs bg-gray-800 border border-gray-700 rounded p-1" value={ollamaConfig.model}
-                  onChange={(e) => setOllamaConfig(s => ({ ...s, model: e.target.value }))}
-                >
-                  {ollamaConfig.availableModels.map(m => <option key={m} value={m}>{m}</option>)}
-                </select>
-                <div className="flex items-center gap-2">
-                  <input type="checkbox" id="autoTrans" checked={ollamaConfig.autoTranslate} onChange={(e) => setOllamaConfig(s => ({ ...s, autoTranslate: e.target.checked }))}
-                    className="rounded bg-gray-800 border-gray-700"
-                  />
-                  <label htmlFor="autoTrans" className="text-xs text-gray-400">导入时自动翻译文件名</label>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Background Settings */}
-          <div className="p-4 border-b border-gray-800">
-            <button
-              onClick={() => setBgExpanded(!bgExpanded)}
-              className="w-full text-xs uppercase text-gray-400 font-semibold mb-2 flex items-center gap-2 hover:text-gray-200 transition"
-            >
-              <ChevronDown className={`w-3 h-3 transition-transform ${bgExpanded ? '' : '-rotate-90'}`} />
-              <ImageIcon className="w-4 h-4" /> 全局背景
-              {uploadedBackgrounds.length > 0 && (
-                <span className="ml-auto text-[10px] text-gray-500 font-normal">
-                  ({uploadedBackgrounds.length} 张)
-                </span>
-              )}
-            </button>
-
-            {bgExpanded && (
-              <>
-                <div className="grid grid-cols-6 gap-2 mb-3">
-                  {PRESETS.map(p => (
-                    <button key={p.id} onClick={() => setGlobalSettings(s => ({ ...s, backgroundType: 'preset', backgroundValue: p.value }))}
-                      className={`w-full h-8 rounded-md transition-all ${globalSettings.backgroundValue === p.value && globalSettings.backgroundType === 'preset' ? 'ring-2 ring-blue-500 scale-110 z-10' : 'opacity-70 hover:opacity-100'}`}
-                      style={{ background: p.value }}
-                      title={p.name}
-                    />
-                  ))}
-                </div>
-
-                {/* Built-in Background Images */}
-                <div className="mb-3">
-                  <p className="text-[10px] text-gray-500 mb-2">内置背景图片</p>
-                  <div className="grid grid-cols-3 gap-2">
-                    {BUILTIN_BACKGROUNDS.map(bg => (
-                      <button
-                        key={bg.id}
-                        onClick={() => setGlobalSettings(s => ({ ...s, backgroundType: 'builtin', backgroundUpload: bg.src }))}
-                        className={`w-full h-12 rounded-md transition-all overflow-hidden ${globalSettings.backgroundUpload === bg.src && globalSettings.backgroundType === 'builtin' ? 'ring-2 ring-blue-500 scale-105' : 'opacity-70 hover:opacity-100'}`}
-                        title={bg.name}
-                      >
-                        <img src={bg.src} alt={bg.name} className="w-full h-full object-cover" />
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Uploaded Background Thumbnails */}
-                {uploadedBackgrounds.length > 0 && (
-                  <div className="mb-3">
-                    <p className="text-[10px] text-gray-500 mb-2">已链接背景图片</p>
-                    <div className="grid grid-cols-5 gap-2">
-                      {uploadedBackgrounds.slice(0, 10).map((bg, idx) => (
-                        <button
-                          key={idx}
-                          onClick={() => setGlobalSettings(s => ({ ...s, backgroundType: 'upload', backgroundUpload: bg.data }))}
-                          className={`w-full h-8 rounded-md transition-all overflow-hidden ${globalSettings.backgroundUpload === bg.data && globalSettings.backgroundType === 'upload' ? 'ring-2 ring-blue-500 scale-110 z-10' : 'opacity-70 hover:opacity-100'}`}
-                          title={bg.name}
-                        >
-                          <img src={bg.data} alt={bg.name} className="w-full h-full object-cover" />
-                        </button>
                       ))}
-                      {uploadedBackgrounds.length > 10 && (
-                        <div className="w-full h-8 rounded-md bg-gray-800 flex items-center justify-center text-[10px] text-gray-500">
-                          +{uploadedBackgrounds.length - 10}
-                        </div>
-                      )}
                     </div>
-                  </div>
-                )}
-
-                <button
-                  onClick={handleDirectoryBgUpload}
-                  className={`flex items-center justify-center w-full p-2 text-xs bg-gray-800 rounded cursor-pointer hover:bg-gray-700 border border-gray-700 transition ${globalSettings.backgroundType === 'upload' ? 'border-blue-500 text-blue-400' : 'text-gray-400'}`}
-                >
-                  <FolderInput className="w-3 h-3 mr-2" /> 链接背景文件夹
-                </button>
-                {backgroundFolderPath && (
-                  <p className="text-[9px] text-gray-500 mt-1 text-center font-mono truncate" title={backgroundFolderPath}>
-                    {backgroundFolderPath.split('/').slice(-2).join('/')}
-                  </p>
-                )}
-              </>
-            )}
-          </div>
-
-          {/* Scene List */}
-          <div className="flex-1 overflow-y-auto p-4 bg-gray-900 slim-scrollbar">
-            <div className="flex justify-between items-center mb-3">
-              <h3 className="text-xs uppercase text-gray-400 font-semibold">场景列表 ({scenes.length})</h3>
-              <div className="relative group">
-                <input type="file" multiple webkitdirectory="" accept="image/*"
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onChange={handleBatchUpload}
-                />
-                <button
-                  className="p-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded transition shadow-lg shadow-blue-900/50">
-                  <FolderInput className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-
-            <div className="space-y-2 pb-20">
-              {scenes.map(scene => (
-                <div key={scene.id} onClick={() => setActiveSceneId(scene.id)}
-                  className={`group p-2 rounded-lg cursor-pointer flex items-center gap-3 border transition-all ${activeSceneId === scene.id ? 'bg-gray-800 border-blue-500/50 shadow-lg' : 'bg-gray-900 border-gray-800 hover:bg-gray-800 hover:border-gray-700'}`}
-                >
-                  <div className="w-8 h-12 bg-gray-950 rounded overflow-hidden flex-shrink-0 border border-gray-700 relative">
-                    {scene.screenshot ? (
-                      <img src={scene.screenshot} className="w-full h-full object-cover" alt="" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-gray-700">
-                        <ImageIcon size={10} />
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className={`text-sm font-medium truncate ${activeSceneId === scene.id ? 'text-white' : 'text-gray-400'}`}>{scene.name || '未命名场景'}</div>
-                    <div className="text-[10px] text-gray-600 truncate">{scene.titleEN || '...'}</div>
-                  </div>
-                  <button onClick={(e) => { e.stopPropagation(); deleteScene(scene.id); }}
-                    className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-red-500/20 hover:text-red-400 text-gray-600 rounded transition"
-                  >
-                    <Trash2 className="w-3 h-3" />
-                  </button>
+                  ))}
+                  {/* Custom Presets */}
+                  {customSizePresets.length > 0 && (
+                    <div>
+                      <div className="px-3 py-1.5 text-[10px] uppercase text-gray-500 font-semibold bg-gray-900/50">自定义</div>
+                      {customSizePresets.map(preset => (
+                        <div key={preset.id} className="flex items-center group">
+                          <button
+                            onClick={() => handlePlatformChange(preset)}
+                            className={`flex-1 flex items-center justify-between px-3 py-2 text-xs hover:bg-gray-700/50 transition ${selectedPlatform === preset.id ? 'text-blue-400 bg-blue-900/20' : 'text-gray-300'}`}
+                          >
+                            <span>{preset.name}</span>
+                            <span className="text-[10px] text-gray-500 font-mono">{preset.width}×{preset.height}</span>
+                          </button>
+                          <button
+                            onClick={() => deleteCustomSizePreset(preset.id)}
+                            className="p-1 text-red-400 opacity-0 group-hover:opacity-100 hover:bg-red-900/30 rounded mr-1 transition"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
-              ))}
+              )}
             </div>
-          </div>
-        </div>
+          )}
 
-        {/* CENTER - Canvas Preview */}
-        <div className="flex-1 flex flex-col relative bg-gray-950">
-
-          <div className="flex-1 overflow-hidden p-4 flex items-center justify-center" style={{ background: 'radial-gradient(circle at center, rgba(30,41,59,0.5) 0%, rgba(15,23,42,1) 100%)' }}>
-            {/* Canvas Container - Auto-fit */}
-            <div className="relative shadow-2xl ring-1 ring-gray-700 rounded-lg overflow-hidden"
-              style={{
-                aspectRatio: `${globalSettings.width}/${globalSettings.height}`,
-                maxWidth: '100%',
-                maxHeight: '100%',
-                width: 'auto',
-                height: 'auto'
-              }}
-            >
-              <canvas ref={canvasRef} className="w-full h-full object-contain bg-gray-800 block" />
-              {/* Overlay Info */}
-              <div className="absolute top-2 right-2 px-2 py-0.5 bg-black/60 backdrop-blur rounded text-[9px] text-gray-400 pointer-events-none">
-                {globalSettings.width} × {globalSettings.height}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* RIGHT SIDEBAR - Edit Active Scene */}
-        <div className="w-72 bg-gray-900 border-l border-gray-800 flex flex-col flex-shrink-0 shadow-xl z-20 no-scrollbar overflow-y-auto">
-          <div className="p-5 border-b border-gray-800">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-sm font-bold text-gray-100">参数调整</h2>
-              <button onClick={applySettingsToAll} title="将当前的位置/大小设置应用到所有场景"
-                className="text-xs flex items-center gap-1 text-blue-400 hover:text-blue-300 bg-blue-900/20 hover:bg-blue-900/40 px-2 py-1 rounded transition border border-blue-900/50">
-                <Copy className="w-3 h-3" /> 应用到所有
+          {/* Canvas Size Display with Save Button - only show in screenshot mode */}
+          {appMode === 'screenshot' && (
+            <div className="relative flex items-center gap-2 text-xs text-gray-400 bg-gray-800/50 px-3 py-1.5 rounded-lg border border-gray-700/50">
+              <span className="text-gray-500">W:</span>
+              <input type="number" className="bg-transparent w-14 text-gray-200 focus:outline-none text-center"
+                value={globalSettings.width} onChange={(e) => setGlobalSettings(s => ({ ...s, width: parseInt(e.target.value) || 100 }))}
+              />
+              <span className="text-gray-600">×</span>
+              <span className="text-gray-500">H:</span>
+              <input type="number" className="bg-transparent w-14 text-gray-200 focus:outline-none text-center"
+                value={globalSettings.height} onChange={(e) => setGlobalSettings(s => ({ ...s, height: parseInt(e.target.value) || 100 }))}
+              />
+              <button
+                onClick={() => setShowSavePresetModal(!showSavePresetModal)}
+                className="ml-1 p-1 text-gray-500 hover:text-blue-400 hover:bg-gray-700/50 rounded transition"
+                title="保存为预设"
+              >
+                <Save className="w-3.5 h-3.5" />
               </button>
-            </div>
 
-            <div className="space-y-4">
-              {/* Saved Configs */}
-              <div className="bg-gray-800/50 rounded-lg p-3 border border-gray-700/50 mb-4">
-                <label className="text-[10px] uppercase text-gray-500 font-semibold mb-2 block flex items-center gap-2">
-                  <Archive className="w-3 h-3" /> 布局预设
-                </label>
-                <div className="flex gap-1 mb-2">
+              {/* Save Preset Dropdown */}
+              {showSavePresetModal && (
+                <div className="absolute top-full left-0 mt-1 bg-gray-800 rounded-lg p-3 w-56 border border-gray-700 shadow-xl z-50" ref={savePresetModalRef}>
+                  <div className="text-xs text-gray-400 mb-2">{globalSettings.width}×{globalSettings.height}</div>
                   <input
                     type="text"
-                    value={configName}
-                    onChange={(e) => setConfigName(e.target.value)}
-                    placeholder="新预设名称..."
-                    className="flex-1 min-w-0 bg-gray-900 text-xs border border-gray-700 rounded px-2 py-1"
+                    value={newPresetName}
+                    onChange={(e) => setNewPresetName(e.target.value)}
+                    placeholder="输入预设名称..."
+                    className="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1.5 text-xs text-gray-200 mb-2"
+                    autoFocus
+                    onKeyDown={(e) => e.key === 'Enter' && saveCustomSizePreset()}
                   />
-                  <button onClick={saveConfig} className="p-1 bg-blue-900/50 text-blue-300 rounded border border-blue-800 hover:bg-blue-800"><Save className="w-3 h-3" /></button>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setShowSavePresetModal(false)}
+                      className="flex-1 px-2 py-1 text-[10px] text-gray-400 hover:text-white bg-gray-700 hover:bg-gray-600 rounded transition"
+                    >
+                      取消
+                    </button>
+                    <button
+                      onClick={saveCustomSizePreset}
+                      className="flex-1 px-2 py-1 text-[10px] text-white bg-blue-600 hover:bg-blue-500 rounded transition"
+                    >
+                      保存
+                    </button>
+                  </div>
                 </div>
-                <div className="max-h-24 overflow-y-auto space-y-1">
-                  {savedConfigs.map((config, idx) => (
-                    <div key={idx} className="flex items-center justify-between text-xs bg-gray-900/50 p-1 rounded group">
-                      <span onClick={() => loadConfig(config)} className="text-gray-300 cursor-pointer hover:text-white flex-1 truncate">{config.name}</span>
-                      <button onClick={() => deleteConfig(idx)} className="text-red-500 opacity-0 group-hover:opacity-100"><Trash2 className="w-3 h-3" /></button>
+              )}
+            </div>
+          )}
+        </div> {/* Close Left Section */}
+
+        {/* Center section with language toggle - only show in screenshot mode */}
+        {appMode === 'screenshot' && (
+          <div className="flex items-center gap-3 no-drag">
+            {/* Language Preview Toggle */}
+            <div className="flex bg-gray-800/80 rounded-lg p-0.5 border border-gray-700/50">
+              <button
+                onClick={() => setPreviewLanguage('primary')}
+                className={`px-3 py-1 text-xs font-medium rounded-md transition flex items-center gap-1 ${previewLanguage === 'primary' ? 'bg-gray-700 text-white shadow' : 'text-gray-400 hover:text-gray-200'}`}
+              >
+                {LANGUAGES.find(l => l.code === globalSettings.primaryLang)?.flag} {LANGUAGES.find(l => l.code === globalSettings.primaryLang)?.nativeName}
+              </button>
+              {globalSettings.secondaryLang !== 'none' && (
+                <button
+                  onClick={() => setPreviewLanguage('secondary')}
+                  className={`px-3 py-1 text-xs font-medium rounded-md transition flex items-center gap-1 ${previewLanguage === 'secondary' ? 'bg-gray-700 text-white shadow' : 'text-gray-400 hover:text-gray-200'}`}
+                >
+                  {LANGUAGES.find(l => l.code === globalSettings.secondaryLang)?.flag} {LANGUAGES.find(l => l.code === globalSettings.secondaryLang)?.nativeName}
+                </button>
+              )}
+            </div>
+
+            {/* Language Settings Dropdown */}
+            <div className="relative" ref={langSettingsRef}>
+              <button
+                onClick={() => setLangSettingsOpen(!langSettingsOpen)}
+                className="p-1.5 bg-gray-800/80 hover:bg-gray-700/80 rounded-lg text-gray-400 hover:text-white transition border border-gray-700/50"
+                title="语言设置"
+              >
+                <Globe className="w-4 h-4" />
+              </button>
+
+              {langSettingsOpen && (
+                <div className="absolute top-full right-0 mt-1 w-72 bg-gray-800/95 backdrop-blur-xl rounded-lg border border-gray-700/50 shadow-2xl z-50 p-3 space-y-3">
+                  <div className="flex items-center justify-between border-b border-gray-700/50 pb-2">
+                    <div className="text-xs text-gray-400 font-semibold flex items-center gap-2">
+                      <Globe className="w-3.5 h-3.5" /> 语言设置
+                    </div>
+                    <button
+                      onClick={() => {
+                        // Auto detect system language
+                        const sysLangCode = navigator.language;
+                        const matchedLang = LANGUAGES.find(l => l.code === sysLangCode || (sysLangCode.startsWith(l.code) && l.code !== 'none'))?.code || 'en';
+                        setGlobalSettings(s => ({ ...s, primaryLang: matchedLang, secondaryLang: 'en' }));
+                      }}
+                      className="text-[10px] text-blue-400 hover:text-blue-300 flex items-center gap-1"
+                    >
+                      <Monitor className="w-3 h-3" /> 跟随系统
+                    </button>
+                  </div>
+
+                  {/* Primary Language */}
+                  <div>
+                    <label className="text-[10px] text-gray-500 block mb-1">主语言 (Primary)</label>
+                    <select
+                      value={globalSettings.primaryLang}
+                      onChange={(e) => setGlobalSettings(s => ({ ...s, primaryLang: e.target.value }))}
+                      className="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1.5 text-xs text-gray-200"
+                    >
+                      {LANGUAGES.filter(l => l.code !== 'none').map(lang => (
+                        <option key={lang.code} value={lang.code}>{lang.flag} {lang.nativeName}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Secondary Language */}
+                  <div>
+                    <label className="text-[10px] text-gray-500 block mb-1">翻译语言 (Secondary)</label>
+                    <select
+                      value={globalSettings.secondaryLang}
+                      onChange={(e) => setGlobalSettings(s => ({ ...s, secondaryLang: e.target.value }))}
+                      className="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1.5 text-xs text-gray-200"
+                    >
+                      {LANGUAGES.map(lang => (
+                        <option key={lang.code} value={lang.code}>{lang.flag} {lang.nativeName}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="text-[9px] text-gray-600 pt-2 border-t border-gray-700/50">
+                    选择「不使用翻译」可仅导出单一语言版本
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Right section with export button - only show in screenshot mode */}
+        {appMode === 'screenshot' && (
+          <div className="flex items-center gap-3 no-drag">
+            <button onClick={handleExportAll}
+              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-1.5 rounded-lg text-xs font-medium transition shadow-lg shadow-blue-900/30">
+              <Download className="w-3.5 h-3.5" /> 导出全部
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* MAIN CONTENT AREA - Conditional rendering based on mode */}
+      {
+        appMode === 'icon' ? (
+          <IconFabric />
+        ) : (
+          <div className="flex flex-1 overflow-hidden">
+
+            {/* LEFT SIDEBAR */}
+            <div className="w-80 bg-gray-900 border-r border-gray-800 flex flex-col flex-shrink-0 z-20 shadow-xl">
+
+              {/* Ollama Settings */}
+              <div className="px-4 py-3 border-b border-gray-800 bg-gray-900/50">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2 text-xs font-semibold text-gray-400 uppercase">
+                    <Cpu className="w-3 h-3" /> 本地 AI 翻译 (Ollama)
+                  </div>
+                  <div className={`w-2 h-2 rounded-full ${ollamaConfig.isConnected ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]' : 'bg-red-500'}`}></div>
+                </div>
+
+                {!ollamaConfig.isConnected ? (
+                  <div className="space-y-2">
+                    <input className="w-full text-xs bg-gray-800 border border-gray-700 rounded p-1 text-gray-300"
+                      value={ollamaConfig.host} onChange={(e) => setOllamaConfig(s => ({ ...s, host: e.target.value }))}
+                      placeholder="http://localhost:11434"
+                    />
+                    <button onClick={checkOllamaConnection}
+                      className="w-full text-xs bg-blue-900/50 hover:bg-blue-800 text-blue-200 py-1 rounded border border-blue-800 transition">
+                      连接 Ollama
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <select className="w-full text-xs bg-gray-800 border border-gray-700 rounded p-1" value={ollamaConfig.model}
+                      onChange={(e) => setOllamaConfig(s => ({ ...s, model: e.target.value }))}
+                    >
+                      {ollamaConfig.availableModels.map(m => <option key={m} value={m}>{m}</option>)}
+                    </select>
+                    <div className="flex items-center gap-2">
+                      <input type="checkbox" id="autoTrans" checked={ollamaConfig.autoTranslate} onChange={(e) => setOllamaConfig(s => ({ ...s, autoTranslate: e.target.checked }))}
+                        className="rounded bg-gray-800 border-gray-700"
+                      />
+                      <label htmlFor="autoTrans" className="text-xs text-gray-400">导入时自动翻译文件名</label>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Background Settings */}
+              <div className="p-4 border-b border-gray-800">
+                <button
+                  onClick={() => setBgExpanded(!bgExpanded)}
+                  className="w-full text-xs uppercase text-gray-400 font-semibold mb-2 flex items-center gap-2 hover:text-gray-200 transition"
+                >
+                  <ChevronDown className={`w-3 h-3 transition-transform ${bgExpanded ? '' : '-rotate-90'}`} />
+                  <ImageIcon className="w-4 h-4" /> 全局背景
+                  {uploadedBackgrounds.length > 0 && (
+                    <span className="ml-auto text-[10px] text-gray-500 font-normal">
+                      ({uploadedBackgrounds.length} 张)
+                    </span>
+                  )}
+                </button>
+
+                {bgExpanded && (
+                  <>
+                    <div className="grid grid-cols-6 gap-2 mb-3">
+                      {PRESETS.map(p => (
+                        <button key={p.id} onClick={() => setGlobalSettings(s => ({ ...s, backgroundType: 'preset', backgroundValue: p.value }))}
+                          className={`w-full h-8 rounded-md transition-all ${globalSettings.backgroundValue === p.value && globalSettings.backgroundType === 'preset' ? 'ring-2 ring-blue-500 scale-110 z-10' : 'opacity-70 hover:opacity-100'}`}
+                          style={{ background: p.value }}
+                          title={p.name}
+                        />
+                      ))}
+                    </div>
+
+                    {/* Built-in Background Images */}
+                    <div className="mb-3">
+                      <p className="text-[10px] text-gray-500 mb-2">内置背景图片</p>
+                      <div className="grid grid-cols-3 gap-2">
+                        {BUILTIN_BACKGROUNDS.map(bg => (
+                          <button
+                            key={bg.id}
+                            onClick={() => setGlobalSettings(s => ({ ...s, backgroundType: 'builtin', backgroundUpload: bg.src }))}
+                            className={`w-full h-12 rounded-md transition-all overflow-hidden ${globalSettings.backgroundUpload === bg.src && globalSettings.backgroundType === 'builtin' ? 'ring-2 ring-blue-500 scale-105' : 'opacity-70 hover:opacity-100'}`}
+                            title={bg.name}
+                          >
+                            <img src={bg.src} alt={bg.name} className="w-full h-full object-cover" />
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Uploaded Background Thumbnails */}
+                    {uploadedBackgrounds.length > 0 && (
+                      <div className="mb-3">
+                        <p className="text-[10px] text-gray-500 mb-2">已链接背景图片</p>
+                        <div className="grid grid-cols-5 gap-2">
+                          {uploadedBackgrounds.slice(0, 10).map((bg, idx) => (
+                            <button
+                              key={idx}
+                              onClick={() => setGlobalSettings(s => ({ ...s, backgroundType: 'upload', backgroundUpload: bg.data }))}
+                              className={`w-full h-8 rounded-md transition-all overflow-hidden ${globalSettings.backgroundUpload === bg.data && globalSettings.backgroundType === 'upload' ? 'ring-2 ring-blue-500 scale-110 z-10' : 'opacity-70 hover:opacity-100'}`}
+                              title={bg.name}
+                            >
+                              <img src={bg.data} alt={bg.name} className="w-full h-full object-cover" />
+                            </button>
+                          ))}
+                          {uploadedBackgrounds.length > 10 && (
+                            <div className="w-full h-8 rounded-md bg-gray-800 flex items-center justify-center text-[10px] text-gray-500">
+                              +{uploadedBackgrounds.length - 10}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    <button
+                      onClick={handleDirectoryBgUpload}
+                      className={`flex items-center justify-center w-full p-2 text-xs bg-gray-800 rounded cursor-pointer hover:bg-gray-700 border border-gray-700 transition ${globalSettings.backgroundType === 'upload' ? 'border-blue-500 text-blue-400' : 'text-gray-400'}`}
+                    >
+                      <FolderInput className="w-3 h-3 mr-2" /> 链接背景文件夹
+                    </button>
+                    {backgroundFolderPath && (
+                      <p className="text-[9px] text-gray-500 mt-1 text-center font-mono truncate" title={backgroundFolderPath}>
+                        {backgroundFolderPath.split('/').slice(-2).join('/')}
+                      </p>
+                    )}
+                  </>
+                )}
+              </div>
+
+              {/* Scene List */}
+              <div className="flex-1 overflow-y-auto p-4 bg-gray-900 slim-scrollbar">
+                <div className="flex justify-between items-center mb-3">
+                  <h3 className="text-xs uppercase text-gray-400 font-semibold">截图列表 ({scenes.length})</h3>
+                  <div className="relative group">
+                    <input type="file" multiple webkitdirectory="" accept="image/*"
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onChange={handleBatchUpload}
+                    />
+                    <button
+                      className="p-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded transition shadow-lg shadow-blue-900/50">
+                      <FolderInput className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-2 pb-20">
+                  {scenes.map(scene => (
+                    <div key={scene.id} onClick={() => setActiveSceneId(scene.id)}
+                      className={`group p-2 rounded-lg cursor-pointer flex items-center gap-3 border transition-all ${activeSceneId === scene.id ? 'bg-gray-800 border-blue-500/50 shadow-lg' : 'bg-gray-900 border-gray-800 hover:bg-gray-800 hover:border-gray-700'}`}
+                    >
+                      <div className="w-8 h-12 bg-gray-950 rounded overflow-hidden flex-shrink-0 border border-gray-700 relative">
+                        {scene.screenshot ? (
+                          <img src={scene.screenshot} className="w-full h-full object-cover" alt="" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-gray-700">
+                            <ImageIcon size={10} />
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className={`text-sm font-medium truncate ${activeSceneId === scene.id ? 'text-white' : 'text-gray-400'}`}>{scene.name || '未命名场景'}</div>
+                        <div className="text-[10px] text-gray-600 truncate">{scene.titleEN || '...'}</div>
+                      </div>
+                      <button onClick={(e) => { e.stopPropagation(); deleteScene(scene.id); }}
+                        className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-red-500/20 hover:text-red-400 text-gray-600 rounded transition"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
                     </div>
                   ))}
                 </div>
               </div>
-
-              {/* Screenshot Controls */}
-              <div className="bg-gray-800/50 rounded-lg p-3 border border-gray-700/50">
-                <label className="text-[10px] uppercase text-gray-500 font-semibold mb-2 block flex items-center gap-2">
-                  <Settings className="w-3 h-3" /> 截图布局
-                </label>
-                <div className="space-y-3">
-                  <div className="group">
-                    <div className="flex justify-between text-[10px] text-gray-400 mb-1">
-                      缩放 <span>{Math.round(activeScene.settings.screenshotScale * 100)}%</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <input type="range" min="0.3" max="3.0" step="0.01" value={activeScene.settings.screenshotScale}
-                        onChange={(e) => updateSceneSettings('screenshotScale', parseFloat(e.target.value))}
-                        className="flex-1 h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
-                      />
-                      <button onClick={() => resetSceneSetting('screenshotScale')} className="p-1 text-gray-500 hover:text-blue-400 opacity-0 group-hover:opacity-100 transition"><RotateCcw className="w-3 h-3" /></button>
-                    </div>
-                  </div>
-                  <div className="group">
-                    <div className="flex justify-between text-[10px] text-gray-400 mb-1">垂直位置 (Y) <span>{activeScene.settings.screenshotY}</span></div>
-                    <div className="flex items-center gap-2">
-                      <input type="range" min="0" max="1500" step="10" value={activeScene.settings.screenshotY} onChange={(e) =>
-                        updateSceneSettings('screenshotY', parseInt(e.target.value))}
-                        className="flex-1 h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
-                      />
-                      <button onClick={() => resetSceneSetting('screenshotY')} className="p-1 text-gray-500 hover:text-blue-400 opacity-0 group-hover:opacity-100 transition"><RotateCcw className="w-3 h-3" /></button>
-                    </div>
-                  </div>
-                  <div className="group">
-                    <div className="flex justify-between text-[10px] text-gray-400 mb-1">水平位置 (X) <span>{activeScene.settings.screenshotX}</span></div>
-                    <div className="flex items-center gap-2">
-                      <input type="range" min="-1000" max="1000" step="10" value={activeScene.settings.screenshotX}
-                        onChange={(e) => updateSceneSettings('screenshotX', parseInt(e.target.value))}
-                        className="flex-1 h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
-                      />
-                      <button onClick={() => resetSceneSetting('screenshotX')} className="p-1 text-gray-500 hover:text-blue-400 opacity-0 group-hover:opacity-100 transition"><RotateCcw className="w-3 h-3" /></button>
-                    </div>
-                  </div>
-                  {/* Screenshot Shadow Toggle */}
-                  <div className="pt-2 mt-2 border-t border-gray-700/50">
-                    <label className="flex items-center gap-2 text-xs text-gray-400 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={activeScene.settings.screenshotShadow !== false}
-                        onChange={(e) => updateSceneSettings('screenshotShadow', e.target.checked)}
-                        className="rounded bg-gray-800 border-gray-700 text-blue-500"
-                      />
-                      截图阴影
-                    </label>
-                  </div>
-                </div>
-              </div>
             </div>
-          </div>
 
-          {/* Text Settings */}
-          <div className="p-5">
-            <h3 className="text-[10px] uppercase text-gray-500 font-semibold mb-4 flex items-center gap-2">
-              <Type className="w-3 h-3" /> 文案 & 翻译
-            </h3>
-
-            <div className="space-y-4">
-              {/* Global Text Controls */}
-              <div className="bg-gray-800/50 rounded-lg p-3 border border-gray-700/50">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-[10px] uppercase text-gray-500 font-semibold">对齐方式</span>
-                  <div className="flex bg-gray-900 rounded-md p-0.5">
-                    <button
-                      onClick={() => setGlobalSettings(s => ({ ...s, textAlign: 'left' }))}
-                      className={`p-1.5 rounded transition ${globalSettings.textAlign === 'left' ? 'bg-gray-700 text-white' : 'text-gray-500 hover:text-gray-300'}`}
-                    >
-                      <AlignLeft className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      onClick={() => setGlobalSettings(s => ({ ...s, textAlign: 'center' }))}
-                      className={`p-1.5 rounded transition ${globalSettings.textAlign === 'center' ? 'bg-gray-700 text-white' : 'text-gray-500 hover:text-gray-300'}`}
-                    >
-                      <AlignCenter className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      onClick={() => setGlobalSettings(s => ({ ...s, textAlign: 'right' }))}
-                      className={`p-1.5 rounded transition ${globalSettings.textAlign === 'right' ? 'bg-gray-700 text-white' : 'text-gray-500 hover:text-gray-300'}`}
-                    >
-                      <AlignRight className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                </div>
-                {/* Text Effects */}
-                <div className="flex items-center gap-4 mt-3 pt-3 border-t border-gray-700/50">
-                  <label className="flex items-center gap-2 text-xs text-gray-400 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={globalSettings.textShadow}
-                      onChange={(e) => setGlobalSettings(s => ({ ...s, textShadow: e.target.checked }))}
-                      className="rounded bg-gray-800 border-gray-700 text-blue-500"
-                    />
-                    阴影
-                  </label>
-                  <label className="flex items-center gap-2 text-xs text-gray-400 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={globalSettings.textStroke}
-                      onChange={(e) => setGlobalSettings(s => ({ ...s, textStroke: e.target.checked }))}
-                      className="rounded bg-gray-800 border-gray-700 text-blue-500"
-                    />
-                    描边
-                  </label>
-                </div>
-                {/* Stroke Color - only show when stroke is enabled */}
-                {globalSettings.textStroke && (
-                  <div className="mt-2">
-                    <div className="text-[10px] text-gray-400 mb-1">描边颜色</div>
-                    <div className="flex gap-1.5">
-                      {STROKE_COLORS.map(c => (
-                        <button
-                          key={c.id}
-                          onClick={() => setGlobalSettings(s => ({ ...s, strokeColor: c.id }))}
-                          className={`w-5 h-5 rounded-md border-2 transition ${globalSettings.strokeColor === c.id ? 'border-blue-500 scale-110' : 'border-gray-600 hover:border-gray-500'}`}
-                          style={{ background: c.value }}
-                          title={c.name}
-                        />
-                      ))}
+            {/* CENTER - Canvas Preview */}
+            <div className="flex-1 flex flex-col relative bg-gray-950">
+              {/* Design Tips Area */}
+              {(() => {
+                const currentPreset = [...PLATFORM_PRESETS, ...customSizePresets].find(p => p.id === selectedPlatform);
+                if (currentPreset?.designTips?.length > 0) {
+                  return (
+                    <div className="px-4 pt-3 pb-0">
+                      <DesignTips tips={currentPreset.designTips} mode={currentPreset.mode || 'poster'} />
                     </div>
-                  </div>
-                )}
-                {/* Text Fade Control */}
-                <div className="mt-3 pt-3 border-t border-gray-700/50 space-y-2">
-                  <div className="text-[10px] text-gray-500 font-semibold">文字渐变控制</div>
-                  <div>
-                    <div className="flex justify-between text-[10px] text-gray-400 mb-1">渐变位置 <span>{Math.round(globalSettings.fadeStart * 100)}%</span></div>
-                    <input
-                      type="range" min="0.3" max="1" step="0.05"
-                      value={globalSettings.fadeStart}
-                      onChange={(e) => setGlobalSettings(s => ({ ...s, fadeStart: parseFloat(e.target.value) }))}
-                      className="w-full h-1 bg-gray-700 rounded-lg accent-blue-500"
-                    />
-                  </div>
-                  <div>
-                    <div className="flex justify-between text-[10px] text-gray-400 mb-1">底部透明度 <span>{Math.round(globalSettings.fadeOpacity * 100)}%</span></div>
-                    <input
-                      type="range" min="0" max="1" step="0.05"
-                      value={globalSettings.fadeOpacity}
-                      onChange={(e) => setGlobalSettings(s => ({ ...s, fadeOpacity: parseFloat(e.target.value) }))}
-                      className="w-full h-1 bg-gray-700 rounded-lg accent-blue-500"
-                    />
-                  </div>
-                </div>
-              </div>
+                  );
+                }
+                return null;
+              })()}
 
-              {/* Chinese Title */}
-              <div>
-                <label className="block text-xs text-gray-400 mb-1">
-                  {LANGUAGES.find(l => l.code === globalSettings.primaryLang)?.nativeName || '主标题'} (Primary)
-                </label>
-                <textarea
-                  rows={2}
-                  value={activeScene.titleCN}
-                  onChange={(e) => {
-                    const newTitle = e.target.value;
-                    // 同步更新 name（去掉换行符显示在列表）
-                    updateScene(activeScene.id, { titleCN: newTitle, name: newTitle.replace(/\n/g, ' ') });
+              <div className="flex-1 overflow-hidden p-4 flex items-center justify-center" style={{ background: 'radial-gradient(circle at center, rgba(30,41,59,0.5) 0%, rgba(15,23,42,1) 100%)' }}>
+                {/* Canvas Container - Auto-fit */}
+                <div className="relative shadow-2xl ring-1 ring-gray-700 rounded-lg overflow-hidden"
+                  style={{
+                    aspectRatio: `${globalSettings.width}/${globalSettings.height}`,
+                    maxWidth: '100%',
+                    maxHeight: '100%',
+                    width: 'auto',
+                    height: 'auto'
                   }}
-                  className="w-full bg-gray-800 border border-gray-700 rounded p-2 text-xs text-gray-200 focus:border-blue-500 outline-none resize-none transition"
-                  placeholder="支持多行文字..."
-                />
-              </div>
-
-              {/* English Title */}
-              <div className="relative">
-                <label className="block text-xs text-gray-400 mb-1 flex justify-between items-center">
-                  <span>
-                    {globalSettings.secondaryLang === 'none' ? '副标题 (可选)' : LANGUAGES.find(l => l.code === globalSettings.secondaryLang)?.nativeName} (Secondary)
-                  </span>
-                  <button
-                    onClick={async () => {
-                      const trans = await translateText(activeScene.titleCN, globalSettings.secondaryLang);
-                      updateScene(activeScene.id, { titleEN: trans });
-                    }}
-                    disabled={!ollamaConfig.isConnected || globalSettings.secondaryLang === 'none'}
-                    className={`text-[10px] flex items-center gap-1 px-1.5 py-0.5 rounded transition ${ollamaConfig.isConnected && globalSettings.secondaryLang !== 'none' ? 'bg-blue-600 text-white hover:bg-blue-500' : 'bg-gray-700 text-gray-500 cursor-not-allowed'}`}
-                  >
-                    <RefreshCw className="w-3 h-3" /> 重新翻译
-                  </button>
-                </label>
-                <textarea
-                  rows={2}
-                  value={activeScene.titleEN}
-                  onChange={(e) => updateScene(activeScene.id, { titleEN: e.target.value })}
-                  className="w-full bg-gray-800 border border-gray-700 rounded p-2 text-xs text-gray-200 focus:border-blue-500 outline-none resize-none transition"
-                  placeholder="Supports multiple lines..."
-                />
-              </div>
-
-              {/* 中文文字样式 */}
-              <div className="pt-4 border-t border-gray-800">
-                <h4 className="text-[10px] uppercase text-blue-400 font-semibold mb-3">
-                  {LANGUAGES.find(l => l.code === globalSettings.primaryLang)?.nativeName || '主标题'} 样式
-                </h4>
-                <div className="space-y-3">
-                  {/* Font Selection */}
-                  <div>
-                    <div className="text-[10px] text-gray-400 mb-1">字体</div>
-                    <select
-                      value={globalSettings.fontCN}
-                      onChange={(e) => setGlobalSettings(s => ({ ...s, fontCN: e.target.value }))}
-                      className="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1 text-xs text-gray-200"
-                    >
-                      {FONTS_CN.map(f => <option key={f.id} value={f.value}>{f.name}</option>)}
-                    </select>
+                >
+                  <canvas ref={canvasRef} className="w-full h-full object-contain bg-gray-800 block" />
+                  {/* Overlay Info */}
+                  <div className="absolute top-2 right-2 px-2 py-0.5 bg-black/60 backdrop-blur rounded text-[9px] text-gray-400 pointer-events-none">
+                    {globalSettings.width} × {globalSettings.height}
                   </div>
-                  {/* Color Selection */}
-                  <div>
-                    <div className="text-[10px] text-gray-400 mb-1">颜色</div>
-                    <div className="flex gap-1.5 flex-wrap">
-                      {TEXT_COLORS.map(c => (
-                        <button
-                          key={c.id}
-                          onClick={() => setGlobalSettings(s => ({ ...s, textColorCN: c.id }))}
-                          className={`w-6 h-6 rounded-md border-2 transition ${globalSettings.textColorCN === c.id ? 'border-blue-500 scale-110' : 'border-gray-700 hover:border-gray-500'}`}
-                          style={{ background: c.gradient ? `linear-gradient(135deg, ${c.gradient[0]}, ${c.gradient[1]})` : c.value }}
-                          title={c.name}
-                        />
+                </div>
+              </div>
+            </div>
+
+            {/* RIGHT SIDEBAR - Edit Active Scene */}
+            <div className="w-72 bg-gray-900 border-l border-gray-800 flex flex-col flex-shrink-0 shadow-xl z-20 no-scrollbar overflow-y-auto">
+              <div className="p-5 border-b border-gray-800">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-sm font-bold text-gray-100">参数调整</h2>
+                  <button onClick={applySettingsToAll} title="将当前的位置/大小设置应用到所有场景"
+                    className="text-xs flex items-center gap-1 text-blue-400 hover:text-blue-300 bg-blue-900/20 hover:bg-blue-900/40 px-2 py-1 rounded transition border border-blue-900/50">
+                    <Copy className="w-3 h-3" /> 应用到所有
+                  </button>
+                </div>
+
+                <div className="space-y-4">
+                  {/* Saved Configs */}
+                  <div className="bg-gray-800/50 rounded-lg p-3 border border-gray-700/50 mb-4">
+                    <label className="text-[10px] uppercase text-gray-500 font-semibold mb-2 block flex items-center gap-2">
+                      <Archive className="w-3 h-3" /> 布局预设
+                    </label>
+                    <div className="flex gap-1 mb-2">
+                      <input
+                        type="text"
+                        value={configName}
+                        onChange={(e) => setConfigName(e.target.value)}
+                        placeholder="新预设名称..."
+                        className="flex-1 min-w-0 bg-gray-900 text-xs border border-gray-700 rounded px-2 py-1"
+                      />
+                      <button onClick={saveConfig} className="p-1 bg-blue-900/50 text-blue-300 rounded border border-blue-800 hover:bg-blue-800"><Save className="w-3 h-3" /></button>
+                    </div>
+                    <div className="max-h-24 overflow-y-auto space-y-1">
+                      {savedConfigs.map((config, idx) => (
+                        <div key={idx} className="flex items-center justify-between text-xs bg-gray-900/50 p-1 rounded group">
+                          <span onClick={() => loadConfig(config)} className="text-gray-300 cursor-pointer hover:text-white flex-1 truncate">{config.name}</span>
+                          <button onClick={() => deleteConfig(idx)} className="text-red-500 opacity-0 group-hover:opacity-100"><Trash2 className="w-3 h-3" /></button>
+                        </div>
                       ))}
                     </div>
                   </div>
-                  {/* Size */}
-                  <div className="group">
-                    <div className="flex justify-between text-[10px] text-gray-400 mb-1">字体大小 <span>{activeScene.settings.textSizeCN}</span></div>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="range" min="40" max="300" step="5"
-                        value={activeScene.settings.textSizeCN}
-                        onChange={(e) => updateSceneSettings('textSizeCN', parseInt(e.target.value))}
-                        className="flex-1 h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
-                      />
-                      <button onClick={() => resetSceneSetting('textSizeCN')} className="p-1 text-gray-500 hover:text-blue-400 opacity-0 group-hover:opacity-100 transition"><RotateCcw className="w-3 h-3" /></button>
-                    </div>
-                  </div>
-                  {/* Y Position */}
-                  <div className="group">
-                    <div className="flex justify-between text-[10px] text-gray-400 mb-1">垂直位置 (Y) <span>{activeScene.settings.textYCN}</span></div>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="range" min="50" max="1000" step="10"
-                        value={activeScene.settings.textYCN}
-                        onChange={(e) => updateSceneSettings('textYCN', parseInt(e.target.value))}
-                        className="flex-1 h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
-                      />
-                      <button onClick={() => resetSceneSetting('textYCN')} className="p-1 text-gray-500 hover:text-blue-400 opacity-0 group-hover:opacity-100 transition"><RotateCcw className="w-3 h-3" /></button>
+
+                  {/* Screenshot Controls */}
+                  <div className="bg-gray-800/50 rounded-lg p-3 border border-gray-700/50">
+                    <label className="text-[10px] uppercase text-gray-500 font-semibold mb-2 block flex items-center gap-2">
+                      <Settings className="w-3 h-3" /> 截图布局
+                    </label>
+                    <div className="space-y-3">
+                      <div className="group">
+                        <div className="flex justify-between text-[10px] text-gray-400 mb-1">
+                          缩放 <span>{Math.round(activeScene.settings.screenshotScale * 100)}%</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <input type="range" min="0.3" max="3.0" step="0.01" value={activeScene.settings.screenshotScale}
+                            onChange={(e) => updateSceneSettings('screenshotScale', parseFloat(e.target.value))}
+                            className="flex-1 h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                          />
+                          <button onClick={() => resetSceneSetting('screenshotScale')} className="p-1 text-gray-500 hover:text-blue-400 opacity-0 group-hover:opacity-100 transition"><RotateCcw className="w-3 h-3" /></button>
+                        </div>
+                      </div>
+                      <div className="group">
+                        <div className="flex justify-between text-[10px] text-gray-400 mb-1">垂直位置 (Y) <span>{activeScene.settings.screenshotY}</span></div>
+                        <div className="flex items-center gap-2">
+                          <input type="range" min="0" max="1500" step="10" value={activeScene.settings.screenshotY} onChange={(e) =>
+                            updateSceneSettings('screenshotY', parseInt(e.target.value))}
+                            className="flex-1 h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                          />
+                          <button onClick={() => resetSceneSetting('screenshotY')} className="p-1 text-gray-500 hover:text-blue-400 opacity-0 group-hover:opacity-100 transition"><RotateCcw className="w-3 h-3" /></button>
+                        </div>
+                      </div>
+                      <div className="group">
+                        <div className="flex justify-between text-[10px] text-gray-400 mb-1">水平位置 (X) <span>{activeScene.settings.screenshotX}</span></div>
+                        <div className="flex items-center gap-2">
+                          <input type="range" min="-1000" max="1000" step="10" value={activeScene.settings.screenshotX}
+                            onChange={(e) => updateSceneSettings('screenshotX', parseInt(e.target.value))}
+                            className="flex-1 h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                          />
+                          <button onClick={() => resetSceneSetting('screenshotX')} className="p-1 text-gray-500 hover:text-blue-400 opacity-0 group-hover:opacity-100 transition"><RotateCcw className="w-3 h-3" /></button>
+                        </div>
+                      </div>
+                      {/* Screenshot Shadow Toggle */}
+                      <div className="pt-2 mt-2 border-t border-gray-700/50">
+                        <label className="flex items-center gap-2 text-xs text-gray-400 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={activeScene.settings.screenshotShadow !== false}
+                            onChange={(e) => updateSceneSettings('screenshotShadow', e.target.checked)}
+                            className="rounded bg-gray-800 border-gray-700 text-blue-500"
+                          />
+                          截图阴影
+                        </label>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
 
+              {/* Text Settings */}
+              <div className="p-5">
+                <h3 className="text-[10px] uppercase text-gray-500 font-semibold mb-4 flex items-center gap-2">
+                  <Type className="w-3 h-3" /> 文案 & 翻译
+                </h3>
 
-              {/* 英文文字样式 */}
-              <div className="pt-4 border-t border-gray-800">
-                <h4 className="text-[10px] uppercase text-blue-400 font-semibold mb-3">
-                  {globalSettings.secondaryLang === 'none' ? '副标题' : LANGUAGES.find(l => l.code === globalSettings.secondaryLang)?.nativeName} 样式
-                </h4>
-                <div className="space-y-3">
-                  {/* Font Selection */}
-                  <div>
-                    <div className="text-[10px] text-gray-400 mb-1">Font</div>
-                    <select
-                      value={globalSettings.fontEN}
-                      onChange={(e) => setGlobalSettings(s => ({ ...s, fontEN: e.target.value }))}
-                      className="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1 text-xs text-gray-200"
-                    >
-                      {FONTS_EN.map(f => <option key={f.id} value={f.value}>{f.name}</option>)}
-                    </select>
-                  </div>
-                  {/* Uppercase Option */}
-                  <div>
-                    <label className="flex items-center gap-2 text-xs text-gray-400 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={globalSettings.textUppercase}
-                        onChange={(e) => setGlobalSettings(s => ({ ...s, textUppercase: e.target.checked }))}
-                        className="rounded bg-gray-800 border-gray-700 text-blue-500"
-                      />
-                      全部大写 (UPPERCASE)
-                    </label>
-                  </div>
-                  {/* Color Selection */}
-                  <div>
-                    <div className="text-[10px] text-gray-400 mb-1">Color</div>
-                    <div className="flex gap-1.5 flex-wrap">
-                      {TEXT_COLORS.map(c => (
+                <div className="space-y-4">
+                  {/* Global Text Controls */}
+                  <div className="bg-gray-800/50 rounded-lg p-3 border border-gray-700/50">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-[10px] uppercase text-gray-500 font-semibold">对齐方式</span>
+                      <div className="flex bg-gray-900 rounded-md p-0.5">
                         <button
-                          key={c.id}
-                          onClick={() => setGlobalSettings(s => ({ ...s, textColorEN: c.id }))}
-                          className={`w-6 h-6 rounded-md border-2 transition ${globalSettings.textColorEN === c.id ? 'border-blue-500 scale-110' : 'border-gray-700 hover:border-gray-500'}`}
-                          style={{ background: c.gradient ? `linear-gradient(135deg, ${c.gradient[0]}, ${c.gradient[1]})` : c.value }}
-                          title={c.name}
+                          onClick={() => setGlobalSettings(s => ({ ...s, textAlign: 'left' }))}
+                          className={`p-1.5 rounded transition ${globalSettings.textAlign === 'left' ? 'bg-gray-700 text-white' : 'text-gray-500 hover:text-gray-300'}`}
+                        >
+                          <AlignLeft className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => setGlobalSettings(s => ({ ...s, textAlign: 'center' }))}
+                          className={`p-1.5 rounded transition ${globalSettings.textAlign === 'center' ? 'bg-gray-700 text-white' : 'text-gray-500 hover:text-gray-300'}`}
+                        >
+                          <AlignCenter className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => setGlobalSettings(s => ({ ...s, textAlign: 'right' }))}
+                          className={`p-1.5 rounded transition ${globalSettings.textAlign === 'right' ? 'bg-gray-700 text-white' : 'text-gray-500 hover:text-gray-300'}`}
+                        >
+                          <AlignRight className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                    {/* Text Effects */}
+                    <div className="flex items-center gap-4 mt-3 pt-3 border-t border-gray-700/50">
+                      <label className="flex items-center gap-2 text-xs text-gray-400 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={globalSettings.textShadow}
+                          onChange={(e) => setGlobalSettings(s => ({ ...s, textShadow: e.target.checked }))}
+                          className="rounded bg-gray-800 border-gray-700 text-blue-500"
                         />
-                      ))}
+                        阴影
+                      </label>
+                      <label className="flex items-center gap-2 text-xs text-gray-400 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={globalSettings.textStroke}
+                          onChange={(e) => setGlobalSettings(s => ({ ...s, textStroke: e.target.checked }))}
+                          className="rounded bg-gray-800 border-gray-700 text-blue-500"
+                        />
+                        描边
+                      </label>
+                    </div>
+                    {/* Stroke Color - only show when stroke is enabled */}
+                    {globalSettings.textStroke && (
+                      <div className="mt-2">
+                        <div className="text-[10px] text-gray-400 mb-1">描边颜色</div>
+                        <div className="flex gap-1.5">
+                          {STROKE_COLORS.map(c => (
+                            <button
+                              key={c.id}
+                              onClick={() => setGlobalSettings(s => ({ ...s, strokeColor: c.id }))}
+                              className={`w-5 h-5 rounded-md border-2 transition ${globalSettings.strokeColor === c.id ? 'border-blue-500 scale-110' : 'border-gray-600 hover:border-gray-500'}`}
+                              style={{ background: c.value }}
+                              title={c.name}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {/* Text Fade Control */}
+                    <div className="mt-3 pt-3 border-t border-gray-700/50 space-y-2">
+                      <div className="text-[10px] text-gray-500 font-semibold">文字渐变控制</div>
+                      <div>
+                        <div className="flex justify-between text-[10px] text-gray-400 mb-1">渐变位置 <span>{Math.round(globalSettings.fadeStart * 100)}%</span></div>
+                        <input
+                          type="range" min="0.3" max="1" step="0.05"
+                          value={globalSettings.fadeStart}
+                          onChange={(e) => setGlobalSettings(s => ({ ...s, fadeStart: parseFloat(e.target.value) }))}
+                          className="w-full h-1 bg-gray-700 rounded-lg accent-blue-500"
+                        />
+                      </div>
+                      <div>
+                        <div className="flex justify-between text-[10px] text-gray-400 mb-1">底部透明度 <span>{Math.round(globalSettings.fadeOpacity * 100)}%</span></div>
+                        <input
+                          type="range" min="0" max="1" step="0.05"
+                          value={globalSettings.fadeOpacity}
+                          onChange={(e) => setGlobalSettings(s => ({ ...s, fadeOpacity: parseFloat(e.target.value) }))}
+                          className="w-full h-1 bg-gray-700 rounded-lg accent-blue-500"
+                        />
+                      </div>
                     </div>
                   </div>
-                  {/* Size */}
-                  <div className="group">
-                    <div className="flex justify-between text-[10px] text-gray-400 mb-1">字体大小 <span>{activeScene.settings.textSizeEN}</span></div>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="range" min="40" max="300" step="5"
-                        value={activeScene.settings.textSizeEN}
-                        onChange={(e) => updateSceneSettings('textSizeEN', parseInt(e.target.value))}
-                        className="flex-1 h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
-                      />
-                      <button onClick={() => resetSceneSetting('textSizeEN')} className="p-1 text-gray-500 hover:text-blue-400 opacity-0 group-hover:opacity-100 transition"><RotateCcw className="w-3 h-3" /></button>
+
+                  {/* Chinese Title */}
+                  <div>
+                    <label className="block text-xs text-gray-400 mb-1">
+                      {LANGUAGES.find(l => l.code === globalSettings.primaryLang)?.nativeName || '主标题'} (Primary)
+                    </label>
+                    <textarea
+                      rows={2}
+                      value={activeScene.titleCN}
+                      onChange={(e) => {
+                        const newTitle = e.target.value;
+                        // 同步更新 name（去掉换行符显示在列表）
+                        updateScene(activeScene.id, { titleCN: newTitle, name: newTitle.replace(/\n/g, ' ') });
+                      }}
+                      className="w-full bg-gray-800 border border-gray-700 rounded p-2 text-xs text-gray-200 focus:border-blue-500 outline-none resize-none transition"
+                      placeholder="支持多行文字..."
+                    />
+                  </div>
+
+                  {/* English Title */}
+                  <div className="relative">
+                    <label className="block text-xs text-gray-400 mb-1 flex justify-between items-center">
+                      <span>
+                        {globalSettings.secondaryLang === 'none' ? '副标题 (可选)' : LANGUAGES.find(l => l.code === globalSettings.secondaryLang)?.nativeName} (Secondary)
+                      </span>
+                      <button
+                        onClick={async () => {
+                          const trans = await translateText(activeScene.titleCN, globalSettings.secondaryLang);
+                          updateScene(activeScene.id, { titleEN: trans });
+                        }}
+                        disabled={!ollamaConfig.isConnected || globalSettings.secondaryLang === 'none'}
+                        className={`text-[10px] flex items-center gap-1 px-1.5 py-0.5 rounded transition ${ollamaConfig.isConnected && globalSettings.secondaryLang !== 'none' ? 'bg-blue-600 text-white hover:bg-blue-500' : 'bg-gray-700 text-gray-500 cursor-not-allowed'}`}
+                      >
+                        <RefreshCw className="w-3 h-3" /> 重新翻译
+                      </button>
+                    </label>
+                    <textarea
+                      rows={2}
+                      value={activeScene.titleEN}
+                      onChange={(e) => updateScene(activeScene.id, { titleEN: e.target.value })}
+                      className="w-full bg-gray-800 border border-gray-700 rounded p-2 text-xs text-gray-200 focus:border-blue-500 outline-none resize-none transition"
+                      placeholder="Supports multiple lines..."
+                    />
+                  </div>
+
+                  {/* 中文文字样式 */}
+                  <div className="pt-4 border-t border-gray-800">
+                    <h4 className="text-[10px] uppercase text-blue-400 font-semibold mb-3">
+                      {LANGUAGES.find(l => l.code === globalSettings.primaryLang)?.nativeName || '主标题'} 样式
+                    </h4>
+                    <div className="space-y-3">
+                      {/* Font Selection */}
+                      <div>
+                        <div className="text-[10px] text-gray-400 mb-1">字体</div>
+                        <select
+                          value={globalSettings.fontCN}
+                          onChange={(e) => setGlobalSettings(s => ({ ...s, fontCN: e.target.value }))}
+                          className="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1 text-xs text-gray-200"
+                        >
+                          {FONTS_CN.map(f => <option key={f.id} value={f.value}>{f.name}</option>)}
+                        </select>
+                      </div>
+                      {/* Color Selection */}
+                      <div>
+                        <div className="text-[10px] text-gray-400 mb-1">颜色</div>
+                        <div className="flex gap-1.5 flex-wrap">
+                          {TEXT_COLORS.map(c => (
+                            <button
+                              key={c.id}
+                              onClick={() => setGlobalSettings(s => ({ ...s, textColorCN: c.id }))}
+                              className={`w-6 h-6 rounded-md border-2 transition ${globalSettings.textColorCN === c.id ? 'border-blue-500 scale-110' : 'border-gray-700 hover:border-gray-500'}`}
+                              style={{ background: c.gradient ? `linear-gradient(135deg, ${c.gradient[0]}, ${c.gradient[1]})` : c.value }}
+                              title={c.name}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                      {/* Size */}
+                      <div className="group">
+                        <div className="flex justify-between text-[10px] text-gray-400 mb-1">字体大小 <span>{activeScene.settings.textSizeCN}</span></div>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="range" min="40" max="300" step="5"
+                            value={activeScene.settings.textSizeCN}
+                            onChange={(e) => updateSceneSettings('textSizeCN', parseInt(e.target.value))}
+                            className="flex-1 h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                          />
+                          <button onClick={() => resetSceneSetting('textSizeCN')} className="p-1 text-gray-500 hover:text-blue-400 opacity-0 group-hover:opacity-100 transition"><RotateCcw className="w-3 h-3" /></button>
+                        </div>
+                      </div>
+                      {/* Y Position */}
+                      <div className="group">
+                        <div className="flex justify-between text-[10px] text-gray-400 mb-1">垂直位置 (Y) <span>{activeScene.settings.textYCN}</span></div>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="range" min="50" max="1000" step="10"
+                            value={activeScene.settings.textYCN}
+                            onChange={(e) => updateSceneSettings('textYCN', parseInt(e.target.value))}
+                            className="flex-1 h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                          />
+                          <button onClick={() => resetSceneSetting('textYCN')} className="p-1 text-gray-500 hover:text-blue-400 opacity-0 group-hover:opacity-100 transition"><RotateCcw className="w-3 h-3" /></button>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                  {/* Y Position */}
-                  <div className="group">
-                    <div className="flex justify-between text-[10px] text-gray-400 mb-1">垂直位置 (Y) <span>{activeScene.settings.textYEN}</span></div>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="range" min="50" max="1000" step="10"
-                        value={activeScene.settings.textYEN}
-                        onChange={(e) => updateSceneSettings('textYEN', parseInt(e.target.value))}
-                        className="flex-1 h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
-                      />
-                      <button onClick={() => resetSceneSetting('textYEN')} className="p-1 text-gray-500 hover:text-blue-400 opacity-0 group-hover:opacity-100 transition"><RotateCcw className="w-3 h-3" /></button>
+
+
+                  {/* 英文文字样式 */}
+                  <div className="pt-4 border-t border-gray-800">
+                    <h4 className="text-[10px] uppercase text-blue-400 font-semibold mb-3">
+                      {globalSettings.secondaryLang === 'none' ? '副标题' : LANGUAGES.find(l => l.code === globalSettings.secondaryLang)?.nativeName} 样式
+                    </h4>
+                    <div className="space-y-3">
+                      {/* Font Selection */}
+                      <div>
+                        <div className="text-[10px] text-gray-400 mb-1">Font</div>
+                        <select
+                          value={globalSettings.fontEN}
+                          onChange={(e) => setGlobalSettings(s => ({ ...s, fontEN: e.target.value }))}
+                          className="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1 text-xs text-gray-200"
+                        >
+                          {FONTS_EN.map(f => <option key={f.id} value={f.value}>{f.name}</option>)}
+                        </select>
+                      </div>
+                      {/* Uppercase Option */}
+                      <div>
+                        <label className="flex items-center gap-2 text-xs text-gray-400 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={globalSettings.textUppercase}
+                            onChange={(e) => setGlobalSettings(s => ({ ...s, textUppercase: e.target.checked }))}
+                            className="rounded bg-gray-800 border-gray-700 text-blue-500"
+                          />
+                          全部大写 (UPPERCASE)
+                        </label>
+                      </div>
+                      {/* Color Selection */}
+                      <div>
+                        <div className="text-[10px] text-gray-400 mb-1">Color</div>
+                        <div className="flex gap-1.5 flex-wrap">
+                          {TEXT_COLORS.map(c => (
+                            <button
+                              key={c.id}
+                              onClick={() => setGlobalSettings(s => ({ ...s, textColorEN: c.id }))}
+                              className={`w-6 h-6 rounded-md border-2 transition ${globalSettings.textColorEN === c.id ? 'border-blue-500 scale-110' : 'border-gray-700 hover:border-gray-500'}`}
+                              style={{ background: c.gradient ? `linear-gradient(135deg, ${c.gradient[0]}, ${c.gradient[1]})` : c.value }}
+                              title={c.name}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                      {/* Size */}
+                      <div className="group">
+                        <div className="flex justify-between text-[10px] text-gray-400 mb-1">字体大小 <span>{activeScene.settings.textSizeEN}</span></div>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="range" min="40" max="300" step="5"
+                            value={activeScene.settings.textSizeEN}
+                            onChange={(e) => updateSceneSettings('textSizeEN', parseInt(e.target.value))}
+                            className="flex-1 h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                          />
+                          <button onClick={() => resetSceneSetting('textSizeEN')} className="p-1 text-gray-500 hover:text-blue-400 opacity-0 group-hover:opacity-100 transition"><RotateCcw className="w-3 h-3" /></button>
+                        </div>
+                      </div>
+                      {/* Y Position */}
+                      <div className="group">
+                        <div className="flex justify-between text-[10px] text-gray-400 mb-1">垂直位置 (Y) <span>{activeScene.settings.textYEN}</span></div>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="range" min="50" max="1000" step="10"
+                            value={activeScene.settings.textYEN}
+                            onChange={(e) => updateSceneSettings('textYEN', parseInt(e.target.value))}
+                            className="flex-1 h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                          />
+                          <button onClick={() => resetSceneSetting('textYEN')} className="p-1 text-gray-500 hover:text-blue-400 opacity-0 group-hover:opacity-100 transition"><RotateCcw className="w-3 h-3" /></button>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-      </div> {/* End of MAIN CONTENT AREA */}
+        )}
     </div>
   );
 };
