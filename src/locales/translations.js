@@ -154,6 +154,7 @@ export const translations = {
             exportFailed: '导出失败: ',
             confirmApplyAll: '确定要将当前截图大小、位置和文字布局应用到所有场景吗？',
             confirmDeleteScenes: '确定要删除选中的 {n} 个场景吗？',
+            confirmDeleteBackground: '确定要删除这张背景图片吗？',
         },
 
         // 图标工厂
@@ -547,6 +548,7 @@ export const translations = {
             exportFailed: 'Export failed: ',
             confirmApplyAll: 'Apply current screenshot size, position, and text layout to all scenes?',
             confirmDeleteScenes: 'Delete {n} selected scenes?',
+            confirmDeleteBackground: 'Are you sure you want to delete this background image?',
         },
 
         iconFabric: {
@@ -1276,6 +1278,7 @@ export const translations = {
             exportFailed: 'エクスポート失敗: ',
             confirmApplyAll: '現在のスクリーンショットサイズ、位置、テキストレイアウトをすべてのシーンに適用しますか？',
             confirmDeleteScenes: 'これら {n} つのシーンを削除しますか？',
+            confirmDeleteBackground: 'この背景画像を削除してもよろしいですか？',
         },
 
         iconFabric: {
@@ -1626,6 +1629,7 @@ export const translations = {
             exportFailed: '내보내기 실패: ',
             confirmApplyAll: '현재 스크린샷 크기, 위치 및 텍스트 레이아웃을 모든 장면에 적용하시겠습니까?',
             confirmDeleteScenes: '이 {n}개의 장면을 삭제하시겠습니까?',
+            confirmDeleteBackground: '이 배경 이미지를 삭제하시겠습니까?',
         },
 
         iconFabric: {
@@ -1976,6 +1980,7 @@ export const translations = {
             exportFailed: 'Échec de l\'exportation : ',
             confirmApplyAll: 'Appliquer la taille, la position et la disposition du texte actuelles à toutes les scènes ?',
             confirmDeleteScenes: 'Supprimer ces {n} scènes ?',
+            confirmDeleteBackground: 'Voulez-vous vraiment supprimer cette image de fond ?',
         },
 
         iconFabric: {
@@ -2326,6 +2331,7 @@ export const translations = {
             exportFailed: 'Export fehlgeschlagen: ',
             confirmApplyAll: 'Aktuelle Screenshot-Größe, Position und Textlayout auf alle Szenen anwenden?',
             confirmDeleteScenes: 'Diese {n} Szenen löschen?',
+            confirmDeleteBackground: 'Möchten Sie dieses Hintergrundbild wirklich löschen?',
         },
 
         iconFabric: {
@@ -2676,6 +2682,7 @@ export const translations = {
             exportFailed: 'Error de exportación: ',
             confirmApplyAll: '¿Aplicar tamaño, posición y diseño de texto actuales a todas las escenas?',
             confirmDeleteScenes: '¿Eliminar las {n} escenas seleccionadas?',
+            confirmDeleteBackground: '¿Está seguro de que desea eliminar esta imagen de fondo?',
         },
         iconFabric: {
             resourceLayers: 'Capas de recursos',
@@ -3025,6 +3032,7 @@ export const translations = {
             exportFailed: 'Falha na exportação: ',
             confirmApplyAll: 'Aplicar tamanho, posição e layout de texto atuais a todas as cenas?',
             confirmDeleteScenes: 'Excluir as {n} cenas selecionadas?',
+            confirmDeleteBackground: 'Tem certeza de que deseja excluir esta imagem de fundo?',
         },
         iconFabric: {
             resourceLayers: 'Camadas de Recursos',
@@ -3374,6 +3382,7 @@ export const translations = {
             exportFailed: 'Esportazione fallita: ',
             confirmApplyAll: 'Applicare dimensioni, posizione e layout testo attuali a tutte le scene?',
             confirmDeleteScenes: 'Eliminare le {n} scene selezionate?',
+            confirmDeleteBackground: 'Sei sicuro di voler eliminare questa immagine di sfondo?',
         },
         iconFabric: {
             resourceLayers: 'Livelli Risorse',
@@ -3723,6 +3732,7 @@ export const translations = {
             exportFailed: 'Ошибка экспорта: ',
             confirmApplyAll: 'Применить текущий размер, позицию и макет текста ко всем сценам?',
             confirmDeleteScenes: 'Удалить выбранные сцены ({n})?',
+            confirmDeleteBackground: 'Вы уверены, что хотите удалить это фоновое изображение?',
         },
         iconFabric: {
             resourceLayers: 'Слои ресурсов',
@@ -4072,6 +4082,7 @@ export const translations = {
             exportFailed: 'فشل التصدير: ',
             confirmApplyAll: 'تطبيق الحجم والموضع وتخطيط النص الحالي على جميع المشاهد؟',
             confirmDeleteScenes: 'حذف {n} مشاهد محددة؟',
+            confirmDeleteBackground: 'هل أنت متأكد أنك تريد حذف صورة الخلفية هذه؟',
         },
         iconFabric: {
             resourceLayers: 'طبقات الموارد',

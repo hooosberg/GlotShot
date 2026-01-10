@@ -6,6 +6,7 @@ import IconFabric from './components/IconFabric/IconFabric';
 import SettingsModal from './components/SettingsModal';
 import DesignTips from './components/DesignTips';
 import { useTranslation, I18nProvider, detectSystemLanguage } from './locales/i18n';
+import ConfirmDialog from './components/ConfirmDialog';
 import { translations } from './locales/translations';
 
 // Default constants
@@ -526,6 +527,17 @@ const App = () => {
   // Modals
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [settingsInitialTab, setSettingsInitialTab] = useState('start');
+
+  // Custom Confirm Dialog State
+  const [confirmDialog, setConfirmDialog] = useState({
+    isOpen: false,
+    title: '',
+    message: '',
+    confirmText: '',
+    cancelText: '',
+    onConfirm: () => { },
+    type: 'danger'
+  });
 
   // Refs for click outside
   const platformDropdownRef = useRef(null);
@@ -1116,6 +1128,35 @@ const App = () => {
   };
 
 
+
+  const deleteUploadedBackground = (index, e) => {
+    e.stopPropagation();
+
+    setConfirmDialog({
+      isOpen: true,
+      title: t('common.delete'),
+      message: t('alerts.confirmDeleteBackground'),
+      confirmText: t('common.delete'),
+      cancelText: t('common.cancel'),
+      type: 'danger',
+      onConfirm: () => {
+        const bgToDelete = uploadedBackgrounds[index];
+        const updated = uploadedBackgrounds.filter((_, i) => i !== index);
+        setUploadedBackgrounds(updated);
+
+        // If the deleted background was currently selected, reset to default
+        if (globalSettings.backgroundType === 'upload' && globalSettings.backgroundUpload === bgToDelete.data) {
+          setGlobalSettings(prev => ({
+            ...prev,
+            backgroundType: 'preset',
+            backgroundValue: PRESETS[0].value,
+            backgroundUpload: null
+          }));
+        }
+      }
+    });
+  };
+
   const updateScene = (id, updates) => {
     setScenes(prev => prev.map(s => s.id === id ? { ...s, ...updates } : s));
   };
@@ -1543,6 +1584,17 @@ const App = () => {
         setGlassEffect={setGlassEffect}
       />
 
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        onClose={() => setConfirmDialog(prev => ({ ...prev, isOpen: false }))}
+        onConfirm={confirmDialog.onConfirm}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        confirmText={confirmDialog.confirmText}
+        cancelText={confirmDialog.cancelText}
+        type={confirmDialog.type}
+      />
+
       {/* MAIN CONTENT AREA - Conditional rendering based on mode */}
       {
         appMode === 'icon' ? (
@@ -1681,14 +1733,24 @@ const App = () => {
                         <p className="text-[10px] text-gray-500 mb-2">{t('sidebar.linkedBackgrounds')}</p>
                         <div className="grid grid-cols-5 gap-2">
                           {uploadedBackgrounds.slice(0, 10).map((bg, idx) => (
-                            <button
-                              key={idx}
-                              onClick={() => setGlobalSettings(s => ({ ...s, backgroundType: 'upload', backgroundUpload: bg.data }))}
-                              className={`w-full h-8 rounded-md transition-all overflow-hidden ${globalSettings.backgroundUpload === bg.data && globalSettings.backgroundType === 'upload' ? 'ring-2 ring-blue-500 scale-110 z-10' : 'opacity-70 hover:opacity-100'}`}
-                              title={bg.name}
-                            >
-                              <img src={bg.data} alt={bg.name} className="w-full h-full object-cover" />
-                            </button>
+                            <div key={idx} className="relative group w-full h-8 rounded-md overflow-hidden">
+                              <button
+                                onClick={() => setGlobalSettings(s => ({ ...s, backgroundType: 'upload', backgroundUpload: bg.data }))}
+                                className={`w-full h-full transition-all ${globalSettings.backgroundUpload === bg.data && globalSettings.backgroundType === 'upload' ? 'ring-2 ring-blue-500 scale-110 z-10' : 'opacity-70 group-hover:opacity-100'}`}
+                                title={bg.name}
+                              >
+                                <img src={bg.data} alt={bg.name} className="w-full h-full object-cover" />
+                              </button>
+
+                              {/* Delete Button Overlay */}
+                              <div
+                                onClick={(e) => deleteUploadedBackground(idx, e)}
+                                className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity cursor-pointer z-20"
+                                title={t('common.delete')}
+                              >
+                                <Trash2 className="w-4 h-4 text-white hover:text-red-400 transition-colors" />
+                              </div>
+                            </div>
                           ))}
                           {uploadedBackgrounds.length > 10 && (
                             <div className="w-full h-8 rounded-md bg-gray-800 flex items-center justify-center text-[10px] text-gray-500">
