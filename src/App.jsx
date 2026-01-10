@@ -6,6 +6,7 @@ import IconFabric from './components/IconFabric/IconFabric';
 import SettingsModal from './components/SettingsModal';
 import DesignTips from './components/DesignTips';
 import { useTranslation, I18nProvider, detectSystemLanguage } from './locales/i18n';
+import { translations } from './locales/translations';
 
 // Default constants
 const DEFAULT_WIDTH = 2880;
@@ -303,6 +304,13 @@ const DEFAULT_SCENE_SETTINGS = {
 
 const App = () => {
   const { t, language, changeLanguage } = useTranslation();
+
+  // Update Electron menu language
+  useEffect(() => {
+    if (window.electron && translations[language] && translations[language].menu) {
+      window.electron.updateMenuLanguage(translations[language].menu);
+    }
+  }, [language]);
 
   // Translation mapping for preset names
   const PRESET_NAME_MAP = {
@@ -947,7 +955,7 @@ const App = () => {
   // Electron 直接选择图片文件（支持多选）
   const handleElectronBatchUpload = async () => {
     if (!window.electron) {
-      alert("文件选择功能仅在 Electron 应用中可用");
+      alert(t('alerts.electronOnly'));
       return;
     }
 
@@ -958,7 +966,7 @@ const App = () => {
     // 读取选中的文件
     const result = await window.electron.readFiles(filePaths);
     if (!result.success || result.images.length === 0) {
-      alert("无法读取选中的图片文件");
+      alert(t('alerts.readFilesError'));
       return;
     }
 
@@ -983,14 +991,14 @@ const App = () => {
     // 如果有重名文件，询问用户
     if (duplicates.length > 0) {
       const duplicateNames = duplicates.map(d => d.name).slice(0, 5).join('\n• ');
-      const moreCount = duplicates.length > 5 ? `\n...还有 ${duplicates.length - 5} 个` : '';
-      const confirmMsg = `以下 ${duplicates.length} 个截图已存在：\n• ${duplicateNames}${moreCount}\n\n是否覆盖这些截图？\n\n点击"确定"覆盖，点击"取消"跳过重复的`;
+      const moreCount = duplicates.length > 5 ? `\n... (+${duplicates.length - 5})` : '';
+      const confirmMsg = t('alerts.duplicateScreenshots', { n: duplicates.length, names: duplicateNames, more: moreCount });
 
       if (!window.confirm(confirmMsg)) {
         // 用户选择跳过重复的
         imagesToProcess = imagesToImport.filter(img => !existingNames.has(img.name));
         if (imagesToProcess.length === 0) {
-          alert('没有新的截图需要导入');
+          alert(t('alerts.noNewScreenshots'));
           return;
         }
       }
@@ -1074,7 +1082,7 @@ const App = () => {
   // 背景图片导入 - 直接选择文件（支持多选），支持重名覆盖
   const handleDirectoryBgUpload = async () => {
     if (!window.electron) {
-      alert("文件选择功能仅在 Electron 应用中可用");
+      alert(t('alerts.electronOnly'));
       return;
     }
 
@@ -1085,7 +1093,7 @@ const App = () => {
     // 读取选中的文件
     const result = await window.electron.readFiles(filePaths);
     if (!result.success || result.images.length === 0) {
-      alert("无法读取选中的图片文件");
+      alert(t('alerts.readFilesError'));
       return;
     }
 
@@ -1125,7 +1133,7 @@ const App = () => {
 
   // Apply current scene settings to ALL scenes
   const applySettingsToAll = () => {
-    if (!window.confirm("确定要将当前截图大小、位置和文字布局应用到所有场景吗？")) return;
+    if (!window.confirm(t('alerts.confirmApplyAll'))) return;
     const currentSettings = activeScene.settings;
     setScenes(prev => prev.map(s => ({
       ...s,
@@ -1158,7 +1166,7 @@ const App = () => {
   // 多选删除
   const deleteSelectedScenes = () => {
     if (selectedSceneIds.size === 0) return;
-    if (!window.confirm(`确定要删除选中的 ${selectedSceneIds.size} 个场景吗？`)) return;
+    if (!window.confirm(t('alerts.confirmDeleteSelected', { n: selectedSceneIds.size }))) return;
 
     // 如果全部选中，保留一个空场景 - 确保有完整的 settings
     if (selectedSceneIds.size >= scenes.filter(s => s.screenshot).length) {
@@ -1206,17 +1214,17 @@ const App = () => {
   };
 
   const saveConfig = () => {
-    if (!configName) return alert("请输入配置名称");
+    if (!configName) return alert(t('alerts.enterConfigName'));
     const newConfig = { name: configName, settings: activeScene.settings };
     const updated = [...savedConfigs, newConfig];
     setSavedConfigs(updated);
     localStorage.setItem('appstore_builder_configs', JSON.stringify(updated));
     setConfigName('');
-    alert("配置已保存");
+    alert(t('alerts.configSaved'));
   };
 
   const loadConfig = (config) => {
-    if (window.confirm(`加载配置 "${config.name}"？将覆盖当前场景设置`)) {
+    if (window.confirm(t('alerts.loadConfigConfirm', { name: config.name }))) {
       setScenes(prev => prev.map(s => s.id === activeSceneId ? {
         ...s,
         settings: { ...config.settings }
@@ -1240,7 +1248,7 @@ const App = () => {
     }
 
     // 1. Select Directory via Electron
-    if (!window.electron) return alert("Output directory selection is only available in Electron app.");
+    if (!window.electron) return alert(t('alerts.outputDirElectronOnly'));
 
     const basePath = await window.electron.selectDirectory();
     if (!basePath) return; // User cancelled
@@ -1254,7 +1262,7 @@ const App = () => {
       return tempCanvas.toDataURL('image/jpeg', 0.9);
     };
 
-    alert(`开始导出到: ${basePath}...`);
+    alert(t('alerts.exportStart', { path: basePath }));
 
     for (const scene of scenes) {
       if (!scene.screenshot) continue;
