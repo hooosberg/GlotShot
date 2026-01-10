@@ -1,5 +1,6 @@
 import { AlertCircle, Info, Lightbulb } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { useTranslation } from '../locales/i18n';
 
 /**
  * 设计说明组件
@@ -9,6 +10,7 @@ const DesignTips = ({ tips, mode, className = '' }) => {
     if (!tips?.length) return null;
 
     const [isExpanded, setIsExpanded] = useState(true);
+    const { t } = useTranslation();
 
     // 每次切换模式或提示内容变化时，重置为展开状态，并在4秒后收起
     useEffect(() => {
@@ -28,6 +30,13 @@ const DesignTips = ({ tips, mode, className = '' }) => {
     const iconColor = isScreenshotMode ? 'text-blue-400' : 'text-amber-400';
     const bulletColor = isScreenshotMode ? 'text-blue-500/60' : 'text-amber-500/60';
 
+    // 根据模式获取对应的标题文本
+    const getTipLabel = () => {
+        if (mode === 'poster') return t('designTips.designTips');
+        if (mode === 'screenshot') return t('designTips.screenshotRequirements');
+        return t('designTips.officialRequirements');
+    };
+
     return (
         <div
             className={`
@@ -45,7 +54,7 @@ const DesignTips = ({ tips, mode, className = '' }) => {
                     <Lightbulb className={`w-4 h-4 ${iconColor}`} />
                 )}
                 <span className={`text-xs font-medium ${iconColor} whitespace-nowrap`}>
-                    {mode === 'poster' ? '设计提示' : mode === 'screenshot' ? '截图要求' : '官方要求'}
+                    {getTipLabel()}
                 </span>
             </div>
 

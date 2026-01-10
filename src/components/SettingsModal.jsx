@@ -1,20 +1,16 @@
 import { useState, useEffect } from 'react';
-import { X, LayoutGrid, Monitor, Palette, Keyboard, Settings, Info, Image as ImageIcon, Layers, Github, ExternalLink } from 'lucide-react';
+import { X, LayoutGrid, Monitor, Palette, Keyboard, Settings, Info, Image as ImageIcon, Layers, Github, ExternalLink, Star } from 'lucide-react';
 import './SettingsModal.css';
-import { translations } from '../locales/translations';
+import { useTranslation, SUPPORTED_UI_LANGUAGES } from '../locales/i18n';
 
 const SettingsModal = ({ isOpen, onClose, initialTab = 'start', appMode, setAppMode, globalSettings, setGlobalSettings, theme, setTheme, glassEffect, setGlassEffect }) => {
     const [activeTab, setActiveTab] = useState(initialTab);
+    const { t, changeLanguage } = useTranslation();
 
-    // Determine language based on globalSettings.uiLanguage
-    const lang = globalSettings?.uiLanguage || 'zh-CN';
-    const t = (key) => {
-        const keys = key.split('.');
-        let value = translations[lang] || translations['zh-CN'];
-        for (const k of keys) {
-            value = value?.[k];
-        }
-        return value || key;
+    // 处理语言变更
+    const handleLanguageChange = (newLang) => {
+        setGlobalSettings(prev => ({ ...prev, uiLanguage: newLang }));
+        changeLanguage(newLang);
     };
 
     // Reset tab when opening
@@ -78,22 +74,22 @@ const SettingsModal = ({ isOpen, onClose, initialTab = 'start', appMode, setAppM
                                             <ImageIcon size={28} />
                                         </div>
                                         <div className="mode-card-title-group">
-                                            <div className="mode-card-title">商店海报设计</div>
-                                            <div className="mode-card-subtitle">Store Poster Design</div>
+                                            <div className="mode-card-title">{t('settings.modes.poster_title')}</div>
+                                            <div className="mode-card-subtitle">{t('settings.modes.poster_subtitle')}</div>
                                         </div>
                                     </div>
                                     <div className="mode-card-body">
                                         <p className="mode-card-desc">
-                                            专为 App Store 和 Google Play 打造的截图美化工具。
+                                            {t('settings.modes.poster_desc')}
                                         </p>
                                         <ul className="mode-features">
-                                            <li>✨ 智能手机外壳套用</li>
-                                            <li>🎨 渐变背景与文字排版</li>
-                                            <li>🌍 多语言批量导出</li>
+                                            <li>{t('settings.modes.poster_feature1')}</li>
+                                            <li>{t('settings.modes.poster_feature2')}</li>
+                                            <li>{t('settings.modes.poster_feature3')}</li>
                                         </ul>
                                     </div>
                                     <div className="mode-card-footer">
-                                        <span className="mode-cta">进入设计 &rarr;</span>
+                                        <span className="mode-cta">{t('settings.modes.poster_cta')}</span>
                                     </div>
                                 </div>
 
@@ -106,33 +102,33 @@ const SettingsModal = ({ isOpen, onClose, initialTab = 'start', appMode, setAppM
                                             <Layers size={28} />
                                         </div>
                                         <div className="mode-card-title-group">
-                                            <div className="mode-card-title">多平台图标工厂</div>
-                                            <div className="mode-card-subtitle">Multi-platform Icon Factory</div>
+                                            <div className="mode-card-title">{t('settings.modes.icon_title')}</div>
+                                            <div className="mode-card-subtitle">{t('settings.modes.icon_subtitle')}</div>
                                         </div>
                                     </div>
                                     <div className="mode-card-body">
                                         <p className="mode-card-desc">
-                                            一键生成所有主流平台所需的图标尺寸。
+                                            {t('settings.modes.icon_desc')}
                                         </p>
                                         <ul className="mode-features">
-                                            <li>📱 iOS / Android / Windows / Web</li>
-                                            <li>✂️ 自动裁切与圆角处理</li>
-                                            <li>🚀 快速批量导出</li>
+                                            <li>{t('settings.modes.icon_feature1')}</li>
+                                            <li>{t('settings.modes.icon_feature2')}</li>
+                                            <li>{t('settings.modes.icon_feature3')}</li>
                                         </ul>
                                     </div>
                                     <div className="mode-card-footer">
-                                        <span className="mode-cta">进入工厂 &rarr;</span>
+                                        <span className="mode-cta">{t('settings.modes.icon_cta')}</span>
                                     </div>
                                 </div>
                             </div>
 
                             <div className="settings-intro-section">
-                                <h3>关于 GlotShot</h3>
+                                <h3>{t('settings.intro.title')}</h3>
                                 <p>
-                                    GlotShot 是一个专注于移动应用上架素材设计的工具集。无论你是需要制作精美的应用商店预览图，还是需要生成适配各个平台的应用图标，GlotShot 都能帮助你高效完成。
+                                    {t('settings.intro.desc1')}
                                 </p>
                                 <p>
-                                    选择上方的一个模块开始你的工作。你可以在任何时候通过右上角的设置按钮切换回这里。
+                                    {t('settings.intro.desc2')}
                                 </p>
                             </div>
                         </div>
@@ -172,11 +168,15 @@ const SettingsModal = ({ isOpen, onClose, initialTab = 'start', appMode, setAppM
                                 <label className="form-label">{t('settings.general.language_title')}</label>
                                 <select
                                     className="form-select"
-                                    value={globalSettings.uiLanguage}
-                                    onChange={(e) => setGlobalSettings(prev => ({ ...prev, uiLanguage: e.target.value }))}
+                                    value={globalSettings.uiLanguage || 'auto'}
+                                    onChange={(e) => handleLanguageChange(e.target.value)}
                                 >
-                                    <option value="zh-CN">简体中文 (Simplified Chinese)</option>
-                                    <option value="en">English (English)</option>
+                                    <option value="auto">{t('settings.general.language_auto')}</option>
+                                    {SUPPORTED_UI_LANGUAGES.map(lang => (
+                                        <option key={lang.code} value={lang.code}>
+                                            {lang.flag} {lang.nativeName}
+                                        </option>
+                                    ))}
                                 </select>
                             </div>
 
@@ -222,38 +222,62 @@ const SettingsModal = ({ isOpen, onClose, initialTab = 'start', appMode, setAppM
                         <div className="content-section">
                             <div className="about-hero">
                                 <div className="about-logo-large">
-                                    <Monitor size={48} />
+                                    <img
+                                        src="/icon/DMG_Icon_1024x1024.png"
+                                        alt="GlotShot"
+                                        className="w-full h-full object-cover rounded-[22%]"
+                                        style={{ boxShadow: '0 0 20px rgba(0,0,0,0.2)' }}
+                                    />
                                 </div>
                                 <div className="about-app-name">GlotShot</div>
                                 <div className="about-app-desc">{t('settings.about.description')}</div>
                             </div>
 
-                            <div className="about-meta">
-                                <div className="meta-row">
-                                    <span className="meta-label">{t('settings.about.version')}</span>
-                                    <span className="meta-value">v1.3.3</span>
+                            <div className="about-scroll-container" style={{ marginTop: '20px' }}>
+                                <div className="about-block mb-4">
+                                    <h4 className="text-sm font-semibold text-indigo-400 mb-2">{t('settings.about.features_title')}</h4>
+                                    <ul className="text-sm opacity-80 space-y-1 list-disc pl-4">
+                                        <li>{t('settings.about.feature_poster')}</li>
+                                        <li>{t('settings.about.feature_icon')}</li>
+                                        <li>{t('settings.about.feature_license')}</li>
+                                    </ul>
                                 </div>
-                                <div className="meta-row">
-                                    <span className="meta-label">{t('settings.about.developer')}</span>
-                                    <span className="meta-value">hooosberg</span>
-                                </div>
-                                <div className="meta-row">
-                                    <span className="meta-label">Email</span>
-                                    <span className="meta-value">zikedece@proton.me</span>
-                                </div>
-                                <div className="meta-row">
-                                    <span className="meta-label">GitHub</span>
-                                    <span className="meta-value">
-                                        <a href="#" onClick={(e) => { e.preventDefault(); window.open('https://github.com/hooosberg/GlotShot', '_blank'); }}>
-                                            github.com/hooosberg/GlotShot
-                                        </a>
-                                    </span>
+
+                                <div className="about-meta py-4 border-t border-white/5">
+                                    <div className="meta-row">
+                                        <span className="meta-label">{t('settings.about.version')}</span>
+                                        <span className="meta-value">v{typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '0.0.0'}</span>
+                                    </div>
+                                    <div className="meta-row">
+                                        <span className="meta-label">{t('settings.about.developer')}</span>
+                                        <span className="meta-value">hooosberg</span>
+                                    </div>
+                                    <div className="meta-row">
+                                        <span className="meta-label">Email</span>
+                                        <span className="meta-value">zikedece@proton.me</span>
+                                    </div>
+                                    <div className="meta-row">
+                                        <span className="meta-label">GitHub</span>
+                                        <span className="meta-value">
+                                            <a href="#" onClick={(e) => { e.preventDefault(); window.open('https://github.com/hooosberg/GlotShot', '_blank'); }}>
+                                                github.com/hooosberg/GlotShot
+                                            </a>
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
 
-                            <div className="star-cta" onClick={() => window.open('https://github.com/hooosberg/GlotShot', '_blank')}>
-                                <div>{t('settings.about.star_title')}</div>
-                                <div className="text-sm opacity-80 mt-1">{t('settings.about.star_action')}</div>
+                            <div className="star-cta flex items-center justify-center gap-4" onClick={() => window.open('https://github.com/hooosberg/GlotShot', '_blank')}>
+                                <Github size={32} />
+                                <div className="flex flex-col items-start">
+                                    <div className="font-bold text-lg leading-tight flex items-center gap-2">
+                                        {t('settings.about.star_title')}
+                                    </div>
+                                    <div className="text-xs opacity-90 flex items-center gap-1 mt-1">
+                                        <Star size={12} className="fill-current text-white/80" />
+                                        {t('settings.about.cta_desc')}
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     )}

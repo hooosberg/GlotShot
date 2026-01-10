@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { Upload, Download, RotateCcw, Move, Layers, LayoutTemplate, Palette, Image as ImageIcon, Check, AlertCircle } from 'lucide-react';
 import { loadImage, canvasToBase64, drawSquirclePath, resizeImage } from '../../utils/imageProcessor';
+import { useTranslation } from '../../locales/i18n';
 
 /**
  * 全能图标工厂 Pro v2
@@ -13,11 +14,35 @@ import { loadImage, canvasToBase64, drawSquirclePath, resizeImage } from '../../
  * - Steam: 512×512 PNG (透明)
  */
 
+// SVG Path Data for Official Logos
+const ICONS = {
+    apple: (props) => (
+        <svg viewBox="0 0 16 16" fill="currentColor" {...props}>
+            <path d="M11.182.008C11.148-.03 9.923.023 8.857 1.18c-1.066 1.156-.902 2.482-.878 2.516s1.52.087 2.475-1.258.762-2.391.728-2.43m3.314 11.733c-.048-.096-2.325-1.234-2.113-3.422s1.675-2.789 1.698-2.854-.597-.79-1.254-1.157a3.7 3.7 0 0 0-1.563-.434c-.108-.003-.483-.095-1.254.116-.508.139-1.653.589-1.968.607-.316.018-1.256-.522-2.267-.665-.647-.125-1.333.131-1.824.328-.49.196-1.422.754-2.074 2.237-.652 1.482-.311 3.83-.067 4.56s.625 1.924 1.273 2.796c.576.984 1.34 1.667 1.659 1.899s1.219.386 1.843.067c.502-.308 1.408-.485 1.766-.472.357.013 1.061.154 1.782.539.571.197 1.111.115 1.652-.105.541-.221 1.324-1.059 2.238-2.758q.52-1.185.473-1.282" />
+        </svg>
+    ),
+    android: (props) => (
+        <svg viewBox="0 0 512 512" fill="currentColor" {...props}>
+            <path d="M380.91,199l42.47-73.57a8.63,8.63,0,0,0-3.12-11.76,8.52,8.52,0,0,0-11.71,3.12l-43,74.52c-32.83-15-69.78-23.35-109.52-23.35s-76.69,8.36-109.52,23.35l-43-74.52a8.6,8.6,0,1,0-14.83,8.57l42.47,73.57c-47.53,28.21-81.86,72.93-94.88,124.63H475.79C462.77,271.93,428.44,227.21,380.91,199Z" />
+        </svg>
+    ),
+    steam: (props) => (
+        <svg viewBox="0 0 16 16" fill="currentColor" {...props}>
+            <path d="M.329 10.333A8.01 8.01 0 0 0 7.99 16C12.414 16 16 12.418 16 8s-3.586-8-8.009-8A8.006 8.006 0 0 0 0 7.468l.003.006 4.304 1.769A2.2 2.2 0 0 1 5.62 8.88l1.96-2.844-.001-.04a3.046 3.046 0 0 1 3.042-3.043 3.046 3.046 0 0 1 3.042 3.043 3.047 3.047 0 0 1-3.111 3.044l-2.804 2a2.223 2.223 0 0 1-3.075 2.11 2.22 2.22 0 0 1-1.312-1.568L.33 10.333Z" />
+            <path d="M4.868 12.683a1.715 1.715 0 0 0 1.318-3.165 1.7 1.7 0 0 0-1.263-.02l1.023.424a1.261 1.261 0 1 1-.97 2.33l-.99-.41a1.7 1.7 0 0 0 .882.84Zm3.726-6.687a2.03 2.03 0 0 0 2.027 2.029 2.03 2.03 0 0 0 2.027-2.029 2.03 2.03 0 0 0-2.027-2.027m2.03-1.527a1.524 1.524 0 1 1-.002 3.048 1.524 1.524 0 0 1 .002-3.048" />
+        </svg>
+    ),
+    windows: (props) => (
+        <svg viewBox="0 0 24 24" fill="currentColor" {...props}>
+            <path d="M0 3.42857L9.42857 2.14286V11.5714H0V3.42857ZM10.2857 2.03571L24 0V11.5714H10.2857V2.03571ZM24 12.4286V24L10.2857 22.0714V12.4286H24ZM9.42857 12.4286V21.9643L0 20.6786V12.4286H9.42857Z" />
+        </svg>
+    )
+};
+
 const PLATFORMS = {
     apple: {
         id: 'apple',
         name: 'Apple',
-        icon: '🍎',
         desc: 'iOS / macOS App Store',
         type: 'single',
         exportSize: 1024,
@@ -28,7 +53,6 @@ const PLATFORMS = {
     android: {
         id: 'android',
         name: 'Android',
-        icon: '🤖',
         desc: 'Google Play Store',
         type: 'dual',
         exportSize: 512,
@@ -39,7 +63,6 @@ const PLATFORMS = {
     steam: {
         id: 'steam',
         name: 'Steam',
-        icon: '🎮',
         desc: 'Desktop Shortcut',
         type: 'single',
         exportSize: 512,
@@ -50,7 +73,6 @@ const PLATFORMS = {
     windows: {
         id: 'windows',
         name: 'Windows',
-        icon: '🪟',
         desc: 'Desktop Icon',
         type: 'single',
         exportSize: 256,
@@ -67,6 +89,7 @@ const SHAPE_OPTS = [
 ];
 
 const IconFabric = () => {
+    const { t } = useTranslation();
     const [activePlatform, setActivePlatform] = useState('apple');
     const [previewShape, setPreviewShape] = useState('circle');
 
@@ -107,7 +130,7 @@ const IconFabric = () => {
 
         // Android 前景图格式校验
         if (activePlatform === 'android' && target === 'main' && file.type !== 'image/png') {
-            alert('⚠️ Android 自适应图标前景必须使用透明 PNG 格式！');
+            alert(t('alerts.androidPngRequired'));
             return;
         }
 
@@ -364,7 +387,7 @@ const IconFabric = () => {
 
     const handleExport = async () => {
         if (!window.electron) {
-            alert('导出功能仅在 Electron 桌面应用中可用 (Exporting is only available in the desktop app)');
+            alert(t('alerts.exportDesktopOnly'));
             return;
         }
         const basePath = await window.electron.selectDirectory();
@@ -422,13 +445,13 @@ const IconFabric = () => {
             await window.electron.saveFiles({ basePath, files });
 
             if (activePlatform === 'apple') {
-                alert('✅ Apple 图标导出成功！\n\n• AppIcon_1024x1024.png (MAS 满铺)\n• DMG_Icon_1024x1024.png (Squircle + 投影)');
+                alert(t('alerts.appleExportSuccess'));
             } else {
-                alert(`✅ 导出成功！\n\n${platform.name}/${platform.exportName}\n尺寸: ${platform.exportSize}×${platform.exportSize} px`);
+                alert(`${t('alerts.iconExportSuccess')}\n\n${platform.name}/${platform.exportName}\n${t('iconFabric.scale')}: ${platform.exportSize}×${platform.exportSize} px`);
             }
         } catch (error) {
             console.error(error);
-            alert('导出失败: ' + error.message);
+            alert(t('alerts.exportFailed') + error.message);
         } finally {
             setIsExporting(false);
         }
@@ -460,7 +483,9 @@ const IconFabric = () => {
                                 ? 'bg-blue-600/20 text-blue-400 ring-1 ring-blue-500/50'
                                 : 'text-gray-500 hover:bg-gray-800/50 hover:text-gray-300'}`}
                         >
-                            <span className="text-xl">{p.icon}</span>
+                            <span className="text-xl">
+                                {ICONS[p.id] && ICONS[p.id]({ className: `w-6 h-6 ${activePlatform === p.id ? 'fill-blue-400' : 'fill-gray-500 group-hover:fill-gray-300'}` })}
+                            </span>
                             <span className="text-[10px] font-medium">{p.name}</span>
                         </button>
                     ))}
@@ -469,15 +494,15 @@ const IconFabric = () => {
                 <div className="flex-1 overflow-y-auto p-4 space-y-6">
                     <div>
                         <h3 className="text-xs font-bold text-gray-400 mb-3 flex items-center gap-2">
-                            <Layers className="w-3.5 h-3.5" /> 资源图层
+                            <Layers className="w-3.5 h-3.5" /> {t('iconFabric.resourceLayers')}
                         </h3>
 
                         {activePlatform === 'android' ? (
                             <div className="space-y-3">
                                 <div className="bg-gray-800/40 rounded-xl p-3 border border-gray-700/50">
                                     <div className="flex justify-between items-center mb-2">
-                                        <span className="text-xs text-gray-300">前景 (Logo)</span>
-                                        {platformData.android.foreground && <span className="text-[10px] text-green-400">已加载</span>}
+                                        <span className="text-xs text-gray-300">{t('iconFabric.foreground')}</span>
+                                        {platformData.android.foreground && <span className="text-[10px] text-green-400">{t('iconFabric.loaded')}</span>}
                                     </div>
                                     <div
                                         onClick={() => fileInputRef.current?.click()}
@@ -488,7 +513,7 @@ const IconFabric = () => {
                                         ) : (
                                             <>
                                                 <Upload className="w-5 h-5 text-gray-500 mb-1" />
-                                                <span className="text-[10px] text-gray-500">上传透明 PNG</span>
+                                                <span className="text-[10px] text-gray-500">{t('iconFabric.uploadPng')}</span>
                                             </>
                                         )}
                                     </div>
@@ -496,7 +521,7 @@ const IconFabric = () => {
 
                                 <div className="bg-gray-800/40 rounded-xl p-3 border border-gray-700/50">
                                     <div className="flex justify-between items-center mb-2">
-                                        <span className="text-xs text-gray-300">背景层</span>
+                                        <span className="text-xs text-gray-300">{t('iconFabric.background')}</span>
                                         <div className="flex bg-gray-900 rounded p-0.5">
                                             <button
                                                 onClick={() => updatePlatformData('android', { backgroundType: 'color' })}
@@ -534,7 +559,7 @@ const IconFabric = () => {
                                             {platformData.android.backgroundImage ? (
                                                 <img src={platformData.android.backgroundImage} className="w-full h-full object-cover rounded" />
                                             ) : (
-                                                <span className="text-[10px] text-gray-500">上传背景图</span>
+                                                <span className="text-[10px] text-gray-500">{t('iconFabric.uploadBackground')}</span>
                                             )}
                                         </div>
                                     )}
@@ -563,15 +588,15 @@ const IconFabric = () => {
                     <div>
                         <div className="flex justify-between items-center mb-3">
                             <h3 className="text-xs font-bold text-gray-400 flex items-center gap-2">
-                                <Move className="w-3.5 h-3.5" /> 变换调整
+                                <Move className="w-3.5 h-3.5" /> {t('iconFabric.transform')}
                             </h3>
-                            <button onClick={resetSettings} className="text-[10px] text-blue-400 hover:text-blue-300">复位</button>
+                            <button onClick={resetSettings} className="text-[10px] text-blue-400 hover:text-blue-300">{t('iconFabric.reset')}</button>
                         </div>
 
                         <div className="bg-gray-800/40 rounded-xl p-4 border border-gray-700/50">
                             <div className="mb-4">
                                 <div className="flex justify-between text-[11px] mb-1.5 text-gray-400">
-                                    <span>缩放</span>
+                                    <span>{t('iconFabric.scale')}</span>
                                     <span className="text-white">{platformData[activePlatform].scale}%</span>
                                 </div>
                                 <input
@@ -584,7 +609,7 @@ const IconFabric = () => {
 
                             <div className="text-[10px] text-gray-500 flex items-start gap-2 bg-blue-500/5 p-2 rounded border border-blue-500/10">
                                 <Move className="w-3 h-3 text-blue-400 shrink-0 mt-0.5" />
-                                <span>{activePlatform === 'android' ? '仅缩放移动前景图层' : '可在右侧画布拖拽调整位置'}</span>
+                                <span>{activePlatform === 'android' ? t('iconFabric.fgOnlyTip') : t('iconFabric.dragTip')}</span>
                             </div>
                         </div>
                     </div>
@@ -594,7 +619,7 @@ const IconFabric = () => {
             {/* 中间：编辑器 */}
             <div className="flex-1 flex flex-col min-w-0" style={{ background: 'var(--app-bg-secondary)' }}>
                 <div className="h-10 flex items-center justify-center border-b border-gray-800/50">
-                    <span className="text-xs text-gray-500">{platform.name} 编辑器 · {platform.guide}</span>
+                    <span className="text-xs text-gray-500">{platform.name} {t('iconFabric.editor')} · {t(`iconFabric.platforms.${activePlatform}.guide`)}</span>
                 </div>
                 <div className="flex-1 flex items-center justify-center overflow-hidden p-8">
                     <canvas
@@ -609,7 +634,7 @@ const IconFabric = () => {
             <div className="w-[340px] border-l flex flex-col shrink-0" style={{ background: 'var(--app-bg-primary)', borderColor: 'var(--app-border)' }}>
                 <div className="p-4 border-b border-gray-800">
                     <h3 className="text-sm font-semibold text-gray-200 flex items-center gap-2">
-                        <LayoutTemplate className="w-4 h-4 text-blue-400" /> 实时预览
+                        <LayoutTemplate className="w-4 h-4 text-blue-400" /> {t('iconFabric.livePreview')}
                     </h3>
                 </div>
 
@@ -620,7 +645,7 @@ const IconFabric = () => {
                                 <button
                                     key={m.id}
                                     onClick={() => setPreviewShape(m.id)}
-                                    title={m.name}
+                                    title={t(`iconFabric.shapes.${m.id}`)}
                                     className={`w-8 h-8 flex items-center justify-center rounded ${previewShape === m.id ? 'bg-gray-600 text-white' : 'text-gray-500 hover:text-gray-300'}`}
                                 >
                                     <span className="text-lg leading-none">{m.icon}</span>
@@ -633,7 +658,7 @@ const IconFabric = () => {
 
                     <div className="mt-8 w-full">
                         <div className="bg-gray-800/30 rounded-lg p-4 border border-gray-700/30">
-                            <h4 className="text-xs font-medium text-gray-400 mb-3">导出文件</h4>
+                            <h4 className="text-xs font-medium text-gray-400 mb-3">{t('iconFabric.exportFiles')}</h4>
                             {activePlatform === 'apple' ? (
                                 <div className="space-y-2">
                                     <div className="flex items-center gap-3 p-3 bg-gray-900/50 rounded-lg">
@@ -662,7 +687,7 @@ const IconFabric = () => {
                             )}
                             <p className="text-[10px] text-gray-600 mt-3 flex items-start gap-1.5">
                                 <AlertCircle className="w-3 h-3 shrink-0 mt-0.5" />
-                                {platform.guide}
+                                {t(`iconFabric.platforms.${activePlatform}.guide`)}
                             </p>
                         </div>
                     </div>
