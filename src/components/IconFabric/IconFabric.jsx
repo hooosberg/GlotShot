@@ -34,7 +34,7 @@ const PLATFORMS = {
         exportSize: 512,
         exportName: 'PlayStore_512x512.png',
         safeZone: 606, // 66dp in 1024 canvas
-        guide: '512px 满铺正方形，Play Console 自动裁圆角'
+        guide: '核心规范：前景层必须为透明 PNG (镂空) 以透出背景，Play Console 自动裁圆角'
     },
     steam: {
         id: 'steam',
@@ -60,7 +60,7 @@ const PLATFORMS = {
     }
 };
 
-const ANDROID_MASKS = [
+const SHAPE_OPTS = [
     { id: 'circle', name: '圆形', icon: '●' },
     { id: 'squircle', name: '圆角矩形', icon: '▢' },
     { id: 'square', name: '方形', icon: '■' },
@@ -68,7 +68,7 @@ const ANDROID_MASKS = [
 
 const IconFabric = () => {
     const [activePlatform, setActivePlatform] = useState('apple');
-    const [androidMask, setAndroidMask] = useState('circle');
+    const [previewShape, setPreviewShape] = useState('circle');
 
     const [platformData, setPlatformData] = useState({
         apple: { image: null, canvas: null, scale: 100, offsetX: 0, offsetY: 0 },
@@ -107,7 +107,8 @@ const IconFabric = () => {
 
         // Android 前景图格式校验
         if (activePlatform === 'android' && target === 'main' && file.type !== 'image/png') {
-            alert('⚠️ Android 自适应图标前景建议使用透明 PNG 格式，以确保在各种形状遮罩下正确显示。');
+            alert('⚠️ Android 自适应图标前景必须使用透明 PNG 格式！');
+            return;
         }
 
         try {
@@ -244,11 +245,11 @@ const IconFabric = () => {
         }
 
         // 渲染预览
-        if (activePlatform === 'android') {
+        if (activePlatform === 'android' || activePlatform === 'windows') {
             ctx.save();
             ctx.beginPath();
-            if (androidMask === 'circle') ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2);
-            else if (androidMask === 'squircle') drawSquirclePath(ctx, 0, 0, size, 0.225);
+            if (previewShape === 'circle') ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2);
+            else if (previewShape === 'squircle') drawSquirclePath(ctx, 0, 0, size, 0.225);
             else ctx.rect(0, 0, size, size);
             ctx.clip();
             ctx.drawImage(tempCanvas, 0, 0, CANVAS_SIZE, CANVAS_SIZE, 0, 0, size, size);
@@ -273,7 +274,7 @@ const IconFabric = () => {
         } else {
             ctx.drawImage(tempCanvas, 0, 0, CANVAS_SIZE, CANVAS_SIZE, 0, 0, size, size);
         }
-    }, [activePlatform, platformData, androidMask]);
+    }, [activePlatform, platformData, previewShape]);
 
     useEffect(() => { drawEditor(); }, [drawEditor]);
     useEffect(() => { drawPreview(); }, [drawPreview]);
@@ -336,6 +337,15 @@ const IconFabric = () => {
                 ctx.drawImage(data.fgCanvas, srcX, srcY, cropSize, cropSize, 0, 0, CANVAS_SIZE, CANVAS_SIZE);
             }
         } else {
+            if (activePlatform === 'windows') {
+                ctx.save();
+                ctx.beginPath();
+                if (previewShape === 'circle') ctx.arc(CANVAS_SIZE / 2, CANVAS_SIZE / 2, CANVAS_SIZE / 2, 0, Math.PI * 2);
+                else if (previewShape === 'squircle') drawSquirclePath(ctx, 0, 0, CANVAS_SIZE, 0.225);
+                else ctx.rect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+                ctx.clip();
+            }
+
             if (data.canvas) {
                 const scale = data.scale / 100;
                 const minDim = Math.min(data.canvas.width, data.canvas.height);
@@ -344,14 +354,21 @@ const IconFabric = () => {
                 const srcY = (data.canvas.height - cropSize) / 2 - (data.offsetY / CANVAS_SIZE) * cropSize;
                 ctx.drawImage(data.canvas, srcX, srcY, cropSize, cropSize, 0, 0, CANVAS_SIZE, CANVAS_SIZE);
             }
+
+            if (activePlatform === 'windows') {
+                ctx.restore();
+            }
         }
         return tempCanvas;
     };
 
     const handleExport = async () => {
-        if (!window.electron) return;
+        if (!window.electron) {
+            alert('导出功能仅在 Electron 桌面应用中可用 (Exporting is only available in the desktop app)');
+            return;
+        }
         const basePath = await window.electron.selectDirectory();
-        if (!basePath) return;
+        if (!basePath) return; // User cancelled
         setIsExporting(true);
 
         try {
@@ -417,13 +434,23 @@ const IconFabric = () => {
         }
     };
 
+    // Listen for global export trigger from App.jsx
+    useEffect(() => {
+        const handleTrigger = () => {
+            handleExport();
+        };
+        window.addEventListener('trigger-icon-export', handleTrigger);
+        return () => window.removeEventListener('trigger-icon-export', handleTrigger);
+    }, [activePlatform, platformData, previewShape]); // Dependencies needed for handleExport to have current state
+
+
     // === UI ===
     const platform = PLATFORMS[activePlatform];
 
     return (
-        <div className="flex flex-1 overflow-hidden bg-[#0F1115]">
+        <div className="flex flex-1 overflow-hidden" style={{ background: 'var(--app-bg-primary)' }}>
             {/* 左侧：平台选择 + 控制 */}
-            <div className="w-[300px] border-r border-gray-800 flex flex-col shrink-0 bg-[#0F1115]">
+            <div className="w-[300px] border-r flex flex-col shrink-0" style={{ background: 'var(--app-bg-primary)', borderColor: 'var(--app-border)' }}>
                 <div className="flex p-2 gap-1 border-b border-gray-800">
                     {Object.values(PLATFORMS).map(p => (
                         <button
@@ -565,7 +592,7 @@ const IconFabric = () => {
             </div>
 
             {/* 中间：编辑器 */}
-            <div className="flex-1 flex flex-col min-w-0 bg-[#0A0C10]">
+            <div className="flex-1 flex flex-col min-w-0" style={{ background: 'var(--app-bg-secondary)' }}>
                 <div className="h-10 flex items-center justify-center border-b border-gray-800/50">
                     <span className="text-xs text-gray-500">{platform.name} 编辑器 · {platform.guide}</span>
                 </div>
@@ -579,7 +606,7 @@ const IconFabric = () => {
             </div>
 
             {/* 右侧：预览 + 导出 */}
-            <div className="w-[340px] border-l border-gray-800 flex flex-col shrink-0 bg-[#0F1115]">
+            <div className="w-[340px] border-l flex flex-col shrink-0" style={{ background: 'var(--app-bg-primary)', borderColor: 'var(--app-border)' }}>
                 <div className="p-4 border-b border-gray-800">
                     <h3 className="text-sm font-semibold text-gray-200 flex items-center gap-2">
                         <LayoutTemplate className="w-4 h-4 text-blue-400" /> 实时预览
@@ -587,14 +614,14 @@ const IconFabric = () => {
                 </div>
 
                 <div className="flex-1 p-6 flex flex-col items-center bg-gradient-to-b from-[#0F1115] to-[#000]">
-                    {activePlatform === 'android' && (
+                    {(activePlatform === 'android' || activePlatform === 'windows') && (
                         <div className="flex gap-2 mb-6 bg-gray-800/50 p-1 rounded-lg border border-gray-700">
-                            {ANDROID_MASKS.map(m => (
+                            {SHAPE_OPTS.map(m => (
                                 <button
                                     key={m.id}
-                                    onClick={() => setAndroidMask(m.id)}
+                                    onClick={() => setPreviewShape(m.id)}
                                     title={m.name}
-                                    className={`w-8 h-8 flex items-center justify-center rounded ${androidMask === m.id ? 'bg-gray-600 text-white' : 'text-gray-500 hover:text-gray-300'}`}
+                                    className={`w-8 h-8 flex items-center justify-center rounded ${previewShape === m.id ? 'bg-gray-600 text-white' : 'text-gray-500 hover:text-gray-300'}`}
                                 >
                                     <span className="text-lg leading-none">{m.icon}</span>
                                 </button>
@@ -641,16 +668,7 @@ const IconFabric = () => {
                     </div>
                 </div>
 
-                <div className="p-4 border-t border-gray-800">
-                    <button
-                        onClick={handleExport}
-                        disabled={isExporting}
-                        className="w-full py-3 bg-blue-600 hover:bg-blue-500 disabled:bg-gray-700 text-white rounded-xl font-medium shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2"
-                    >
-                        <Download className="w-4 h-4" />
-                        {isExporting ? '导出中...' : `导出 ${platform.name} 图标`}
-                    </button>
-                </div>
+
             </div>
         </div>
     );

@@ -3,7 +3,7 @@ import { X, LayoutGrid, Monitor, Palette, Keyboard, Settings, Info, Image as Ima
 import './SettingsModal.css';
 import { translations } from '../locales/translations';
 
-const SettingsModal = ({ isOpen, onClose, initialTab = 'start', appMode, setAppMode, globalSettings, setGlobalSettings, theme, setTheme }) => {
+const SettingsModal = ({ isOpen, onClose, initialTab = 'start', appMode, setAppMode, globalSettings, setGlobalSettings, theme, setTheme, glassEffect, setGlassEffect }) => {
     const [activeTab, setActiveTab] = useState(initialTab);
 
     // Determine language based on globalSettings.uiLanguage
@@ -26,7 +26,7 @@ const SettingsModal = ({ isOpen, onClose, initialTab = 'start', appMode, setAppM
 
     const sections = [
         { id: 'start', icon: LayoutGrid, label: t('settings.nav.start') },
-        { id: 'appearance', icon: Palette, label: t('settings.nav.appearance') },
+        // { id: 'appearance', icon: Palette, label: t('settings.nav.appearance') }, // Removed as per request
         { id: 'shortcuts', icon: Keyboard, label: t('settings.nav.shortcuts') },
         { id: 'general', icon: Settings, label: t('settings.nav.general') },
         { id: 'about', icon: Info, label: t('settings.nav.about') },
@@ -66,72 +66,74 @@ const SettingsModal = ({ isOpen, onClose, initialTab = 'start', appMode, setAppM
 
                     {/* START (Modes) */}
                     {activeTab === 'start' && (
-                        <div className="content-section">
+                        <div className="content-section wide-section">
                             <h2 className="section-title">{t('settings.nav.start')}</h2>
                             <div className="mode-cards">
                                 <div
                                     className={`mode-card ${appMode === 'screenshot' ? 'active' : ''}`}
                                     onClick={() => { setAppMode('screenshot'); onClose(); }}
                                 >
-                                    <div className="mode-card-icon">
-                                        <ImageIcon size={32} />
+                                    <div className="mode-card-header">
+                                        <div className="mode-card-icon">
+                                            <ImageIcon size={28} />
+                                        </div>
+                                        <div className="mode-card-title-group">
+                                            <div className="mode-card-title">商店海报设计</div>
+                                            <div className="mode-card-subtitle">Store Poster Design</div>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <div className="mode-card-title">{t('settings.modes.poster_title')}</div>
-                                        <div className="mode-card-desc">{t('settings.modes.poster_desc')}</div>
+                                    <div className="mode-card-body">
+                                        <p className="mode-card-desc">
+                                            专为 App Store 和 Google Play 打造的截图美化工具。
+                                        </p>
+                                        <ul className="mode-features">
+                                            <li>✨ 智能手机外壳套用</li>
+                                            <li>🎨 渐变背景与文字排版</li>
+                                            <li>🌍 多语言批量导出</li>
+                                        </ul>
+                                    </div>
+                                    <div className="mode-card-footer">
+                                        <span className="mode-cta">进入设计 &rarr;</span>
                                     </div>
                                 </div>
+
                                 <div
                                     className={`mode-card ${appMode === 'icon' ? 'active' : ''}`}
                                     onClick={() => { setAppMode('icon'); onClose(); }}
                                 >
-                                    <div className="mode-card-icon">
-                                        <Layers size={32} />
+                                    <div className="mode-card-header">
+                                        <div className="mode-card-icon">
+                                            <Layers size={28} />
+                                        </div>
+                                        <div className="mode-card-title-group">
+                                            <div className="mode-card-title">多平台图标工厂</div>
+                                            <div className="mode-card-subtitle">Multi-platform Icon Factory</div>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <div className="mode-card-title">{t('settings.modes.icon_title')}</div>
-                                        <div className="mode-card-desc">{t('settings.modes.icon_desc')}</div>
+                                    <div className="mode-card-body">
+                                        <p className="mode-card-desc">
+                                            一键生成所有主流平台所需的图标尺寸。
+                                        </p>
+                                        <ul className="mode-features">
+                                            <li>📱 iOS / Android / Windows / Web</li>
+                                            <li>✂️ 自动裁切与圆角处理</li>
+                                            <li>🚀 快速批量导出</li>
+                                        </ul>
                                     </div>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* APPEARANCE */}
-                    {activeTab === 'appearance' && (
-                        <div className="content-section">
-                            <h2 className="section-title">{t('settings.nav.appearance')}</h2>
-
-                            <div className="form-group">
-                                <label className="form-label">{t('settings.appearance.theme_title')}</label>
-                                <div className="theme-options">
-                                    <div
-                                        className={`theme-option ${theme === 'dark' ? 'active' : ''}`}
-                                        onClick={() => setTheme('dark')}
-                                    >
-                                        <div className="w-4 h-4 rounded-full bg-gray-900 border border-gray-600"></div>
-                                        {t('settings.appearance.dark')}
-                                    </div>
-                                    <div
-                                        className={`theme-option ${theme === 'light' ? 'active' : ''}`}
-                                        onClick={() => setTheme('light')}
-                                    >
-                                        <div className="w-4 h-4 rounded-full bg-white border border-gray-300"></div>
-                                        {t('settings.appearance.light')}
+                                    <div className="mode-card-footer">
+                                        <span className="mode-cta">进入工厂 &rarr;</span>
                                     </div>
                                 </div>
                             </div>
 
-                            {/* Glassmorphism Placebo Toggle (for now just UI, can be hooked to CSS variable later) */}
-                            <div className="toggle-group">
-                                <div>
-                                    <div className="toggle-label">{t('settings.appearance.glass_effect')}</div>
-                                    <div className="form-help">{t('settings.appearance.glass_desc')}</div>
-                                </div>
-                                <label className="toggle-switch">
-                                    <input type="checkbox" defaultChecked={true} />
-                                    <span className="toggle-slider"></span>
-                                </label>
+                            <div className="settings-intro-section">
+                                <h3>关于 GlotShot</h3>
+                                <p>
+                                    GlotShot 是一个专注于移动应用上架素材设计的工具集。无论你是需要制作精美的应用商店预览图，还是需要生成适配各个平台的应用图标，GlotShot 都能帮助你高效完成。
+                                </p>
+                                <p>
+                                    选择上方的一个模块开始你的工作。你可以在任何时候通过右上角的设置按钮切换回这里。
+                                </p>
                             </div>
                         </div>
                     )}

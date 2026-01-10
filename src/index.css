@@ -1,8 +1,96 @@
 @import "tailwindcss";
 
-/* Custom scrollbar for dark mode if needed */
+/* ============================================
+   全局主题系统 - 苹果设计规范
+   ============================================ */
+
+/* 深色模式（默认） */
+:root {
+  /* 主背景色 */
+  --app-bg-primary: #020617;
+  /* gray-950 */
+  --app-bg-secondary: #0f172a;
+  /* gray-900 */
+  --app-bg-tertiary: #1e293b;
+  /* gray-800 */
+  --app-bg-elevated: #334155;
+  /* gray-700 */
+
+  /* 文字颜色 */
+  --app-text-primary: #ffffff;
+  --app-text-secondary: rgba(255, 255, 255, 0.7);
+  --app-text-muted: rgba(255, 255, 255, 0.4);
+  --app-text-inverted: #0f172a;
+
+  /* 边框颜色 */
+  --app-border: rgba(255, 255, 255, 0.1);
+  --app-border-strong: rgba(255, 255, 255, 0.2);
+
+  /* 卡片/面板背景 */
+  --app-card-bg: rgba(30, 41, 59, 0.5);
+  --app-card-bg-hover: rgba(51, 65, 85, 0.5);
+  --app-card-bg-solid: #1e293b;
+
+  /* 强调色 */
+  --app-accent: #3b82f6;
+  --app-accent-hover: #2563eb;
+  --app-accent-light: rgba(59, 130, 246, 0.2);
+
+  /* 功能色 */
+  --app-success: #22c55e;
+  --app-warning: #f59e0b;
+  --app-danger: #ef4444;
+
+  /* 输入框 */
+  --app-input-bg: rgba(15, 23, 42, 0.8);
+  --app-input-border: rgba(255, 255, 255, 0.1);
+  --app-input-focus: rgba(59, 130, 246, 0.5);
+
+  /* 标题栏背景（无毛玻璃时） */
+  --titlebar-bg: rgba(15, 23, 42, 0.95);
+
+  /* 毛玻璃效果（默认关闭） */
+  --glass-blur: 0px;
+  --glass-bg-titlebar: rgba(15, 23, 42, 0.95);
+  --glass-bg-modal: var(--app-bg-secondary);
+}
+
+/* 浅色模式 */
+
+
+/* 毛玻璃效果激活 */
+[data-glass='true'] {
+  --glass-blur: 20px;
+  --glass-bg-titlebar: rgba(15, 23, 42, 0.75);
+  --glass-bg-modal: rgba(30, 30, 35, 0.85);
+}
+
+/* ============================================
+   全局基础样式
+   ============================================ */
+
 body {
   margin: 0;
-  background-color: #020617;
-  /* gray-950 */
+  background-color: var(--app-bg-primary);
+  color: var(--app-text-primary);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* 滚动条样式 - 深色模式 */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--app-border-strong);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--app-text-muted);
 }

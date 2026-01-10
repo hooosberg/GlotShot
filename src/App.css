@@ -6,7 +6,18 @@
   padding: 0;
 }
 
-/* Draggable title bar region for Electron */
+/* ============================================
+   主容器
+   ============================================ */
+.app-container {
+  background: var(--app-bg-primary);
+  color: var(--app-text-primary);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* ============================================
+   Draggable title bar region for Electron
+   ============================================ */
 .drag-region {
   -webkit-app-region: drag;
 }
@@ -15,7 +26,9 @@
   -webkit-app-region: no-drag;
 }
 
-/* Hide scrollbars globally but allow scroll */
+/* ============================================
+   滚动条样式
+   ============================================ */
 .no-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
@@ -25,7 +38,6 @@
   display: none;
 }
 
-/* Slim custom scrollbar for when needed */
 .slim-scrollbar::-webkit-scrollbar {
   width: 4px;
 }
@@ -35,15 +47,133 @@
 }
 
 .slim-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--app-border-strong);
   border-radius: 4px;
 }
 
 .slim-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--app-text-muted);
 }
 
-/* Canvas container auto-fit */
+/* ============================================
+   标题栏（支持毛玻璃）
+   ============================================ */
+.global-titlebar {
+  background: var(--glass-bg-titlebar);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border-bottom: 1px solid var(--app-border);
+  z-index: 100;
+  transition: background-color 0.3s ease;
+}
+
+/* ============================================
+   侧边栏面板
+   ============================================ */
+.sidebar-panel {
+  background: var(--app-bg-secondary);
+  border-color: var(--app-border);
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+/* ============================================
+   卡片/面板
+   ============================================ */
+.app-card {
+  background: var(--app-card-bg);
+  border: 1px solid var(--app-border);
+  border-radius: 8px;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.app-card:hover {
+  background: var(--app-card-bg-hover);
+}
+
+.app-card-solid {
+  background: var(--app-card-bg-solid);
+  border: 1px solid var(--app-border);
+  border-radius: 8px;
+}
+
+/* ============================================
+   输入框样式
+   ============================================ */
+.app-input {
+  background: var(--app-input-bg);
+  border: 1px solid var(--app-input-border);
+  color: var(--app-text-primary);
+  border-radius: 6px;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.app-input:focus {
+  outline: none;
+  border-color: var(--app-accent);
+  background: var(--app-bg-secondary);
+}
+
+.app-input::placeholder {
+  color: var(--app-text-muted);
+}
+
+/* ============================================
+   按钮样式
+   ============================================ */
+.app-btn {
+  background: var(--app-card-bg);
+  color: var(--app-text-primary);
+  border: 1px solid var(--app-border);
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.app-btn:hover {
+  background: var(--app-card-bg-hover);
+  border-color: var(--app-border-strong);
+}
+
+.app-btn-primary {
+  background: var(--app-accent);
+  color: white;
+  border: none;
+}
+
+.app-btn-primary:hover {
+  background: var(--app-accent-hover);
+}
+
+/* ============================================
+   文字颜色工具类
+   ============================================ */
+.text-primary {
+  color: var(--app-text-primary);
+}
+
+.text-secondary {
+  color: var(--app-text-secondary);
+}
+
+.text-muted {
+  color: var(--app-text-muted);
+}
+
+/* ============================================
+   中央预览区域
+   ============================================ */
+.preview-area {
+  background: var(--app-bg-primary);
+  transition: background-color 0.3s ease;
+}
+
+.preview-gradient {
+  background: radial-gradient(circle at center, var(--app-card-bg) 0%, var(--app-bg-primary) 100%);
+}
+
+/* ============================================
+   Canvas container auto-fit
+   ============================================ */
 .canvas-container {
   display: flex;
   align-items: center;
@@ -62,7 +192,9 @@
   justify-content: center;
 }
 
-/* Collapsible sections */
+/* ============================================
+   Collapsible sections
+   ============================================ */
 .collapse-toggle {
   transition: transform 0.2s ease;
 }
@@ -71,31 +203,21 @@
   transform: rotate(-90deg);
 }
 
-/* Apple-style glassmorphism */
-.glass-panel {
-  background: rgba(30, 30, 30, 0.8);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-}
-
-/* Smooth transitions */
+/* ============================================
+   Smooth transitions
+   ============================================ */
 .sidebar-section {
   transition: max-height 0.3s ease, opacity 0.2s ease, padding 0.3s ease;
   overflow: hidden;
 }
 
-/* Global Top Title Bar */
-.global-titlebar {
-  background: rgba(15, 23, 42, 0.75);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  z-index: 100;
-}
-
-/* Platform dropdown animation */
+/* ============================================
+   Platform dropdown animation
+   ============================================ */
 .platform-dropdown {
   animation: dropdownFadeIn 0.15s ease-out;
+  background: var(--app-bg-tertiary);
+  border: 1px solid var(--app-border);
 }
 
 @keyframes dropdownFadeIn {
@@ -108,4 +230,20 @@
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+/* ============================================
+   进度条
+   ============================================ */
+.progress-bar-container {
+  background: var(--app-bg-secondary);
+  border-top: 1px solid var(--app-border);
+}
+
+.progress-bar-track {
+  background: var(--app-bg-tertiary);
+}
+
+.progress-bar-fill {
+  background: var(--app-accent);
 }

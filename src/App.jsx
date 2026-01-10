@@ -379,15 +379,25 @@ const App = () => {
     } catch { return []; }
   });
 
-  // Theme Settings
-  const [theme, setTheme] = useState(() => {
-    return localStorage.getItem('app_theme') || 'dark';
+  // Theme Settings - Forced Dark Mode
+  const [theme] = useState('dark');
+  const setTheme = () => { }; // No-op since theme is locked
+
+  // Glass Effect Settings
+  const [glassEffect, setGlassEffect] = useState(() => {
+    return localStorage.getItem('app_glass_effect') !== 'false';
   });
 
   useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
-    localStorage.setItem('app_theme', theme);
-  }, [theme]);
+    document.documentElement.setAttribute('data-theme', 'dark');
+    localStorage.removeItem('app_theme'); // Clean up legacy storage
+  }, []);
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-glass', glassEffect);
+    localStorage.setItem('app_glass_effect', glassEffect);
+  }, [glassEffect]);
+
   const [backgroundFolderPath, setBackgroundFolderPath] = useState('');
 
   // UI state for collapsible sections
@@ -1117,6 +1127,12 @@ const App = () => {
 
   // --- EXPORT LOGIC ---
   const handleExportAll = async () => {
+    // Check mode and dispatch event if in Icon mode
+    if (appMode === 'icon') {
+      window.dispatchEvent(new CustomEvent('trigger-icon-export'));
+      return;
+    }
+
     // 1. Select Directory via Electron
     if (!window.electron) return alert("Output directory selection is only available in Electron app.");
 
@@ -1172,7 +1188,7 @@ const App = () => {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-gray-950 text-white font-sans overflow-hidden no-scrollbar">
+    <div className="flex flex-col h-screen font-sans overflow-hidden no-scrollbar app-container">
 
       {/* GLOBAL TOP TITLE BAR */}
       <div className="global-titlebar h-12 flex items-center justify-between px-4 shrink-0 drag-region">
@@ -1378,23 +1394,23 @@ const App = () => {
           </div>
         )}
 
-        {/* Right section with export button - only show in screenshot mode */}
-        {appMode === 'screenshot' && (
-          <div className="flex items-center gap-3 no-drag">
-            <button onClick={handleExportAll}
-              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-1.5 rounded-lg text-xs font-medium transition shadow-lg shadow-blue-900/30">
-              <Download className="w-3.5 h-3.5" /> 导出全部
-            </button>
-            {/* SETTINGS BUTTON */}
-            <button
-              onClick={() => setShowSettingsModal(true)}
-              className="p-1.5 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition"
-              title="设置"
-            >
-              <Settings className="w-5 h-5" />
-            </button>
-          </div>
-        )}
+        {/* Right section with export button - always show */}
+        <div className="flex items-center gap-3 no-drag">
+          <button onClick={handleExportAll}
+            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-1.5 rounded-lg text-xs font-medium transition shadow-lg shadow-blue-900/30">
+            <Download className="w-3.5 h-3.5" />
+            {appMode === 'icon' ? '导出图标' : '导出全部'}
+          </button>
+          {/* SETTINGS BUTTON */}
+          <button
+            onClick={() => setShowSettingsModal(true)}
+            className="p-1.5 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition"
+            title="设置"
+          >
+            <Settings className="w-5 h-5" />
+          </button>
+        </div>
+
       </div>
 
       <SettingsModal
@@ -1407,6 +1423,8 @@ const App = () => {
         setAppMode={setAppMode}
         theme={theme}
         setTheme={setTheme}
+        glassEffect={glassEffect}
+        setGlassEffect={setGlassEffect}
       />
 
       {/* MAIN CONTENT AREA - Conditional rendering based on mode */}
@@ -1417,7 +1435,7 @@ const App = () => {
           <div className="flex flex-1 overflow-hidden">
 
             {/* LEFT SIDEBAR */}
-            <div className="w-80 bg-gray-900 border-r border-gray-800 flex flex-col flex-shrink-0 z-20 shadow-xl">
+            <div className="w-80 border-r flex flex-col flex-shrink-0 z-20 shadow-xl sidebar-panel">
 
               {/* Ollama Settings */}
               <div className="px-4 py-3 border-b border-gray-800 bg-gray-900/50">
@@ -1540,7 +1558,7 @@ const App = () => {
               </div>
 
               {/* Scene List */}
-              <div className="flex-1 overflow-y-auto p-4 bg-gray-900 slim-scrollbar">
+              <div className="flex-1 overflow-y-auto p-4 slim-scrollbar sidebar-panel">
                 <div className="flex justify-between items-center mb-3">
                   <div className="flex items-center gap-2">
                     {scenes.filter(s => s.screenshot).length > 0 && (
@@ -1617,7 +1635,7 @@ const App = () => {
             </div>
 
             {/* CENTER - Canvas Preview */}
-            <div className="flex-1 flex flex-col relative bg-gray-950">
+            <div className="flex-1 flex flex-col relative preview-area">
               {/* Preview Area with Design Tips floating */}
               <div className="flex-1 overflow-hidden p-4 flex items-center justify-center relative" style={{ background: 'radial-gradient(circle at center, rgba(30,41,59,0.5) 0%, rgba(15,23,42,1) 100%)' }}>
                 {/* Design Tips - 悬浮在预览区上方 */}
@@ -1652,7 +1670,7 @@ const App = () => {
             </div>
 
             {/* RIGHT SIDEBAR - Edit Active Scene */}
-            <div className="w-72 bg-gray-900 border-l border-gray-800 flex flex-col flex-shrink-0 shadow-xl z-20 no-scrollbar overflow-y-auto">
+            <div className="w-72 border-l flex flex-col flex-shrink-0 shadow-xl z-20 no-scrollbar overflow-y-auto sidebar-panel">
               <div className="p-5 border-b border-gray-800">
                 <div className="flex justify-between items-center mb-4">
                   <h2 className="text-sm font-bold text-gray-100">参数调整</h2>
