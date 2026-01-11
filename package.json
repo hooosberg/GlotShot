@@ -59,34 +59,31 @@
       "target": [
         {
           "target": "nsis",
-          "arch": [
-            "x64",
-            "arm64"
-          ]
+          "arch": "x64"
         },
         {
-          "target": "portable",
-          "arch": [
-            "x64",
-            "arm64"
-          ]
+          "target": "nsis",
+          "arch": "arm64"
         }
       ],
-      "icon": "build/icon.png"
+      "icon": "build/icon.png",
+      "artifactName": "${productName}-${version}-${arch}.${ext}"
     },
     "linux": {
       "target": [
         {
           "target": "AppImage",
-          "arch": [
-            "x64",
-            "arm64"
-          ]
+          "arch": "x64"
+        },
+        {
+          "target": "AppImage",
+          "arch": "arm64"
         }
       ],
       "icon": "build/icon.png",
       "category": "Graphics",
-      "maintainer": "Maohuhu <huyuanbo412004038@gmail.com>"
+      "maintainer": "Maohuhu <huyuanbo412004038@gmail.com>",
+      "artifactName": "${productName}-${version}-${arch}.${ext}"
     },
     "files": [
       "dist/**/*",
@@ -94,7 +91,8 @@
       "public/**/*"
     ],
     "directories": {
-      "buildResources": "assets"
+      "buildResources": "assets",
+      "output": "release"
     }
   },
   "devDependencies": {

@@ -2,16 +2,47 @@
 description: Build Linux Packages (x64 + ARM64)
 ---
 
-This workflow builds Linux packages (AppImage and deb) for both x64 and ARM64 architectures.
+# Build Linux AppImages
 
-# Prerequisites
+Build separate Linux AppImage packages for x64 and ARM64 architectures.
 
-Ensure the icon is present:
-- `build/icon.png`
+## Prerequisites
+- Node.js installed
+- Dependencies installed (`npm install`)
+- Icon file at `build/icon.png` (copy from `public/icon/DMG_Icon_1024x1024.png` if missing)
 
-# Build Command
+## Output
+All artifacts output to `release/` directory:
+- `GlotShot-{version}-x86_64.AppImage` - Linux x64 AppImage
+- `GlotShot-{version}-arm64.AppImage` - Linux ARM64 AppImage
 
-Run the following command to build Linux packages.
+## Build Command
 
 // turbo
-npm run build && npx electron-builder --linux --x64 --arm64 && mkdir -p release && mv dist/*.AppImage dist/*.deb dist/*.snap release/ 2>/dev/null || true
+```bash
+npm run electron:build -- --linux
+```
+
+## Notes
+- **DO NOT** build `.deb` packages on macOS (requires `fpm` and `dpkg`)
+- Each architecture gets its own separate AppImage
+- Files are named with architecture suffix automatically via `artifactName` in `package.json`
+- `x86_64` is the standard Linux naming for x64 architecture
+
+## Cross-Platform Asset Handling
+
+> **IMPORTANT**: When loading images/assets in React components, always use ES module imports instead of absolute paths.
+
+❌ **WRONG** (only works on macOS):
+```jsx
+<img src="/icon/logo.png" />
+```
+
+✅ **CORRECT** (works on all platforms):
+```jsx
+import logo from '../../public/icon/logo.png';
+// ...
+<img src={logo} />
+```
+
+Vite bundles imported assets into `dist/assets/`, ensuring cross-platform compatibility.

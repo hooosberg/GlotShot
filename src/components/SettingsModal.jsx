@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { X, LayoutGrid, Monitor, Palette, Keyboard, Settings, Info, Image as ImageIcon, Layers, Github, ExternalLink, Star } from 'lucide-react';
 import './SettingsModal.css';
 import { useTranslation, SUPPORTED_UI_LANGUAGES } from '../locales/i18n';
+import appLogo from '../../public/icon/DMG_Icon_1024x1024.png';
 
 const SettingsModal = ({ isOpen, onClose, initialTab = 'start', appMode, setAppMode, globalSettings, setGlobalSettings, theme, setTheme, glassEffect, setGlassEffect }) => {
     const [activeTab, setActiveTab] = useState(initialTab);
@@ -223,7 +224,7 @@ const SettingsModal = ({ isOpen, onClose, initialTab = 'start', appMode, setAppM
                             <div className="about-hero">
                                 <div className="about-logo-large">
                                     <img
-                                        src="/icon/DMG_Icon_1024x1024.png"
+                                        src={appLogo}
                                         alt="GlotShot"
                                         className="w-full h-full object-cover rounded-[22%]"
                                         style={{ boxShadow: '0 0 20px rgba(0,0,0,0.2)' }}
