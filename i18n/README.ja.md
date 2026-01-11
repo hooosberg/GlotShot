@@ -4,6 +4,7 @@
 
 # GlotShot
 ### App Store プレビュー画像ジェネレーター
+[🌐 公式サイト](https://hooosberg.github.io/GlotShot/)
 
 [![macOS版をダウンロード](https://img.shields.io/badge/ダウンロード-macOS-blue?style=for-the-badge&logo=apple)](https://github.com/hooosberg/GlotShot/releases/latest)
 [![公式サイト](https://img.shields.io/badge/公式サイト-GlotShot-green?style=for-the-badge)](https://hooosberg.github.io/GlotShot/)
@@ -21,7 +22,7 @@
 
 **ローカリゼーション**と**バッチ処理**のサポートが組み込まれており、プロフェッショナルなマーケティング素材を数分で生成して、アプリのグローバル展開を支援します。
 
-公式サイトとランディングページはこちら：[https://hooosberg.github.io/GlotShot/](https://hooosberg.github.io/GlotShot/)
+
 
 ## 📸 スクリーンショット
 

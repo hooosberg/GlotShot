@@ -393,6 +393,66 @@
             color: #eee;
         }
 
+        /* Projects Section */
+        .projects-section {
+            text-align: center;
+            margin-bottom: 120px;
+        }
+
+        .projects-title {
+            font-size: 18px;
+            font-weight: 500;
+            margin-bottom: 40px;
+            color: #888;
+            letter-spacing: 1px;
+            /* text-transform: uppercase; */
+        }
+
+        .projects-container {
+            display: flex;
+            justify-content: center;
+            gap: 60px;
+        }
+
+        .project-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-decoration: none;
+            transition: transform 0.3s ease;
+        }
+
+        .project-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .project-icon {
+            width: 80px;
+            height: 80px;
+            border-radius: 22px;
+            margin-bottom: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            /* border: 1px solid rgba(255,255,255,0.1); */
+            transition: box-shadow 0.3s ease;
+            /* background: #fff; */
+            /* Ensure icon has bg if transparent */
+            /* padding: 10px; */
+            /* Slight padding for non-full-bleed icons? No, user icons seem full bleed or close. Let's inspect user request again. WitNote icon checks out. */
+            padding: 0;
+        }
+
+        .project-card:hover .project-icon {
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
+            /* border-color: rgba(255,255,255,0.3); */
+        }
+
+        .project-name {
+            font-size: 16px;
+            font-weight: 600;
+            color: #fff;
+            letter-spacing: 0.5px;
+        }
+
         /* Footer */
         footer {
             border-top: 1px solid var(--glass-border);
@@ -454,7 +514,7 @@
         <div class="container" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
             <div class="logo-container">
                 <img src="public/icon/AppIcon_1024x1024.png" alt="Logo" class="logo-img">
-                <span class="logo-text">GlotShot</span>
+                <span class="logo-text" data-i18n="app_name">GlotShot</span>
             </div>
 
             <div class="nav-right">
@@ -569,6 +629,20 @@
             <span class="os-badge">macOS 11.0+ • Windows 10+ • Ubuntu 20.04+</span>
         </section>
 
+        <section class="projects-section">
+            <h3 class="projects-title" data-i18n="projects_title">Our Projects</h3>
+            <div class="projects-container">
+                <a href="https://hooosberg.github.io/WitNote/" target="_blank" class="project-card">
+                    <img src="public/icon/WitNote.png" alt="WitNote" class="project-icon">
+                    <span class="project-name">WitNote</span>
+                </a>
+                <a href="https://hooosberg.github.io/GlotShot/" target="_blank" class="project-card">
+                    <img src="public/icon/DMG_Icon_1024x1024.png" alt="GlotShot" class="project-icon">
+                    <span class="project-name" data-i18n="project_glotshot">GlotShot</span>
+                </a>
+            </div>
+        </section>
+
         <footer>
             <div class="footer-links">
                 <a href="https://github.com/hooosberg/GlotShot" target="_blank">GitHub</a>
@@ -613,7 +687,10 @@
                 btn_download_win_2: "Windows",
                 btn_download_linux_2: "Linux",
                 showcase_poster: "Poster Design",
-                showcase_icon: "Icon Design"
+                showcase_icon: "Icon Design",
+                projects_title: "Our Projects",
+                app_name: "GlotShot",
+                project_glotshot: "GlotShot"
             },
             "zh-CN": {
                 nav_features: "功能特性",
@@ -630,6 +707,9 @@
                 btn_download_linux_2: "Linux",
                 showcase_poster: "海报/截图设计",
                 showcase_icon: "图标/Logo 设计",
+                projects_title: "我们的项目",
+                app_name: "万语图",
+                project_glotshot: "万语图",
                 feat_batch_title: "批量处理",
                 feat_batch_desc: "一次性为多种设备和语言制作截图。节省数小时的重复劳动。",
                 feat_translate_title: "AI 智能翻译",
@@ -669,7 +749,8 @@
                 install_desc: "Descarga para macOS.",
                 btn_download_2: "Descargar Ahora",
                 showcase_poster: "Diseño de Póster",
-                showcase_icon: "Diseño de Ícono"
+                showcase_icon: "Diseño de Ícono",
+                projects_title: "Nuestros Proyectos"
             },
             ja: {
                 nav_features: "機能",
@@ -695,7 +776,8 @@
                 install_desc: "最新版をダウンロード。",
                 btn_download_2: "今すぐDL",
                 showcase_poster: "ポスターデザイン",
-                showcase_icon: "アイコンデザイン"
+                showcase_icon: "アイコンデザイン",
+                projects_title: "私たちのプロジェクト"
             },
             ko: {
                 nav_features: "기능",
@@ -721,7 +803,8 @@
                 install_desc: "최신 버전을 다운로드하세요.",
                 btn_download_2: "지금 다운로드",
                 showcase_poster: "포스터 디자인",
-                showcase_icon: "아이콘 디자인"
+                showcase_icon: "아이콘 디자인",
+                projects_title: "우리의 프로젝트"
             },
             fr: {
                 nav_features: "Fonctionnalités",
@@ -747,7 +830,8 @@
                 install_desc: "Téléchargez la dernière version.",
                 btn_download_2: "Télécharger",
                 showcase_poster: "Design d'Affiche",
-                showcase_icon: "Design d'Icône"
+                showcase_icon: "Design d'Icône",
+                projects_title: "Nos Projets"
             },
             de: {
                 nav_features: "Funktionen",
@@ -773,7 +857,8 @@
                 install_desc: "Laden Sie die neuste Version.",
                 btn_download_2: "Download",
                 showcase_poster: "Poster-Design",
-                showcase_icon: "Icon-Design"
+                showcase_icon: "Icon-Design",
+                projects_title: "Unsere Projekte"
             },
             it: {
                 nav_features: "Funzioni",
@@ -799,7 +884,8 @@
                 install_desc: "Scarica ora.",
                 btn_download_2: "Scarica",
                 showcase_poster: "Design Poster",
-                showcase_icon: "Design Icone"
+                showcase_icon: "Design Icone",
+                projects_title: "I Nostri Progetti"
             },
             pt: {
                 nav_features: "Recursos",
@@ -825,7 +911,8 @@
                 install_desc: "Baixe agora.",
                 btn_download_2: "Baixar",
                 showcase_poster: "Design de Pôster",
-                showcase_icon: "Design de Ícone"
+                showcase_icon: "Design de Ícone",
+                projects_title: "Nossos Projetos"
             },
             ru: {
                 nav_features: "Функции",
@@ -851,7 +938,8 @@
                 install_desc: "Скачивайте.",
                 btn_download_2: "Скачать",
                 showcase_poster: "Дизайн Постеров",
-                showcase_icon: "Дизайн Иконок"
+                showcase_icon: "Дизайн Иконок",
+                projects_title: "Наши Проекты"
             },
             ar: {
                 nav_features: "المميزات",
@@ -877,7 +965,8 @@
                 install_desc: "حمل الآن.",
                 btn_download_2: "macOS",
                 showcase_poster: "تصميم الملصقات",
-                showcase_icon: "تصميم الأيقونات"
+                showcase_icon: "تصميم الأيقونات",
+                projects_title: "مشاريعنا"
             },
             hi: {
                 nav_features: "विशेषताएँ",
@@ -903,7 +992,8 @@
                 install_desc: "अभी डाउनलोड करें।",
                 btn_download_2: "macOS",
                 showcase_poster: "पोस्टर डिज़ाइन",
-                showcase_icon: "आइकन डिज़ाइन"
+                showcase_icon: "आइकन डिज़ाइन",
+                projects_title: "हमारी परियोजनाएँ"
             }
         };
 

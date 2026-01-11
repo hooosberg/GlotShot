@@ -4,6 +4,7 @@
 
 # GlotShot
 ### مـوَلِّد صور المعاينة لمتجر التطبيقات
+[🌐 الموقع الرسمي](https://hooosberg.github.io/GlotShot/)
 
 [![تنزيل لنظام macOS](https://img.shields.io/badge/%D8%AA%D9%86%D8%B2%D9%8A%D9%84-macOS-blue?style=for-the-badge&logo=apple)](https://github.com/hooosberg/GlotShot/releases/latest)
 [![الموقع الإلكتروني](https://img.shields.io/badge/%D8%A7%D9%84%D9%85%D9%88%D9%82%D8%B9-GlotShot-green?style=for-the-badge)](https://hooosberg.github.io/GlotShot/)
@@ -21,7 +22,7 @@
 
 مع دعم مدمج لـ **الترجمة** و **المعالجـة بالدفعات**، يساعدك GlotShot على توسيع الوصول العالمي لتطبيقك من خلال إنشاء أصول تسويقية احترافية في دقائق.
 
-الموقع الرسمي والصفحة المقصودة موجودان هنا: [https://hooosberg.github.io/GlotShot/](https://hooosberg.github.io/GlotShot/)
+
 
 ## 📸 لقطات الشاشة
 

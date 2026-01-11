@@ -2,11 +2,12 @@
 
 <img src="../public/icon/DMG_Icon_1024x1024.png" width="128" height="128" alt="GlotShot Logo">
 
-# GlotShot
+# 万语图
 ### 打造完美的 App Store 预览图
+[🌐 官方网站](https://hooosberg.github.io/GlotShot/)
 
 [![下载 macOS 版本](https://img.shields.io/badge/下载-macOS-blue?style=for-the-badge&logo=apple)](https://github.com/hooosberg/GlotShot/releases/latest)
-[![官网](https://img.shields.io/badge/官网-GlotShot-green?style=for-the-badge)](https://hooosberg.github.io/GlotShot/)
+[![官网](https://img.shields.io/badge/官网-万语图-green?style=for-the-badge)](https://hooosberg.github.io/GlotShot/)
 [![许可证](https://img.shields.io/badge/许可证-MIT-yellow.svg?style=for-the-badge)](../LICENSE)
 [![平台](https://img.shields.io/badge/平台-macOS%20%7C%20Windows-lightgrey?style=for-the-badge)](https://electronjs.org/)
 
@@ -18,11 +19,10 @@
 
 ## 🚀 简介
 
-**GlotShot** 是一款专为移动应用开发者和设计师打造的强大工具，旨在轻松制作精美的 **App Store**、**Google Play**、**Steam** 以及 **Windows Store** 预览图（截图）及应用图标。
+**万语图** 是一款专为移动应用开发者和设计师打造的强大工具，旨在轻松制作精美的 **App Store**、**Google Play**、**Steam** 以及 **Windows Store** 预览图（截图）及应用图标。
 
-GlotShot 内置**本地化**和**批量处理**支持，帮助您在几分钟内生成专业的营销素材，从而拓展应用的全球市场影响力。
+**万语图** 内置**本地化**和**批量处理**支持，帮助您在几分钟内生成专业的营销素材，从而拓展应用的全球市场影响力。
 
-官方网站及落地页：[https://hooosberg.github.io/GlotShot/](https://hooosberg.github.io/GlotShot/)
 
 ## 📸 软件截图
 
@@ -46,7 +46,7 @@ GlotShot 内置**本地化**和**批量处理**支持，帮助您在几分钟内
 ### macOS 用户
 1. 访问 [Releases](https://github.com/hooosberg/GlotShot/releases/latest) 页面。
 2. 下载最新的 `.dmg` 安装包。
-3. 打开安装包并将 **GlotShot** 拖入应用程序文件夹即可。
+3. 打开安装包并将 **万语图** 拖入应用程序文件夹即可。
 
 ### Windows 用户
 1. 访问 [Releases](https://github.com/hooosberg/GlotShot/releases/latest) 页面。
@@ -71,7 +71,7 @@ GlotShot 内置**本地化**和**批量处理**支持，帮助您在几分钟内
 
 ## 🛠️ 开发构建
 
-GlotShot 基于 **Electron**、**React** 和 **Vite** 构建。
+**万语图** 基于 **Electron**、**React** 和 **Vite** 构建。
 
 ### 前置要求
 

@@ -4,6 +4,7 @@
 
 # GlotShot
 ### Create Perfect App Store Preview Images
+[🌐 Official Website](https://hooosberg.github.io/GlotShot/)
 
 [![macOS](https://img.shields.io/badge/-macOS-black?style=for-the-badge&logo=apple)](https://github.com/hooosberg/GlotShot/releases/latest)
 [![Windows](https://img.shields.io/badge/-Windows-0078D6?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/hooosberg/GlotShot/releases/latest)
@@ -26,7 +27,7 @@
 
 With built-in support for **localization** and **batch processing**, GlotShot helps you expand your app's global reach by generating professional marketing assets in minutes.
 
-The official website and landing page are hosted here: [https://hooosberg.github.io/GlotShot/](https://hooosberg.github.io/GlotShot/)
+
 
 ## 📸 Screenshots
 

@@ -4,6 +4,7 @@
 
 # GlotShot
 ### 앱 스토어 미리보기 이미지 생성기
+[🌐 공식 웹사이트](https://hooosberg.github.io/GlotShot/)
 
 [![macOS용 다운로드](https://img.shields.io/badge/다운로드-macOS-blue?style=for-the-badge&logo=apple)](https://github.com/hooosberg/GlotShot/releases/latest)
 [![웹사이트](https://img.shields.io/badge/웹사이트-GlotShot-green?style=for-the-badge)](https://hooosberg.github.io/GlotShot/)
@@ -21,7 +22,7 @@
 
 **현지화** 및 **일괄 처리** 기능을 기본으로 지원하여 몇 분 만에 전문적인 마케팅 자료를 생성하고 앱의 글로벌 도달 범위를 확장할 수 있도록 도와줍니다.
 
-공식 웹사이트 및 랜딩 페이지: [https://hooosberg.github.io/GlotShot/](https://hooosberg.github.io/GlotShot/)
+
 
 ## 📸 스크린샷
 

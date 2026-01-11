@@ -4,6 +4,7 @@
 
 # GlotShot
 ### Generatore di Immagini di Anteprima per App Store
+[🌐 Sito Ufficiale](https://hooosberg.github.io/GlotShot/)
 
 [![Scarica per macOS](https://img.shields.io/badge/Scarica-macOS-blue?style=for-the-badge&logo=apple)](https://github.com/hooosberg/GlotShot/releases/latest)
 [![Sito Web](https://img.shields.io/badge/Sito%20Web-GlotShot-green?style=for-the-badge)](https://hooosberg.github.io/GlotShot/)
@@ -21,7 +22,7 @@
 
 Con supporto integrato per la **localizzazione** e l'**elaborazione in batch**, GlotShot ti aiuta a espandere la portata globale della tua app generando risorse di marketing professionali in pochi minuti.
 
-Il sito ufficiale e la landing page sono disponibili qui: [https://hooosberg.github.io/GlotShot/](https://hooosberg.github.io/GlotShot/)
+
 
 ## 📸 Screenshot
 

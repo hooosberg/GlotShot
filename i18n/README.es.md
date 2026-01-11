@@ -4,6 +4,7 @@
 
 # GlotShot
 ### Generador de Imágenes de Vista Previa para App Store
+[🌐 Sitio Web Oficial](https://hooosberg.github.io/GlotShot/)
 
 [![Descargar para macOS](https://img.shields.io/badge/Descargar-macOS-blue?style=for-the-badge&logo=apple)](https://github.com/hooosberg/GlotShot/releases/latest)
 [![Sitio Web](https://img.shields.io/badge/Sitio%20Web-GlotShot-green?style=for-the-badge)](https://hooosberg.github.io/GlotShot/)
@@ -21,7 +22,7 @@
 
 Con soporte integrado para **localización** y **procesamiento por lotes**, GlotShot le ayuda a expandir el alcance global de su aplicación generando activos de marketing profesionales en minutos.
 
-El sitio web oficial y la página de destino se encuentran aquí: [https://hooosberg.github.io/GlotShot/](https://hooosberg.github.io/GlotShot/)
+
 
 ## 📸 Capturas de Pantalla
 

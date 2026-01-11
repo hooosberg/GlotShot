@@ -4,6 +4,7 @@
 
 # GlotShot
 ### App Store Vorschau-Bild Generator
+[🌐 Offizielle Website](https://hooosberg.github.io/GlotShot/)
 
 [![Download für macOS](https://img.shields.io/badge/Download-macOS-blue?style=for-the-badge&logo=apple)](https://github.com/hooosberg/GlotShot/releases/latest)
 [![Webseite](https://img.shields.io/badge/Webseite-GlotShot-green?style=for-the-badge)](https://hooosberg.github.io/GlotShot/)
@@ -21,7 +22,7 @@
 
 Mit integrierter Unterstützung für **Lokalisierung** und **Stapelverarbeitung** hilft Ihnen GlotShot, die globale Reichweite Ihrer App zu erweitern, indem Sie in wenigen Minuten professionelle Marketing-Assets generieren.
 
-Die offizielle Webseite und Landing Page finden Sie hier: [https://hooosberg.github.io/GlotShot/](https://hooosberg.github.io/GlotShot/)
+
 
 ## 📸 Screenshots
 
