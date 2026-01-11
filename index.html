@@ -1,13 +1,982 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>electron_app</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GlotShot - App Store Preview Image Generator</title>
+    <meta name="description"
+        content="Create stunning App Store preview images and screenshots with ease. Supports Apple, Android, and more.">
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="public/icon/AppIcon_1024x1024.png">
+    <style>
+        :root {
+            --primary-color: #0d84ff;
+            /* Slightly brighter blue */
+            --bg-color: #050505;
+            --text-color: #ffffff;
+            --glass-bg: rgba(255, 255, 255, 0.08);
+            /* More subtle glass */
+            --glass-border: rgba(255, 255, 255, 0.15);
+            --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            --accent-purple: #bf5af2;
+            --accent-gradient: linear-gradient(135deg, var(--primary-color), var(--accent-purple));
+        }
+
+        body {
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            overflow-x: hidden;
+            line-height: 1.5;
+        }
+
+        /* Background Animation */
+        .bg-gradient {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: -1;
+            background: radial-gradient(circle at 50% -20%, #1a1a2e 0%, #000000 70%);
+            overflow: hidden;
+        }
+
+        .orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(100px);
+            opacity: 0.4;
+            animation: float 20s infinite ease-in-out;
+        }
+
+        .orb-1 {
+            width: 600px;
+            height: 600px;
+            background: var(--primary-color);
+            top: -200px;
+            left: -100px;
+            animation-delay: 0s;
+        }
+
+        .orb-2 {
+            width: 500px;
+            height: 500px;
+            background: var(--accent-purple);
+            bottom: -100px;
+            right: -100px;
+            animation-delay: -10s;
+        }
+
+        @keyframes float {
+
+            0%,
+            100% {
+                transform: translate(0, 0) scale(1);
+            }
+
+            50% {
+                transform: translate(50px, -50px) scale(1.1);
+            }
+        }
+
+        /* Container */
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        /* Navbar */
+        nav {
+            display: flex;
+            justify-content: center;
+            /* Center the inner container */
+            align-items: center;
+            padding: 20px 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            width: 100%;
+            transition: all 0.3s ease;
+            background: rgba(0, 0, 0, 0.01);
+            /* Very subtle initial bg */
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+
+        nav.scrolled {
+            background: rgba(0, 0, 0, 0.3);
+            /* High transparency */
+            backdrop-filter: blur(50px) saturate(180%);
+            /* Strong blur & saturation */
+            -webkit-backdrop-filter: blur(50px) saturate(180%);
+            border-bottom: 1px solid var(--glass-border);
+            padding: 15px 0;
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-img {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+        }
+
+        .logo-text {
+            font-size: 20px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        .nav-right {
+            display: flex;
+            align-items: center;
+            gap: 24px;
+        }
+
+        .nav-links a {
+            color: #b0b0b0;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        .nav-links a:hover {
+            color: #fff;
+        }
+
+        /* Language Selector */
+        .lang-select-wrapper {
+            position: relative;
+        }
+
+        .lang-select {
+            appearance: none;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid var(--glass-border);
+            color: #fff;
+            padding: 6px 24px 6px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            outline: none;
+        }
+
+        .lang-select option {
+            background: #1a1a1a;
+            color: #fff;
+        }
+
+        /* Hero Section */
+        .hero {
+            text-align: center;
+            padding: 120px 0 80px;
+        }
+
+        .hero h1 {
+            font-size: 72px;
+            margin: 0 0 24px 0;
+            letter-spacing: -2px;
+            line-height: 1.05;
+            font-weight: 800;
+        }
+
+        .hero h1 span {
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero p {
+            font-size: 24px;
+            color: #a1a1a6;
+            max-width: 640px;
+            margin: 0 auto 40px;
+            font-weight: 400;
+        }
+
+        .cta-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 14px 28px;
+            border-radius: 99px;
+            font-weight: 600;
+            font-size: 17px;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+
+        .btn-glass {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #fff;
+            padding: 16px 40px;
+            font-size: 18px;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-glass::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: 0.5s;
+        }
+
+        .btn-glass:hover {
+            transform: translateY(-3px) scale(1.02);
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.4);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+        }
+
+        .btn-glass:hover::before {
+            left: 100%;
+        }
+
+        .btn-glass:active {
+            transform: translateY(1px);
+        }
+
+        /* App Showcase */
+        .showcase {
+            margin: 40px auto 100px;
+            position: relative;
+            max-width: 1000px;
+            border-radius: 12px;
+            box-shadow: 0 20px 80px rgba(0, 0, 0, 0.5);
+            /* Glass border */
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            overflow: hidden;
+        }
+
+        .showcase-controls {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .showcase-btn {
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #ccc;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .showcase-btn.active,
+        .showcase-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+            color: #fff;
+            border-color: #fff;
+        }
+
+        .showcase img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        /* Features Section */
+        .features-title {
+            text-align: center;
+            font-size: 40px;
+            font-weight: 700;
+            margin-bottom: 60px;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+            margin-bottom: 100px;
+        }
+
+        .feature-card {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 32px;
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.3s ease, border-color 0.3s;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .feature-icon {
+            font-size: 32px;
+            margin-bottom: 20px;
+            width: 48px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+        }
+
+        .feature-card h3 {
+            font-size: 20px;
+            margin: 0 0 12px 0;
+            font-weight: 600;
+        }
+
+        .feature-card p {
+            color: #a1a1a6;
+            margin: 0;
+            font-size: 15px;
+            line-height: 1.6;
+        }
+
+        /* Installation Section */
+        .install-section {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 24px;
+            padding: 60px;
+            text-align: center;
+            margin-bottom: 100px;
+        }
+
+        .install-section h2 {
+            font-size: 32px;
+            margin-bottom: 15px;
+        }
+
+        .install-section p {
+            color: #a1a1a6;
+            margin-bottom: 30px;
+        }
+
+        .os-badge {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 14px;
+            margin-top: 20px;
+            color: #eee;
+        }
+
+        /* Footer */
+        footer {
+            border-top: 1px solid var(--glass-border);
+            padding: 60px 0;
+            text-align: center;
+            color: #666;
+            font-size: 14px;
+        }
+
+        .footer-links {
+            margin-bottom: 20px;
+        }
+
+        .footer-links a {
+            color: #888;
+            margin: 0 12px;
+            text-decoration: none;
+        }
+
+        .footer-links a:hover {
+            color: #fff;
+        }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            .feature-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 600px) {
+            .hero h1 {
+                font-size: 48px;
+            }
+
+            .hero p {
+                font-size: 18px;
+            }
+
+            .feature-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .nav-links {
+                display: none;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="bg-gradient">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+    </div>
+
+    <nav id="navbar">
+        <div class="container" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+            <div class="logo-container">
+                <img src="public/icon/AppIcon_1024x1024.png" alt="Logo" class="logo-img">
+                <span class="logo-text">GlotShot</span>
+            </div>
+
+            <div class="nav-right">
+                <div class="nav-links">
+                    <a href="#features" data-i18n="nav_features">Features</a>
+                    <a href="#download" data-i18n="nav_download">Download</a>
+                    <a href="https://github.com/hooosberg/GlotShot" target="_blank">GitHub</a>
+                </div>
+
+                <div class="lang-select-wrapper">
+                    <select id="langSelect" class="lang-select" onchange="changeLanguage(this.value)">
+                        <option value="en">English</option>
+                        <option value="zh-CN">简体中文</option>
+                        <option value="es">Español</option>
+                        <option value="ja">日本語</option>
+                        <option value="ko">한국어</option>
+                        <option value="fr">Français</option>
+                        <option value="de">Deutsch</option>
+                        <option value="it">Italiano</option>
+                        <option value="pt">Português</option>
+                        <option value="ru">Русский</option>
+                        <option value="ar">العربية</option>
+                        <option value="hi">हिन्दी</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+
+        <section class="hero">
+            <h1 id="hero-title">Create Perfect <br><span>App Store Images</span></h1>
+            <p id="hero-subtitle">The ultimate tool for designing App Store, Google Play, Steam, and Windows Store
+                assets. Fast, localized, and beautiful.</p>
+            <div class="cta-buttons">
+                <a href="https://github.com/hooosberg/GlotShot/releases/latest" class="btn btn-glass"
+                    id="btn-download">macOS</a>
+                <a href="https://github.com/hooosberg/GlotShot/releases/latest" class="btn btn-glass"
+                    id="btn-download-win">Windows</a>
+                <a href="https://github.com/hooosberg/GlotShot/releases/latest" class="btn btn-glass"
+                    id="btn-download-linux">Linux</a>
+            </div>
+        </section>
+
+        <section class="showcase">
+            <div class="showcase-controls">
+                <button class="showcase-btn active" onclick="switchMode('poster')">Poster Design</button>
+                <button class="showcase-btn" onclick="switchMode('icon')">Icon Design</button>
+            </div>
+            <!-- Dynamic Image based on language and mode -->
+            <img id="showcase-img" src="public/截图/English/批量制作截图海报.jpg" alt="GlotShot Interface">
+        </section>
+
+        <h2 class="features-title" id="features-title">Why GlotShot?</h2>
+
+        <section id="features" class="features">
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">⚡️</div>
+                    <h3 data-i18n="feat_batch_title">Batch Processing</h3>
+                    <p data-i18n="feat_batch_desc">Create screenshots for multiple devices and languages in one go. Save
+                        hours of manual work.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🌍</div>
+                    <h3 data-i18n="feat_translate_title">AI Translation</h3>
+                    <p data-i18n="feat_translate_desc">Built-in Ollama integration for private, local translation of
+                        your marketing copy into 12+ languages.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🎨</div>
+                    <h3 data-i18n="feat_mode_title">Dual Modes</h3>
+                    <p data-i18n="feat_mode_desc">Switch seamlessly between Poster Design for screenshots and Icon
+                        Design for app icons.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">✂️</div>
+                    <h3 data-i18n="feat_icon_title">Icon Fabric</h3>
+                    <p data-i18n="feat_icon_desc">One source image, infinite exports. Automatically crop and resize
+                        icons for iOS, Android, and macOS.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🛍️</div>
+                    <h3 data-i18n="feat_store_title">Multi-Store Support</h3>
+                    <p data-i18n="feat_store_desc">Generate assets compatible with iOS (App Store), Android (Google
+                        Play), macOS, Windows Store, and Steam.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🔒</div>
+                    <h3 data-i18n="feat_privacy_title">Privacy First</h3>
+                    <p data-i18n="feat_privacy_desc">All processing happens locally on your machine. No data is sent to
+                        the cloud.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="download" class="install-section">
+            <h2 data-i18n="install_title">Ready to Design?</h2>
+            <p data-i18n="install_desc">Download the latest version for macOS (Apple Silicon & Intel), Windows, and
+                Linux.</p>
+            <div class="cta-buttons" style="margin-top: 30px;">
+                <a href="https://github.com/hooosberg/GlotShot/releases/latest" class="btn btn-glass"
+                    id="btn-download-2">macOS</a>
+                <a href="https://github.com/hooosberg/GlotShot/releases/latest" class="btn btn-glass"
+                    id="btn-download-win-2">Windows</a>
+                <a href="https://github.com/hooosberg/GlotShot/releases/latest" class="btn btn-glass"
+                    id="btn-download-linux-2">Linux</a>
+            </div>
+            <br>
+            <span class="os-badge">macOS 11.0+ • Windows 10+ • Ubuntu 20.04+</span>
+        </section>
+
+        <footer>
+            <div class="footer-links">
+                <a href="https://github.com/hooosberg/GlotShot" target="_blank">GitHub</a>
+                <a href="README.md" target="_blank">Documentation</a>
+                <a href="LICENSE" target="_blank">License</a>
+                <a href="PRIVACY.md" target="_blank">Privacy</a>
+            </div>
+            <p>&copy; 2026 GlotShot. Developed by hooosberg. <br> Contact: <a href="mailto:zikedece@proton.me"
+                    style="color: #888; text-decoration: none;">zikedece@proton.me</a></p>
+        </footer>
+    </div>
+
+    <script>
+        // Translations
+        const translations = {
+            en: {
+                nav_features: "Features",
+                nav_download: "Download",
+                hero_title: "Create Perfect <br><span>App Store Images</span>",
+                hero_subtitle: "The ultimate tool for designing App Store, Google Play, Steam, and Windows Store assets. Fast, localized, and beautiful.",
+                btn_download: "macOS",
+                btn_source: "View Source",
+                features_title: "Why GlotShot?",
+                feat_batch_title: "Batch Processing",
+                feat_batch_desc: "Create screenshots for multiple devices and languages in one go. Save hours of manual work.",
+                feat_translate_title: "AI Translation",
+                feat_translate_desc: "Built-in Ollama integration for private, local translation of your marketing copy into 12+ languages.",
+                feat_mode_title: "Dual Modes",
+                feat_mode_desc: "Switch seamlessly between Poster Design for screenshots and Icon Design for app icons.",
+                feat_icon_title: "Icon Fabric",
+                feat_icon_desc: "One source image, infinite exports. Automatically crop and resize icons for iOS, Android, and macOS.",
+                feat_store_title: "Multi-Store Support",
+                feat_store_desc: "Generate assets compatible with iOS (App Store), Android (Google Play), macOS, Windows Store, and Steam.",
+                feat_privacy_title: "Privacy First",
+                feat_privacy_desc: "All processing happens locally on your machine. No data is sent to the cloud.",
+                install_title: "Ready to Design?",
+                install_desc: "Download the latest version for macOS, Windows, and Linux.",
+                btn_download: "macOS",
+                btn_download_win: "Windows",
+                btn_download_linux: "Linux",
+                btn_download_2: "macOS",
+                btn_download_win_2: "Windows",
+                btn_download_linux_2: "Linux"
+            },
+            "zh-CN": {
+                nav_features: "功能特性",
+                nav_download: "下载",
+                hero_title: "打造完美的 <br><span>App Store 预览图</span>",
+                hero_subtitle: "专为 App Store 和 Google Play 设计的截图生成工具。快速、本地化、美观。",
+                install_title: "准备好开始设计了吗？",
+                install_desc: "下载适用于 macOS、Windows 和 Linux 的最新版本。",
+                btn_download: "macOS",
+                btn_download_win: "Windows",
+                btn_download_linux: "Linux",
+                btn_download_2: "macOS",
+                btn_download_win_2: "Windows",
+                btn_download_linux_2: "Linux",
+                feat_batch_title: "批量处理",
+                feat_batch_desc: "一次性为多种设备和语言制作截图。节省数小时的重复劳动。",
+                feat_translate_title: "AI 智能翻译",
+                feat_translate_desc: "内置 Ollama 集成，支持本地、隐私安全的营销文案多语言翻译。",
+                feat_mode_title: "双重模式",
+                feat_mode_desc: "在海报设计（应用截图）和图标设计（Logo 制作）之间无缝切换。",
+                feat_icon_title: "图标工场",
+                feat_icon_desc: "只需一张源图片，自动裁剪并导出 iOS、Android 和 macOS 所需的所有图标。",
+                feat_store_title: "全平台商店支持",
+                feat_store_desc: "一键生成符合 iOS (App Store)、Android (Google Play)、macOS、Windows Store 以及 Steam 标准的素材。",
+                feat_privacy_title: "隐私优先",
+                feat_privacy_desc: "所有处理均在本地进行。您的数据不会上传到云端。",
+                install_title: "准备好开始设计了吗？",
+                install_desc: "下载适用于 macOS (Apple Silicon & Intel) 的最新版本。",
+            },
+            es: {
+                nav_features: "Características",
+                nav_download: "Descargar",
+                hero_title: "Crea Imágenes <br><span>Perfectas</span>",
+                hero_subtitle: "La herramienta definitiva para capturas de App Store y Google Play.",
+                btn_download: "macOS",
+                btn_source: "Ver Código",
+                features_title: "¿Por qué GlotShot?",
+                feat_batch_title: "Procesamiento Lotes",
+                feat_batch_desc: "Crea capturas para múltiples dispositivos e idiomas a la vez.",
+                feat_translate_title: "Traducción IA",
+                feat_translate_desc: "Traducción local y privada con Ollama.",
+                feat_mode_title: "Modos Duales",
+                feat_mode_desc: "Alterna entre Diseño de Póster e Ícono.",
+                feat_icon_title: "Fábrica de Íconos",
+                feat_icon_desc: "Recorte automático para iOS, Android y macOS.",
+                feat_ui_title: "Diseño Moderno",
+                feat_ui_desc: "Interfaz oscura nativa con efectos de vidrio.",
+                feat_privacy_title: "Privacidad",
+                feat_privacy_desc: "Todo es local. Sin datos en la nube.",
+                install_title: "¿Listo para Diseñar?",
+                install_desc: "Descarga para macOS.",
+                btn_download_2: "Descargar Ahora"
+            },
+            ja: {
+                nav_features: "機能",
+                nav_download: "DL",
+                hero_title: "完璧な <br><span>ストア画像</span>",
+                hero_subtitle: "App StoreとGoogle Playのための究極のデザインツール。",
+                btn_download: "macOS",
+                btn_source: "ソース",
+                features_title: "選ばれる理由",
+                feat_batch_title: "バッチ処理",
+                feat_batch_desc: "複数デバイス・言語の画像を一度に作成。",
+                feat_translate_title: "AI翻訳",
+                feat_translate_desc: "Ollamaによるローカルでの多言語翻訳。",
+                feat_mode_title: "デュアルモード",
+                feat_mode_desc: "ポスターとアイコンデザインを切り替え。",
+                feat_icon_title: "アイコン工房",
+                feat_icon_desc: "全プラットフォーム用に自動切り抜き。",
+                feat_ui_title: "モダンUI",
+                feat_ui_desc: "macOSネイティブな美しいダークモード。",
+                feat_privacy_title: "低プライバシー",
+                feat_privacy_desc: "全てローカル処理。クラウド送信なし。",
+                install_title: "準備はいいですか？",
+                install_desc: "最新版をダウンロード。",
+                btn_download_2: "今すぐDL"
+            },
+            ko: {
+                nav_features: "기능",
+                nav_download: "다운로드",
+                hero_title: "완벽한 <br><span>스토어 이미지</span>",
+                hero_subtitle: "App Store 및 Google Play 스크린샷 디자인 도구.",
+                btn_download: "macOS",
+                btn_source: "소스 보기",
+                features_title: "왜 GlotShot인가?",
+                feat_batch_title: "일괄 처리",
+                feat_batch_desc: "여러 기기와 언어의 스크린샷을 한 번에 생성.",
+                feat_translate_title: "AI 번역",
+                feat_translate_desc: "Ollama를 통한 로컬 비공개 번역.",
+                feat_mode_title: "듀얼 모드",
+                feat_mode_desc: "포스터와 아이콘 디자인 간 전환.",
+                feat_icon_title: "아이콘 패브릭",
+                feat_icon_desc: "모든 플랫폼용 자동 자르기.",
+                feat_ui_title: "현대적 디자인",
+                feat_ui_desc: "macOS용 글래스모피즘 다크 모드.",
+                feat_privacy_title: "개인정보 보호",
+                feat_privacy_desc: "모든 처리는 로컬에서 수행됩니다.",
+                install_title: "시작할까요?",
+                install_desc: "최신 버전을 다운로드하세요.",
+                btn_download_2: "지금 다운로드"
+            },
+            fr: {
+                nav_features: "Fonctionnalités",
+                nav_download: "Télécharger",
+                hero_title: "Images <br><span>Parfaites</span>",
+                hero_subtitle: "L'outil ultime pour vos screenshots d'App Store.",
+                btn_download: "macOS",
+                btn_source: "Source",
+                features_title: "Pourquoi GlotShot ?",
+                feat_batch_title: "Traitement Lots",
+                feat_batch_desc: "Créez tout en une seule fois.",
+                feat_translate_title: "Traduction IA",
+                feat_translate_desc: "Traduction locale via Ollama.",
+                feat_mode_title: "Modes Doubles",
+                feat_mode_desc: "Design d'Affiche et d'Icône.",
+                feat_icon_title: "Usine à Icônes",
+                feat_icon_desc: "Recadrage auto pour toutes plateformes.",
+                feat_ui_title: "UI Moderne",
+                feat_ui_desc: "Interface sombre style macOS.",
+                feat_privacy_title: "Confidentialité",
+                feat_privacy_desc: "Traitement 100% local.",
+                install_title: "Prêt ?",
+                install_desc: "Téléchargez la dernière version.",
+                btn_download_2: "Télécharger"
+            },
+            de: {
+                nav_features: "Funktionen",
+                nav_download: "Download",
+                hero_title: "Perfekte <br><span>Bilder</span>",
+                hero_subtitle: "Das Tool für App Store Screenshots.",
+                btn_download: "macOS",
+                btn_source: "Source",
+                features_title: "Warum GlotShot?",
+                feat_batch_title: "Stapelverarbeitung",
+                feat_batch_desc: "Alles auf einmal erstellen.",
+                feat_translate_title: "KI-Übersetzung",
+                feat_translate_desc: "Lokale Übersetzung mit Ollama.",
+                feat_mode_title: "Duale Modi",
+                feat_mode_desc: "Poster- und Icon-Design.",
+                feat_icon_title: "Icon Fabrik",
+                feat_icon_desc: "Auto-Zuschnitt für alle.",
+                feat_ui_title: "Modernes UI",
+                feat_ui_desc: "Schickes Dark Mode Design.",
+                feat_privacy_title: "Datenschutz",
+                feat_privacy_desc: "Alles lokal. Keine Cloud.",
+                install_title: "Bereit?",
+                install_desc: "Laden Sie die neuste Version.",
+                btn_download_2: "Download"
+            },
+            it: {
+                nav_features: "Funzioni",
+                nav_download: "Scarica",
+                hero_title: "Immagini <br><span>Perfette</span>",
+                hero_subtitle: "Lo strumento per screenshot App Store.",
+                btn_download: "macOS",
+                btn_source: "Codice",
+                features_title: "Perché GlotShot?",
+                feat_batch_title: "Batch",
+                feat_batch_desc: "Crea tutto in una volta.",
+                feat_translate_title: "AI",
+                feat_translate_desc: "Traduzione locale con Ollama.",
+                feat_mode_title: "Doppia Modalità",
+                feat_mode_desc: "Poster e Icone.",
+                feat_icon_title: "Icone",
+                feat_icon_desc: "Ritaglio automatico.",
+                feat_ui_title: "Design Moderno",
+                feat_ui_desc: "Interfaccia scura macOS.",
+                feat_privacy_title: "Privacy",
+                feat_privacy_desc: "Tutto locale.",
+                install_title: "Pronto?",
+                install_desc: "Scarica ora.",
+                btn_download_2: "Scarica"
+            },
+            pt: {
+                nav_features: "Recursos",
+                nav_download: "Baixar",
+                hero_title: "Imagens <br><span>Perfeitas</span>",
+                hero_subtitle: "A ferramenta para capturas de tela.",
+                btn_download: "macOS",
+                btn_source: "Código",
+                features_title: "Por que GlotShot?",
+                feat_batch_title: "Lote",
+                feat_batch_desc: "Crie tudo de uma vez.",
+                feat_translate_title: "IA",
+                feat_translate_desc: "Tradução local via Ollama.",
+                feat_mode_title: "Modos Duplos",
+                feat_mode_desc: "Pôster e Ícone.",
+                feat_icon_title: "Fábrica Ícones",
+                feat_icon_desc: "Recorte automático.",
+                feat_ui_title: "Design Moderno",
+                feat_ui_desc: "Interface escura macOS.",
+                feat_privacy_title: "Privacidade",
+                feat_privacy_desc: "Tudo local.",
+                install_title: "Pronto?",
+                install_desc: "Baixe agora.",
+                btn_download_2: "Baixar"
+            },
+            ru: {
+                nav_features: "Функции",
+                nav_download: "Скачать",
+                hero_title: "Идеальные <br><span>Скриншоты</span>",
+                hero_subtitle: "Инструмент для App Store и Google Play.",
+                btn_download: "macOS",
+                btn_source: "Код",
+                features_title: "Почему GlotShot?",
+                feat_batch_title: "Пакетная",
+                feat_batch_desc: "Создавайте всё сразу.",
+                feat_translate_title: "ИИ Перевод",
+                feat_translate_desc: "Локальный перевод Ollama.",
+                feat_mode_title: "Два Режима",
+                feat_mode_desc: "Постеры и Иконки.",
+                feat_icon_title: "Иконки",
+                feat_icon_desc: "Авто-обрезка.",
+                feat_ui_title: "Дизайн",
+                feat_ui_desc: "Темная тема macOS.",
+                feat_privacy_title: "Приватность",
+                feat_privacy_desc: "Всё локально.",
+                install_title: "Готовы?",
+                install_desc: "Скачивайте.",
+                btn_download_2: "Скачать"
+            },
+            ar: {
+                nav_features: "المميزات",
+                nav_download: "تحميل",
+                hero_title: "صور <br><span>مثالية</span>",
+                hero_subtitle: "أداة لقطات الشاشة.",
+                btn_download: "macOS",
+                btn_source: "الكود",
+                features_title: "لماذا GlotShot؟",
+                feat_batch_title: "دفعات",
+                feat_batch_desc: "إنشاء الكل دفعة واحدة.",
+                feat_translate_title: "ذكاء اصطناعي",
+                feat_translate_desc: "ترجمة محلية Ollama.",
+                feat_mode_title: "مزدوج",
+                feat_mode_desc: "ملصقات وأيقونات.",
+                feat_icon_title: "أيقونات",
+                feat_icon_desc: "قص تلقائي.",
+                feat_ui_title: "تصميم",
+                feat_ui_desc: "واجهة داكنة.",
+                feat_privacy_title: "خصوصية",
+                feat_privacy_desc: "محلياً فقط.",
+                install_title: "جاهز؟",
+                install_desc: "حمل الآن.",
+                btn_download_2: "macOS"
+            },
+            hi: {
+                nav_features: "विशेषताएँ",
+                nav_download: "डाउनलोड",
+                hero_title: "परफेक्ट <br><span>इमेज</span>",
+                hero_subtitle: "ऐप स्टोर स्क्रीनशॉट टूल।",
+                btn_download: "macOS",
+                btn_source: "कोड",
+                features_title: "GlotShot क्यों?",
+                feat_batch_title: "बैच",
+                feat_batch_desc: "एक बार में सब बनाएं।",
+                feat_translate_title: "AI अनुवाद",
+                feat_translate_desc: "Ollama स्थानीय अनुवाद।",
+                feat_mode_title: "दोहरा मोड",
+                feat_mode_desc: "पोस्टर और आइकन।",
+                feat_icon_title: "आइकन",
+                feat_icon_desc: "ऑटो-क्रॉप।",
+                feat_ui_title: "डिज़ाइन",
+                feat_ui_desc: "सुंदर डार्क मोड।",
+                feat_privacy_title: "गोपनीयता",
+                feat_privacy_desc: "सब कुछ स्थानीय।",
+                install_title: "तैयार?",
+                install_desc: "अभी डाउनलोड करें।",
+                btn_download_2: "macOS"
+            }
+        };
+
+        // Screenshot Paths
+        const screenshots = {
+            poster: {
+                en: "public/截图/English/批量制作截图海报.jpg",
+                "zh-CN": "public/截图/中文/批量制作截图海报.jpg"
+            },
+            icon: {
+                en: "public/截图/English/多平台图标裁切.jpg",
+                "zh-CN": "public/截图/中文/多平台图标裁切.jpg"
+            }
+        };
+
+        let currentMode = 'poster';
+        let currentLang = 'en';
+
+        function switchMode(mode) {
+            currentMode = mode;
+            // Update buttons
+            document.querySelectorAll('.showcase-btn').forEach(btn => btn.classList.remove('active'));
+            if (mode === 'poster') {
+                document.querySelector('.showcase-btn:nth-child(1)').classList.add('active');
+            } else {
+                document.querySelector('.showcase-btn:nth-child(2)').classList.add('active');
+            }
+            updateShowcaseImage();
+        }
+
+        function updateShowcaseImage() {
+            const modeImages = screenshots[currentMode];
+            const imgSrc = modeImages[currentLang] || modeImages['en'];
+            document.getElementById('showcase-img').src = imgSrc;
+        }
+
+        function changeLanguage(lang) {
+            currentLang = lang;
+            // Update Text
+            const t = translations[lang] || translations['en'];
+
+            // Simple text replacements
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (t[key]) el.textContent = t[key];
+            });
+
+            // Special HTML replacements
+            if (t.hero_title) document.getElementById('hero-title').innerHTML = t.hero_title;
+            if (t.hero_subtitle) document.getElementById('hero-subtitle').textContent = t.hero_subtitle;
+            if (t.btn_download) document.getElementById('btn-download').textContent = t.btn_download;
+            if (t.btn_download_win) document.getElementById('btn-download-win').textContent = t.btn_download_win;
+            if (t.btn_download_linux) document.getElementById('btn-download-linux').textContent = t.btn_download_linux;
+            if (t.btn_source) document.getElementById('btn-source').textContent = t.btn_source;
+            if (t.btn_download_2) document.getElementById('btn-download-2').textContent = t.btn_download_2;
+            if (t.btn_download_win_2) document.getElementById('btn-download-win-2').textContent = t.btn_download_win_2;
+            if (t.btn_download_linux_2) document.getElementById('btn-download-linux-2').textContent = t.btn_download_linux_2;
+            if (t.features_title) document.getElementById('features-title').textContent = t.features_title;
+
+            // Update Screenshot
+            updateShowcaseImage();
+
+            // Update Select Layout
+            document.getElementById('langSelect').value = lang;
+
+            // Save preference
+            localStorage.setItem('glotshot-lang', lang);
+        }
+
+        // Init
+        document.addEventListener('DOMContentLoaded', () => {
+            // Auto-detect
+            const savedLang = localStorage.getItem('glotshot-lang');
+            const browserLang = navigator.language;
+
+            let targetLang = 'en';
+            if (savedLang) {
+                targetLang = savedLang;
+            } else if (browserLang.includes('zh')) {
+                targetLang = 'zh-CN';
+            }
+
+            // Apply available language or fallback
+            if (!translations[targetLang]) targetLang = 'en';
+
+            changeLanguage(targetLang);
+
+            // Navbar scroll effect
+            window.addEventListener('scroll', () => {
+                const nav = document.getElementById('navbar');
+                if (window.scrollY > 50) {
+                    nav.classList.add('scrolled');
+                } else {
+                    nav.classList.remove('scrolled');
+                }
+            });
+        });
+    </script>
+</body>
+
 </html>

@@ -8,5 +8,15 @@ export default defineConfig({
   base: './',
   define: {
     __APP_VERSION__: JSON.stringify(packageJson.version)
+  },
+  build: {
+    rollupOptions: {
+      input: {
+        app: 'app.html'
+      }
+    }
+  },
+  server: {
+    open: '/app.html'
   }
 })

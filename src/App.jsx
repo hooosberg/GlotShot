@@ -2077,7 +2077,7 @@ const App = () => {
                   {/* Chinese Title */}
                   <div>
                     <label className="block text-xs text-gray-400 mb-1">
-                      {LANGUAGES.find(l => l.code === globalSettings.primaryLang)?.nativeName || '主标题'} (Primary)
+                      {LANGUAGES.find(l => l.code === globalSettings.primaryLang)?.nativeName || t('scenes.primaryLanguage')} <span className="opacity-50">- {t('scenes.primaryLanguage')}</span>
                     </label>
                     <textarea
                       rows={2}
@@ -2096,7 +2096,7 @@ const App = () => {
                   <div className="relative">
                     <label className="block text-xs text-gray-400 mb-1 flex justify-between items-center">
                       <span>
-                        {globalSettings.secondaryLang === 'none' ? '副标题 (可选)' : LANGUAGES.find(l => l.code === globalSettings.secondaryLang)?.nativeName} (Secondary)
+                        {globalSettings.secondaryLang === 'none' ? t('scenes.translationLanguage') : LANGUAGES.find(l => l.code === globalSettings.secondaryLang)?.nativeName} <span className="opacity-50">- {t('scenes.translationLanguage')}</span>
                       </span>
                       <button
                         onClick={async () => {
@@ -2186,12 +2186,12 @@ const App = () => {
                   {previewLanguage === 'secondary' && globalSettings.secondaryLang !== 'none' && (
                     <div className="pt-4 border-t border-gray-800">
                       <h4 className="text-[10px] uppercase text-blue-400 font-semibold mb-3">
-                        {LANGUAGES.find(l => l.code === globalSettings.secondaryLang)?.nativeName || '副标题'} 样式
+                        {LANGUAGES.find(l => l.code === globalSettings.secondaryLang)?.nativeName || t('scenes.translationLanguage')} {t('text.primaryStyle')}
                       </h4>
                       <div className="space-y-3">
                         {/* Font Selection */}
                         <div>
-                          <div className="text-[10px] text-gray-400 mb-1">Font</div>
+                          <div className="text-[10px] text-gray-400 mb-1">{t('text.font')}</div>
                           <select
                             value={globalSettings.fontEN}
                             onChange={(e) => setGlobalSettings(s => ({ ...s, fontEN: e.target.value }))}
@@ -2209,12 +2209,12 @@ const App = () => {
                               onChange={(e) => setGlobalSettings(s => ({ ...s, textUppercase: e.target.checked }))}
                               className="rounded bg-gray-800 border-gray-700 text-blue-500"
                             />
-                            全部大写 (UPPERCASE)
+                            {t('text.uppercase')}
                           </label>
                         </div>
                         {/* Color Selection */}
                         <div>
-                          <div className="text-[10px] text-gray-400 mb-1">Color</div>
+                          <div className="text-[10px] text-gray-400 mb-1">{t('text.color')}</div>
                           <div className="flex gap-1.5 flex-wrap">
                             {TEXT_COLORS.map(c => (
                               <button
@@ -2229,7 +2229,7 @@ const App = () => {
                         </div>
                         {/* Size */}
                         <div className="group">
-                          <div className="flex justify-between text-[10px] text-gray-400 mb-1">字体大小 <span>{activeScene.settings.textSizeEN}</span></div>
+                          <div className="flex justify-between text-[10px] text-gray-400 mb-1">{t('text.fontSize')} <span>{activeScene.settings.textSizeEN}</span></div>
                           <div className="flex items-center gap-2">
                             <input
                               type="range" min="40" max="300" step="5"
@@ -2242,7 +2242,7 @@ const App = () => {
                         </div>
                         {/* Y Position */}
                         <div className="group">
-                          <div className="flex justify-between text-[10px] text-gray-400 mb-1">垂直位置 (Y) <span>{activeScene.settings.textYEN}</span></div>
+                          <div className="flex justify-between text-[10px] text-gray-400 mb-1">{t('layout.verticalPosition')} <span>{activeScene.settings.textYEN}</span></div>
                           <div className="flex items-center gap-2">
                             <input
                               type="range" min="50" max="1000" step="10"

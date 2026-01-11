@@ -20,10 +20,10 @@ function createWindow() {
   });
 
   if (isDev) {
-    mainWindow.loadURL('http://localhost:5173');
+    mainWindow.loadURL('http://localhost:5173/app.html');
     mainWindow.webContents.openDevTools();
   } else {
-    mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
+    mainWindow.loadFile(path.join(__dirname, '../dist/app.html'));
   }
 
   // Open external links in browser
@@ -165,11 +165,18 @@ function createMenu(labels = {}) {
       label: T('help', '帮助'),
       submenu: [
         {
+          label: T('visitWebsite', '访问官网首页'),
+          click: async () => {
+            await shell.openExternal('https://hooosberg.github.io/GlotShot/');
+          }
+        },
+        {
           label: T('visitGithub', '访问 GitHub 仓库'),
           click: async () => {
             await shell.openExternal('https://github.com/hooosberg/GlotShot');
           }
         },
+        { type: 'separator' },
         {
           label: T('aboutDeveloper', '关于开发者 (hooosberg)'),
           click: async () => {

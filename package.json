@@ -5,7 +5,7 @@
   "main": "electron/main.cjs",
   "type": "module",
   "scripts": {
-    "dev": "concurrently \"vite\" \"wait-on tcp:5173 && cross-env NODE_ENV=development electron .\"",
+    "dev": "concurrently \"vite\" \"wait-on tcp:5173/app.html && cross-env NODE_ENV=development electron .\"",
     "build": "vite build",
     "electron:build": "vite build && electron-builder",
     "preview": "vite preview"
@@ -37,15 +37,15 @@
     "dmg": {
       "background": "assets/dmg_background.png",
       "icon": "public/icon/DMG_Icon_1024x1024.png",
-      "iconSize": 100,
+      "iconSize": 80,
       "contents": [
         {
-          "x": 130,
-          "y": 220
+          "x": 140,
+          "y": 190
         },
         {
-          "x": 410,
-          "y": 220,
+          "x": 400,
+          "y": 190,
           "type": "link",
           "path": "/Applications"
         }
@@ -54,6 +54,39 @@
         "width": 540,
         "height": 380
       }
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ],
+      "icon": "build/icon.png"
+    },
+    "linux": {
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ],
+      "icon": "build/icon.png",
+      "category": "Graphics",
+      "maintainer": "Maohuhu <huyuanbo412004038@gmail.com>"
     },
     "files": [
       "dist/**/*",

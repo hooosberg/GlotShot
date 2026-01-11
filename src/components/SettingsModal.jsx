@@ -264,6 +264,14 @@ const SettingsModal = ({ isOpen, onClose, initialTab = 'start', appMode, setAppM
                                             </a>
                                         </span>
                                     </div>
+                                    <div className="meta-row">
+                                        <span className="meta-label">{t('settings.about.website')}</span>
+                                        <span className="meta-value">
+                                            <a href="#" onClick={(e) => { e.preventDefault(); window.open('https://hooosberg.github.io/GlotShot/', '_blank'); }}>
+                                                hooosberg.github.io/GlotShot
+                                            </a>
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
 
