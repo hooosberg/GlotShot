@@ -8,6 +8,16 @@ import DesignTips from './components/DesignTips';
 import { useTranslation, I18nProvider, detectSystemLanguage } from './locales/i18n';
 import ConfirmDialog from './components/ConfirmDialog';
 import { translations } from './locales/translations';
+import DeviceMockup, {
+  DEVICE_CONFIGS,
+  generateDeviceFrameSVG,
+  generateLockScreenUI,
+  svgToImage,
+  loadSvgContent,
+  modifySvgLayers,
+  extractSvgLayer,
+  loadDeviceSvgLayers,
+} from './components/DeviceMockup';
 
 // Default constants
 const DEFAULT_WIDTH = 2880;
@@ -15,18 +25,18 @@ const DEFAULT_HEIGHT = 1800;
 
 // Built-in backgrounds - 渐变配色
 const PRESETS = [
-  { id: 'bg1', name: '深海蓝调', value: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)' },
-  { id: 'bg2', name: '极光紫', value: 'linear-gradient(135deg, #2e1065 0%, #7c3aed 100%)' },
-  { id: 'bg3', name: '日落橙', value: 'linear-gradient(135deg, #c2410c 0%, #fb923c 100%)' },
-  { id: 'bg4', name: '清新绿', value: 'linear-gradient(135deg, #064e3b 0%, #10b981 100%)' },
-  { id: 'bg5', name: '高级灰', value: 'linear-gradient(135deg, #374151 0%, #111827 100%)' },
-  { id: 'bg6', name: '梅子黄', value: 'linear-gradient(135deg, #92400e 0%, #fbbf24 100%)' },
-  { id: 'bg7', name: '樱花粉', value: 'linear-gradient(135deg, #be185d 0%, #f472b6 100%)' },
-  { id: 'bg8', name: '海洋青', value: 'linear-gradient(135deg, #155e75 0%, #22d3ee 100%)' },
-  { id: 'bg9', name: '薯莉紫', value: 'linear-gradient(135deg, #4c1d95 0%, #c4b5fd 100%)' },
-  { id: 'bg10', name: '薄荷凉', value: 'linear-gradient(135deg, #065f46 0%, #6ee7b7 100%)' },
-  { id: 'bg11', name: '灰蓝调', value: 'linear-gradient(135deg, #1e3a5f 0%, #3b82f6 100%)' },
-  { id: 'bg12', name: '暮光金', value: 'linear-gradient(135deg, #78350f 0%, #f59e0b 100%)' },
+  { id: 'white', name: '纯白', value: '#FFFFFF' },
+  { id: 'white-gray', name: '白灰渐变', value: 'linear-gradient(180deg, #FFFFFF 0%, #F3F4F6 100%)' },
+  { id: 'titanium', name: '钛金属', value: 'linear-gradient(135deg, #e0e0e0 0%, #9ca3af 100%)' },
+  { id: 'midnight', name: '午夜黑', value: 'linear-gradient(135deg, #020617 0%, #1e293b 100%)' },
+  { id: 'mystic', name: '幻影紫', value: 'linear-gradient(135deg, #4c1d95 0%, #8b5cf6 100%)' },
+  { id: 'sunset', name: '日落金', value: 'linear-gradient(135deg, #f59e0b 0%, #f43f5e 100%)' },
+  { id: 'ocean-breeze', name: '海风蓝', value: 'linear-gradient(135deg, #a5f3fc 0%, #3b82f6 100%)' },
+  { id: 'forest', name: '极光绿', value: 'linear-gradient(135deg, #10b981 0%, #064e3b 100%)' },
+  { id: 'berry-smoothie', name: '浆果粉', value: 'linear-gradient(135deg, #f9a8d4 0%, #be185d 100%)' },
+  { id: 'royal', name: '皇家蓝', value: 'linear-gradient(135deg, #1e40af 0%, #172554 100%)' },
+  { id: 'candy', name: '糖果炫彩', value: 'linear-gradient(135deg, #ff9a9e 0%, #fecfef 99%, #fecfef 100%)' },
+  { id: 'cyber', name: '赛博朋克', value: 'linear-gradient(135deg, #ff00cc 0%, #333399 100%)' },
 ];
 
 // 内置背景图片 (public/背景/)
@@ -243,6 +253,8 @@ const TEXT_COLORS = [
   { id: 'gradient-blue', name: '渐变蓝', value: '#60A5FA', gradient: ['#60A5FA', '#3B82F6'] },
   { id: 'gradient-purple', name: '渐变紫', value: '#A78BFA', gradient: ['#A78BFA', '#8B5CF6'] },
   { id: 'gradient-gold', name: '渐变金', value: '#FCD34D', gradient: ['#FCD34D', '#F59E0B'] },
+  { id: 'classic-black', name: '经典黑', value: '#000000' },
+  { id: 'deep-gray', name: '深枪灰', value: '#374151' },
 ];
 
 // 描边颜色预设
@@ -416,6 +428,7 @@ const App = () => {
   };
 
   // Global Settings with localStorage persistence
+  const [isDeleteMode, setIsDeleteMode] = useState(false);
   const [globalSettings, setGlobalSettings] = useState(() => {
     try {
       const saved = localStorage.getItem('appstore_builder_global');
@@ -437,6 +450,8 @@ const App = () => {
             textShadow: true,
             textStroke: false,
             strokeColor: STROKE_COLORS[0].id,
+            strokeWidth: 4,
+            strokeOpacity: 1.0,
             fadeStart: 0.7,
             fadeOpacity: 0.25,
             textUppercase: false,
@@ -538,6 +553,137 @@ const App = () => {
     onConfirm: () => { },
     type: 'danger'
   });
+
+  // Device Mockup State
+  const [mockupEnabled, setMockupEnabled] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('appstore_builder_mockup_enabled')) || false;
+    } catch { return false; }
+  });
+  const [selectedDevice, setSelectedDevice] = useState(() => {
+    try {
+      return localStorage.getItem('appstore_builder_selected_device') || 'iphone-17-pro-max';
+    } catch { return 'iphone-17-pro-max'; }
+  });
+  const [deviceFrameColor, setDeviceFrameColor] = useState(() => {
+    try {
+      return localStorage.getItem('appstore_builder_frame_color') || '#1C1C1E';
+    } catch { return '#1C1C1E'; }
+  });
+  const [showLockScreenUI, setShowLockScreenUI] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('appstore_builder_lockscreen_ui')) || false;
+    } catch { return false; }
+  });
+  const [showMockupShadow, setShowMockupShadow] = useState(() => {
+    try {
+      const saved = localStorage.getItem('appstore_builder_mockup_shadow');
+      return saved !== null ? JSON.parse(saved) : true;
+    } catch { return true; }
+  });
+  const [shadowOpacity, setShadowOpacity] = useState(() => {
+    try {
+      const saved = localStorage.getItem('appstore_builder_shadow_opacity');
+      return saved !== null ? parseFloat(saved) : 0.5;
+    } catch { return 0.5; }
+  });
+
+  // Device scale, position, and orientation
+  const [deviceScale, setDeviceScale] = useState(() => {
+    try {
+      return parseFloat(localStorage.getItem('appstore_builder_device_scale')) || 1.0;
+    } catch { return 1.0; }
+  });
+  const [deviceX, setDeviceX] = useState(() => {
+    try {
+      return parseInt(localStorage.getItem('appstore_builder_device_x')) || 0;
+    } catch { return 0; }
+  });
+  const [deviceY, setDeviceY] = useState(() => {
+    try {
+      return parseInt(localStorage.getItem('appstore_builder_device_y')) || 400;
+    } catch { return 400; }
+  });
+  // Screen dimensions
+  const [iPadLandscape, setiPadLandscape] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('appstore_builder_ipad_landscape')) !== false;
+    } catch { return true; } // Default to landscape
+  });
+
+  // 缓存的设备图层，避免每次绘制都重复解析 SVG 导致卡顿
+  const [deviceLayers, setDeviceLayers] = useState(null);
+
+  // 当设备配置改变时重新加载图层
+  useEffect(() => {
+    let isMounted = true;
+
+    // 如果没有启用设备套壳，不需要加载
+    if (!mockupEnabled) {
+      setDeviceLayers(null);
+      return;
+    }
+
+    const loadLayers = async () => {
+      const config = DEVICE_CONFIGS[selectedDevice];
+      if (!config) return;
+
+      if (config.useSvgLayers && config.svgPath) {
+        try {
+          const layers = await loadDeviceSvgLayers(
+            config.svgPath,
+            {
+              frameColor: deviceFrameColor,
+              showUI: showLockScreenUI,
+              showShadow: true, // 始终加载投影图层，绘制时由 showMockupShadow 控制
+              deviceConfig: config,
+            }
+          );
+          if (isMounted) {
+            setDeviceLayers(layers);
+          }
+        } catch (e) {
+          console.warn('Failed to load SVG layers:', e);
+        }
+      } else {
+        if (isMounted) setDeviceLayers(null);
+      }
+    };
+
+    loadLayers();
+
+    return () => { isMounted = false; };
+  }, [mockupEnabled, selectedDevice, deviceFrameColor, showLockScreenUI]); // 注意：showMockupShadow 改变不需要重新加载图层，只影响绘制可见性
+
+
+
+  // Persist Device Mockup settings
+  useEffect(() => {
+    localStorage.setItem('appstore_builder_mockup_enabled', JSON.stringify(mockupEnabled));
+  }, [mockupEnabled]);
+  useEffect(() => {
+    localStorage.setItem('appstore_builder_selected_device', selectedDevice);
+  }, [selectedDevice]);
+  useEffect(() => {
+    localStorage.setItem('appstore_builder_frame_color', deviceFrameColor);
+  }, [deviceFrameColor]);
+  useEffect(() => {
+    localStorage.setItem('appstore_builder_lockscreen_ui', JSON.stringify(showLockScreenUI));
+  }, [showLockScreenUI]);
+  useEffect(() => {
+    localStorage.setItem('appstore_builder_device_scale', deviceScale.toString());
+  }, [deviceScale]);
+  useEffect(() => {
+    localStorage.setItem('appstore_builder_device_x', deviceX.toString());
+  }, [deviceX]);
+  useEffect(() => {
+    localStorage.setItem('appstore_builder_device_y', deviceY.toString());
+  }, [deviceY]);
+  useEffect(() => {
+    localStorage.setItem('appstore_builder_mockup_shadow', JSON.stringify(showMockupShadow));
+    localStorage.setItem('appstore_builder_shadow_opacity', shadowOpacity.toString());
+  }, [showMockupShadow, shadowOpacity, deviceLayers]);
+
 
   // Refs for click outside
   const platformDropdownRef = useRef(null);
@@ -744,13 +890,34 @@ const App = () => {
     });
   };
 
+  // 用于跟踪渲染版本，避免异步渲染竞态条件导致拖影
+  const renderVersionRef = useRef(0);
+
   const drawCanvas = useCallback(async (canvas, scene, language, isExport = false) => {
     if (!canvas || !scene) return;
+
+    // 增加渲染版本号
+    const currentVersion = ++renderVersionRef.current;
+
     const ctx = canvas.getContext('2d');
     const { width, height, backgroundType, backgroundValue, backgroundUpload } = globalSettings;
 
     canvas.width = width;
     canvas.height = height;
+
+    // Clear canvas to prevent ghost images when scaling
+    ctx.clearRect(0, 0, width, height);
+
+    // 重置所有 canvas 状态
+    ctx.globalAlpha = 1;
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.shadowColor = 'transparent';
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 0;
+
+    // 检查渲染版本是否仍然有效的辅助函数
+    const isRenderValid = () => renderVersionRef.current === currentVersion;
 
     // 1. Draw Background
     if ((backgroundType === 'upload' || backgroundType === 'builtin') && backgroundUpload) {
@@ -830,7 +997,9 @@ const App = () => {
       }
 
       // Apply color with bottom fade effect - use fadeStart and fadeOpacity
-      const fadeStart = globalSettings.fadeStart || 0.7;
+      const rawFadeStart = globalSettings.fadeStart !== undefined ? globalSettings.fadeStart : 0.7;
+      // Clamp fadeStart to 0-1 for addColorStop, but keep raw value for logic if needed
+      const fadeStart = Math.max(0, Math.min(1, rawFadeStart));
       const fadeOpacity = globalSettings.fadeOpacity || 0.25;
       const fadeHex = Math.round(fadeOpacity * 255).toString(16).padStart(2, '0');
 
@@ -850,7 +1019,8 @@ const App = () => {
       if (globalSettings.textStroke) {
         const strokeColorPreset = STROKE_COLORS.find(c => c.id === globalSettings.strokeColor) || STROKE_COLORS[0];
         ctx.strokeStyle = strokeColorPreset.value;
-        ctx.lineWidth = fontSize * 0.03;
+        const sWidthMultiplier = globalSettings.strokeWidth ? (globalSettings.strokeWidth / 100) : 0.04;
+        ctx.lineWidth = fontSize * sWidthMultiplier;
         ctx.lineJoin = 'round';
       }
 
@@ -876,7 +1046,10 @@ const App = () => {
 
         // Draw stroke first if enabled
         if (globalSettings.textStroke) {
+          ctx.save();
+          ctx.globalAlpha = globalSettings.strokeOpacity !== undefined ? globalSettings.strokeOpacity : 1.0;
           ctx.strokeText(line, textX, lineY);
+          ctx.restore();
         }
 
         // Draw fill
@@ -892,43 +1065,319 @@ const App = () => {
 
 
 
-    // 3. Draw Screenshot (Top Layer)
+    // 3. Draw Screenshot (Top Layer) - with optional Device Mockup
     if (scene.screenshot) {
       try {
         const ssImg = await loadImage(scene.screenshot);
+
+        // 检查渲染版本是否仍然有效
+        if (!isRenderValid()) return;
+
         const baseScale = scene.settings.screenshotScale || 0.8;
-        const targetWidth = width * 0.6 * baseScale;
-        const ratio = targetWidth / ssImg.width;
-        const targetHeight = ssImg.height * ratio;
 
-        const x = (width - targetWidth) / 2 + (scene.settings.screenshotX || 0);
-        const y = (scene.settings.screenshotY || 400);
+        // Check if device mockup is enabled
+        if (mockupEnabled && DEVICE_CONFIGS[selectedDevice]) {
+          const deviceConfig = DEVICE_CONFIGS[selectedDevice];
+          let { screen, frameSize, cornerRadius } = deviceConfig;
 
-        // Shadow - controlled by screenshotShadow setting
-        if (scene.settings.screenshotShadow !== false) {
-          ctx.shadowColor = "rgba(0, 0, 0, 0.4)";
-          ctx.shadowBlur = 50;
-          ctx.shadowOffsetY = 30;
+          // Handle iPad orientation switch
+          let actualIsLandscape = deviceConfig.isLandscape;
+          if (selectedDevice === 'ipad-pro') {
+            actualIsLandscape = iPadLandscape;
+            // Swap dimensions if orientation is different from default
+            if (!iPadLandscape) {
+              // Switch to portrait - swap screen and frame dimensions
+              screen = {
+                x: deviceConfig.screen.y,
+                y: deviceConfig.screen.x,
+                width: deviceConfig.screen.height,
+                height: deviceConfig.screen.width,
+              };
+              frameSize = {
+                width: deviceConfig.frameSize.height,
+                height: deviceConfig.frameSize.width,
+              };
+            }
+          }
+
+          // Use deviceScale for independent device sizing
+          const finalDeviceScale = deviceScale;
+
+          // Calculate base scale to fit device reasonably
+          const baseDeviceWidth = width * 0.35;
+          const baseDeviceHeight = height * 0.6;
+
+          const deviceWidth = frameSize.width;
+          const deviceHeight = frameSize.height;
+
+          const baseScaleRatio = Math.min(
+            baseDeviceWidth / deviceWidth,
+            baseDeviceHeight / deviceHeight
+          );
+
+          // Apply user's device scale
+          const scaleRatio = baseScaleRatio * finalDeviceScale;
+
+          const scaledFrameWidth = deviceWidth * scaleRatio;
+          const scaledFrameHeight = deviceHeight * scaleRatio;
+          const scaledScreenWidth = screen.width * scaleRatio;
+          const scaledScreenHeight = screen.height * scaleRatio;
+          const scaledScreenX = screen.x * scaleRatio;
+          const scaledScreenY = screen.y * scaleRatio;
+          const scaledCornerRadius = cornerRadius * scaleRatio;
+
+          // Use deviceX and deviceY for device position (independent of screenshot position)
+          const frameX = (width - scaledFrameWidth) / 2 + deviceX;
+          const frameY = deviceY;
+
+          // Shadow for device frame
+          // Shadow for device frame - REMOVED: Managed by DeviceMockup settings (showMockupShadow)
+          // if (scene.settings.screenshotShadow !== false) { ... }
+
+          // Draw device frame background (for shadow) - skip for SVG layers and PNG frames
+          // These modes will have shadow applied directly when drawing the image
+          if (!deviceConfig.useSvgLayers && !deviceConfig.usePngFrame) {
+            ctx.fillStyle = deviceFrameColor;
+            const outerRadius = scaledCornerRadius + 8 * scaleRatio;
+            ctx.beginPath();
+            ctx.roundRect(frameX, frameY, scaledFrameWidth, scaledFrameHeight, outerRadius);
+            ctx.fill();
+          }
+
+          // Reset shadow before drawing content
+          ctx.shadowColor = "transparent";
+          ctx.shadowBlur = 0;
+          ctx.shadowOffsetY = 0;
+
+
+          // 预加载 SVG 图层（从外部状态获取缓存的图层）
+          // 如果图层尚未加载完成，暂时不绘制（或者等待下一帧）
+          const svgLayers = deviceLayers;
+
+          if (deviceConfig.useSvgLayers && deviceConfig.svgPath && svgLayers) {
+            try {
+              // 检查渲染版本是否仍然有效
+              if (!isRenderValid()) return;
+
+              // 在裁剪区之前绘制投影层（投影应该在设备外围）
+              if (showMockupShadow && svgLayers.shadow) {
+                // 使用 shadowTransform 配置计算投影的绘制位置和尺寸
+                const st = deviceConfig.shadowTransform;
+                if (st) {
+                  // 计算投影在 SVG 坐标系中的实际尺寸和位置
+                  const shadowScale = st.scale || 1;
+                  const shadowWidthInSvg = st.width * shadowScale;
+                  const shadowHeightInSvg = st.height * shadowScale;
+                  const shadowXInSvg = st.x;
+                  const shadowYInSvg = st.y;
+
+                  // 计算画布上的投影尺寸（按设备缩放比例）
+                  const shadowDrawWidth = shadowWidthInSvg * scaleRatio;
+                  const shadowDrawHeight = shadowHeightInSvg * scaleRatio;
+                  const shadowDrawX = frameX + (shadowXInSvg * scaleRatio);
+                  const shadowDrawY = frameY + (shadowYInSvg * scaleRatio);
+
+                  ctx.save();
+                  ctx.globalAlpha = shadowOpacity;
+                  ctx.drawImage(svgLayers.shadow, shadowDrawX, shadowDrawY, shadowDrawWidth, shadowDrawHeight);
+                  ctx.restore();
+                } else {
+                  // 没有 shadowTransform 配置时使用设备框架尺寸
+                  ctx.save();
+                  ctx.globalAlpha = shadowOpacity;
+                  ctx.drawImage(svgLayers.shadow, frameX, frameY, scaledFrameWidth, scaledFrameHeight);
+                  ctx.restore();
+                }
+              }
+            } catch (e) {
+              console.warn('Failed to load SVG layers:', e);
+            }
+          }
+
+          // Create clipping path for screen area
+          ctx.save();
+          ctx.beginPath();
+          ctx.roundRect(
+            frameX + scaledScreenX,
+            frameY + scaledScreenY,
+            scaledScreenWidth,
+            scaledScreenHeight,
+            scaledCornerRadius
+          );
+          ctx.clip();
+
+          // Draw screenshot within clipped area using scene settings
+          const ssAspect = ssImg.width / ssImg.height;
+          const screenAspect = scaledScreenWidth / scaledScreenHeight;
+
+          // Get screenshot scale from scene settings (default 1.0 for device mode)
+          const ssScale = scene.settings.screenshotScale || 1.0;
+
+          // Base size calculation (cover fit)
+          let baseDrawWidth, baseDrawHeight;
+          if (ssAspect > screenAspect) {
+            // Screenshot is wider - fit height
+            baseDrawHeight = scaledScreenHeight;
+            baseDrawWidth = baseDrawHeight * ssAspect;
+          } else {
+            // Screenshot is taller - fit width
+            baseDrawWidth = scaledScreenWidth;
+            baseDrawHeight = baseDrawWidth / ssAspect;
+          }
+
+          // Apply screenshot scale from scene settings
+          const drawWidth = baseDrawWidth * ssScale;
+          const drawHeight = baseDrawHeight * ssScale;
+
+          // Calculate position with offset from scene settings
+          const ssOffsetX = scene.settings.screenshotX || 0;
+          const ssOffsetY = scene.settings.screenshotY || 0;
+          const drawX = frameX + scaledScreenX + (scaledScreenWidth - drawWidth) / 2 + ssOffsetX * scaleRatio;
+          const drawY = frameY + scaledScreenY + (scaledScreenHeight - drawHeight) / 2 + ssOffsetY * scaleRatio;
+
+          ctx.drawImage(ssImg, drawX, drawY, drawWidth, drawHeight);
+
+          // Draw Lock Screen UI overlay if enabled
+          if (showLockScreenUI && deviceConfig.hasLockScreen) {
+            try {
+              // Check if using SVG layers or legacy modes
+              if (deviceConfig.useSvgLayers && deviceConfig.svgPath) {
+                // New SVG layers mode - UI layer is handled separately below
+                // Skip here as we'll draw it with the frame
+              } else if (deviceConfig.usePngFrame && deviceConfig.uiSvg) {
+                // Legacy PNG + SVG mode
+                const uiImg = await loadImage(deviceConfig.uiSvg);
+                ctx.drawImage(
+                  uiImg,
+                  frameX,
+                  frameY,
+                  scaledFrameWidth,
+                  scaledFrameHeight
+                );
+              } else {
+                // Use generated lock screen SVG
+                const lockScreenSVG = generateLockScreenUI(selectedDevice);
+                if (lockScreenSVG) {
+                  const lockScreenImg = await svgToImage(lockScreenSVG);
+                  ctx.drawImage(
+                    lockScreenImg,
+                    frameX + scaledScreenX,
+                    frameY + scaledScreenY,
+                    scaledScreenWidth,
+                    scaledScreenHeight
+                  );
+                }
+              }
+            } catch (e) {
+              console.warn('Failed to render lock screen UI:', e);
+            }
+          }
+
+          ctx.restore();
+
+          // Draw device frame on top
+          try {
+            // Check if using new SVG layers mode
+            if (deviceConfig.useSvgLayers && deviceConfig.svgPath && svgLayers) {
+              // 使用预加载的 SVG 图层
+
+              // Draw UI layer (if enabled and available)
+              if (showLockScreenUI && svgLayers.ui) {
+                ctx.drawImage(svgLayers.ui, frameX, frameY, scaledFrameWidth, scaledFrameHeight);
+              }
+
+              // Apply shadow effect to frame
+              // Apply shadow effect to frame - REMOVED: Managed by DeviceMockup settings (showMockupShadow)
+              // if (scene.settings.screenshotShadow !== false) { ... }
+
+              // Draw frame on top
+              if (svgLayers.frame) {
+                ctx.drawImage(svgLayers.frame, frameX, frameY, scaledFrameWidth, scaledFrameHeight);
+              }
+
+              // Reset shadow
+              ctx.shadowColor = "transparent";
+              ctx.shadowBlur = 0;
+              ctx.shadowOffsetY = 0;
+            } else if (deviceConfig.usePngFrame && deviceConfig.framePng) {
+              // Legacy PNG frame mode
+              const frameImg = await loadImage(deviceConfig.framePng);
+              // Apply shadow directly to PNG frame
+              // Apply shadow directly to PNG frame - REMOVED: Managed by DeviceMockup settings (showMockupShadow)
+              // if (scene.settings.screenshotShadow !== false) { ... }
+              ctx.drawImage(frameImg, frameX, frameY, scaledFrameWidth, scaledFrameHeight);
+              // Reset shadow
+              ctx.shadowColor = "transparent";
+              ctx.shadowBlur = 0;
+              ctx.shadowOffsetY = 0;
+            } else {
+              // Use generated device frame SVG
+              // For iPad portrait mode, we need to generate rotated SVG
+              const effectiveDevice = selectedDevice === 'ipad-pro' && !iPadLandscape
+                ? 'ipad-pro-portrait'
+                : selectedDevice;
+              const frameSVG = generateDeviceFrameSVG(selectedDevice, deviceFrameColor, !iPadLandscape && selectedDevice === 'ipad-pro');
+              if (frameSVG) {
+                const frameImg = await svgToImage(frameSVG);
+                ctx.drawImage(frameImg, frameX, frameY, scaledFrameWidth, scaledFrameHeight);
+              }
+            }
+          } catch (e) {
+            console.warn('Failed to render device frame:', e);
+          }
+
+        } else {
+          // Original screenshot rendering (without device mockup)
+          const targetWidth = width * 0.6 * baseScale;
+          const ratio = targetWidth / ssImg.width;
+          const targetHeight = ssImg.height * ratio;
+
+          const x = (width - targetWidth) / 2 + (scene.settings.screenshotX || 0);
+          const y = (scene.settings.screenshotY || 400);
+
+          // Shadow - controlled by screenshotShadow setting
+          if (scene.settings.screenshotShadow !== false) {
+            ctx.shadowColor = "rgba(0, 0, 0, 0.4)";
+            ctx.shadowBlur = 50;
+            ctx.shadowOffsetY = 30;
+          }
+
+          ctx.drawImage(ssImg, x, y, targetWidth, targetHeight);
+
+          // Reset shadow
+          ctx.shadowColor = "transparent";
+          ctx.shadowBlur = 0;
+          ctx.shadowOffsetY = 0;
         }
-
-        ctx.drawImage(ssImg, x, y, targetWidth, targetHeight);
-
-        // Reset shadow
-        ctx.shadowColor = "transparent";
-        ctx.shadowBlur = 0;
-        ctx.shadowOffsetY = 0;
       } catch (e) {
         console.error("Error loading screenshot", e);
       }
     }
 
-  }, [globalSettings]);
+  }, [globalSettings, mockupEnabled, selectedDevice, deviceFrameColor, showLockScreenUI, showMockupShadow, shadowOpacity, deviceLayers, deviceScale, deviceX, deviceY, iPadLandscape]);
+
+  // 使用 requestAnimationFrame 防抖，优化拖拽时的渲染性能
+  const rafIdRef = useRef(null);
 
   useEffect(() => {
     if (activeScene && canvasRef.current) {
-      drawCanvas(canvasRef.current, activeScene, previewLanguage);
+      // 取消之前的渲染请求
+      if (rafIdRef.current) {
+        cancelAnimationFrame(rafIdRef.current);
+      }
+
+      // 使用 requestAnimationFrame 合并渲染请求
+      rafIdRef.current = requestAnimationFrame(() => {
+        drawCanvas(canvasRef.current, activeScene, previewLanguage);
+      });
     }
-  }, [activeScene, globalSettings, previewLanguage, drawCanvas]);
+
+    return () => {
+      if (rafIdRef.current) {
+        cancelAnimationFrame(rafIdRef.current);
+      }
+    };
+  }, [activeScene, globalSettings, previewLanguage, drawCanvas, mockupEnabled, selectedDevice, deviceFrameColor, showLockScreenUI, showMockupShadow, deviceScale, deviceX, deviceY, iPadLandscape]);
 
 
   // --- HANDLERS ---
@@ -1157,12 +1606,34 @@ const App = () => {
     });
   };
 
+  const clearAllUploadedBackgrounds = () => {
+    setConfirmDialog({
+      isOpen: true,
+      title: t('sidebar.clearAll'),
+      message: t('alerts.confirmDeleteBackground') + ' (' + t('sidebar.clearAll') + ')',
+      confirmText: t('common.confirm'),
+      cancelText: t('common.cancel'),
+      type: 'danger',
+      onConfirm: () => {
+        setUploadedBackgrounds([]);
+        if (globalSettings.backgroundType === 'upload') {
+          setGlobalSettings(prev => ({
+            ...prev,
+            backgroundType: 'preset',
+            backgroundValue: PRESETS[0].value,
+          }));
+        }
+        setConfirmDialog({ isOpen: false });
+      }
+    });
+  };
+
   const updateScene = (id, updates) => {
     setScenes(prev => prev.map(s => s.id === id ? { ...s, ...updates } : s));
   };
 
   const updateSceneSettings = (key, value) => {
-    setScenes(prev => prev.map(s => s.id === activeSceneId ? {
+    setScenes(prev => prev.map(s => s.id === activeScene.id ? {
       ...s,
       settings: { ...s.settings, [key]: value }
     } : s));
@@ -1368,16 +1839,26 @@ const App = () => {
                   {['Apple', 'Google Play', 'Windows', 'Steam'].map(category => (
                     <div key={category}>
                       <div className="px-3 py-1.5 text-[10px] uppercase text-gray-500 font-semibold bg-white/5">{category}</div>
-                      {PLATFORM_PRESETS.filter(p => p.category === category).map(preset => (
-                        <button
-                          key={preset.id}
-                          onClick={() => handlePlatformChange(preset)}
-                          className={`w-full flex items-center justify-between px-3 py-2 text-xs hover:bg-white/5 transition ${selectedPlatform === preset.id ? 'text-blue-400 bg-blue-500/10' : 'text-gray-300'}`}
-                        >
-                          <span>{getPresetName(preset.id, preset.name)}</span>
-                          <span className="text-[10px] text-gray-500 font-mono">{preset.width}×{preset.height}</span>
-                        </button>
-                      ))}
+                      {PLATFORM_PRESETS.filter(p => p.category === category).map(preset => {
+                        const isRequired = ['iphone-6.9', 'iphone-5.5', 'ipad-13'].includes(preset.id);
+                        return (
+                          <button
+                            key={preset.id}
+                            onClick={() => handlePlatformChange(preset)}
+                            className={`w-full flex items-center justify-between px-3 py-2 text-xs hover:bg-white/5 transition ${selectedPlatform === preset.id ? 'text-blue-400 bg-blue-500/10' : 'text-gray-300'}`}
+                          >
+                            <div className="flex items-center gap-2">
+                              <span>{getPresetName(preset.id, preset.name)}</span>
+                              {isRequired && (
+                                <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-blue-500/20 text-blue-400 border border-blue-500/30 transform scale-90 origin-left">
+                                  {t('common.required')}
+                                </span>
+                              )}
+                            </div>
+                            <span className="text-[10px] text-gray-500 font-mono">{preset.width}×{preset.height}</span>
+                          </button>
+                        );
+                      })}
                     </div>
                   ))}
                   {customSizePresets.length > 0 && (
@@ -1741,15 +2222,15 @@ const App = () => {
                               >
                                 <img src={bg.data} alt={bg.name} className="w-full h-full object-cover" />
                               </button>
-
-                              {/* Delete Button Overlay */}
-                              <div
-                                onClick={(e) => deleteUploadedBackground(idx, e)}
-                                className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity cursor-pointer z-20"
-                                title={t('common.delete')}
-                              >
-                                <Trash2 className="w-4 h-4 text-white hover:text-red-400 transition-colors" />
-                              </div>
+                              {isDeleteMode && (
+                                <div
+                                  onClick={(e) => deleteUploadedBackground(idx, e)}
+                                  className="absolute inset-0 bg-red-500/20 flex items-center justify-center cursor-pointer z-20"
+                                  title={t('common.delete')}
+                                >
+                                  <Trash2 className="w-4 h-4 text-white" />
+                                </div>
+                              )}
                             </div>
                           ))}
                           {uploadedBackgrounds.length > 10 && (
@@ -1761,12 +2242,23 @@ const App = () => {
                       </div>
                     )}
 
-                    <button
-                      onClick={handleDirectoryBgUpload}
-                      className={`flex items-center justify-center w-full p-2 text-xs bg-gray-800 rounded cursor-pointer hover:bg-gray-700 border border-gray-700 transition ${globalSettings.backgroundType === 'upload' ? 'border-blue-500 text-blue-400' : 'text-gray-400'}`}
-                    >
-                      <FolderInput className="w-3 h-3 mr-2" /> {t('sidebar.linkBackgroundFolder')}
-                    </button>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={handleDirectoryBgUpload}
+                        className={`flex-1 flex items-center justify-center p-2 text-xs bg-gray-800 rounded cursor-pointer hover:bg-gray-700 border border-gray-700 transition ${globalSettings.backgroundType === 'upload' ? 'border-blue-500 text-blue-400' : 'text-gray-400'}`}
+                      >
+                        <FolderInput className="w-3 h-3 mr-2" /> {t('sidebar.linkBackgroundFolder')}
+                      </button>
+                      {uploadedBackgrounds.length > 0 && (
+                        <button
+                          onClick={() => setIsDeleteMode(!isDeleteMode)}
+                          className={`flex items-center justify-center w-8 p-2 text-xs rounded cursor-pointer border transition ${isDeleteMode ? 'bg-red-500/20 border-red-500 text-red-500 hover:bg-red-500/30' : 'bg-gray-800 border-gray-700 text-gray-400 hover:text-red-400 hover:border-red-500/50'}`}
+                          title={isDeleteMode ? t('common.done') : t('common.delete')}
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      )}
+                    </div>
                     {backgroundFolderPath && (
                       <p className="text-[9px] text-gray-500 mt-1 text-center font-mono truncate" title={backgroundFolderPath}>
                         {backgroundFolderPath.split('/').slice(-2).join('/')}
@@ -1862,7 +2354,7 @@ const App = () => {
                   const currentPreset = [...PLATFORM_PRESETS, ...customSizePresets].find(p => p.id === selectedPlatform);
                   if (currentPreset?.designTips?.length > 0) {
                     return (
-                      <div className="absolute top-4 left-4 right-4 z-10">
+                      <div className="absolute top-4 left-4 z-10">
                         <DesignTips tips={translateDesignTips(currentPreset.designTips)} mode={currentPreset.mode || 'poster'} />
                       </div>
                     );
@@ -1890,6 +2382,8 @@ const App = () => {
 
             {/* RIGHT SIDEBAR - Edit Active Scene */}
             <div className="w-72 border-l flex flex-col flex-shrink-0 shadow-xl z-20 no-scrollbar overflow-y-auto sidebar-panel">
+
+              {/* 1. Header & Layout Presets (Global Params) */}
               <div className="p-5 border-b border-gray-800">
                 <div className="flex justify-between items-center mb-4">
                   <h2 className="text-sm font-bold text-gray-100">{t('rightPanel.paramAdjust')}</h2>
@@ -1899,89 +2393,34 @@ const App = () => {
                   </button>
                 </div>
 
-                <div className="space-y-4">
-                  {/* Saved Configs */}
-                  <div className="bg-gray-800/50 rounded-lg p-3 border border-gray-700/50 mb-4">
-                    <label className="text-[10px] uppercase text-gray-500 font-semibold mb-2 block flex items-center gap-2">
-                      <Archive className="w-3 h-3" /> {t('rightPanel.layoutPresets')}
-                    </label>
-                    <div className="flex gap-1 mb-2">
-                      <input
-                        type="text"
-                        value={configName}
-                        onChange={(e) => setConfigName(e.target.value)}
-                        placeholder={t('rightPanel.newPresetName')}
-                        className="flex-1 min-w-0 bg-gray-900 text-xs border border-gray-700 rounded px-2 py-1"
-                      />
-                      <button onClick={saveConfig} className="p-1 bg-blue-900/50 text-blue-300 rounded border border-blue-800 hover:bg-blue-800"><Save className="w-3 h-3" /></button>
-                    </div>
-                    <div className="max-h-24 overflow-y-auto space-y-1">
-                      {savedConfigs.map((config, idx) => (
-                        <div key={idx} className="flex items-center justify-between text-xs bg-gray-900/50 p-1 rounded group">
-                          <span onClick={() => loadConfig(config)} className="text-gray-300 cursor-pointer hover:text-white flex-1 truncate">{config.name}</span>
-                          <button onClick={() => deleteConfig(idx)} className="text-red-500 opacity-0 group-hover:opacity-100"><Trash2 className="w-3 h-3" /></button>
-                        </div>
-                      ))}
-                    </div>
+                {/* Saved Configs */}
+                <div className="bg-gray-800/50 rounded-lg p-3 border border-gray-700/50">
+                  <label className="text-[10px] uppercase text-gray-500 font-semibold mb-2 block flex items-center gap-2">
+                    <Archive className="w-3 h-3" /> {t('rightPanel.layoutPresets')}
+                  </label>
+                  <div className="flex gap-1 mb-2">
+                    <input
+                      type="text"
+                      value={configName}
+                      onChange={(e) => setConfigName(e.target.value)}
+                      placeholder={t('rightPanel.newPresetName')}
+                      className="flex-1 min-w-0 bg-gray-900 text-xs border border-gray-700 rounded px-2 py-1"
+                    />
+                    <button onClick={saveConfig} className="p-1 bg-blue-900/50 text-blue-300 rounded border border-blue-800 hover:bg-blue-800"><Save className="w-3 h-3" /></button>
                   </div>
-
-                  {/* Screenshot Controls */}
-                  <div className="bg-gray-800/50 rounded-lg p-3 border border-gray-700/50">
-                    <label className="text-[10px] uppercase text-gray-500 font-semibold mb-2 block flex items-center gap-2">
-                      <Settings className="w-3 h-3" /> {t('layout.title')}
-                    </label>
-                    <div className="space-y-3">
-                      <div className="group">
-                        <div className="flex justify-between text-[10px] text-gray-400 mb-1">
-                          {t('layout.scale')} <span>{Math.round(activeScene.settings.screenshotScale * 100)}%</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <input type="range" min="0.3" max="3.0" step="0.01" value={activeScene.settings.screenshotScale}
-                            onChange={(e) => updateSceneSettings('screenshotScale', parseFloat(e.target.value))}
-                            className="flex-1 h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
-                          />
-                          <button onClick={() => resetSceneSetting('screenshotScale')} className="p-1 text-gray-500 hover:text-blue-400 opacity-0 group-hover:opacity-100 transition"><RotateCcw className="w-3 h-3" /></button>
-                        </div>
+                  <div className="max-h-24 overflow-y-auto space-y-1">
+                    {savedConfigs.map((config, idx) => (
+                      <div key={idx} className="flex items-center justify-between text-xs bg-gray-900/50 p-1 rounded group">
+                        <span onClick={() => loadConfig(config)} className="text-gray-300 cursor-pointer hover:text-white flex-1 truncate">{config.name}</span>
+                        <button onClick={() => deleteConfig(idx)} className="text-red-500 opacity-0 group-hover:opacity-100"><Trash2 className="w-3 h-3" /></button>
                       </div>
-                      <div className="group">
-                        <div className="flex justify-between text-[10px] text-gray-400 mb-1">{t('layout.verticalPosition')} <span>{activeScene.settings.screenshotY}</span></div>
-                        <div className="flex items-center gap-2">
-                          <input type="range" min="0" max="1500" step="10" value={activeScene.settings.screenshotY} onChange={(e) =>
-                            updateSceneSettings('screenshotY', parseInt(e.target.value))}
-                            className="flex-1 h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
-                          />
-                          <button onClick={() => resetSceneSetting('screenshotY')} className="p-1 text-gray-500 hover:text-blue-400 opacity-0 group-hover:opacity-100 transition"><RotateCcw className="w-3 h-3" /></button>
-                        </div>
-                      </div>
-                      <div className="group">
-                        <div className="flex justify-between text-[10px] text-gray-400 mb-1">{t('layout.horizontalPosition')} <span>{activeScene.settings.screenshotX}</span></div>
-                        <div className="flex items-center gap-2">
-                          <input type="range" min="-1000" max="1000" step="10" value={activeScene.settings.screenshotX}
-                            onChange={(e) => updateSceneSettings('screenshotX', parseInt(e.target.value))}
-                            className="flex-1 h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
-                          />
-                          <button onClick={() => resetSceneSetting('screenshotX')} className="p-1 text-gray-500 hover:text-blue-400 opacity-0 group-hover:opacity-100 transition"><RotateCcw className="w-3 h-3" /></button>
-                        </div>
-                      </div>
-                      {/* Screenshot Shadow Toggle */}
-                      <div className="pt-2 mt-2 border-t border-gray-700/50">
-                        <label className="flex items-center gap-2 text-xs text-gray-400 cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={activeScene.settings.screenshotShadow !== false}
-                            onChange={(e) => updateSceneSettings('screenshotShadow', e.target.checked)}
-                            className="rounded bg-gray-800 border-gray-700 text-blue-500"
-                          />
-                          {t('layout.screenshotShadow')}
-                        </label>
-                      </div>
-                    </div>
+                    ))}
                   </div>
                 </div>
               </div>
 
-              {/* Text Settings */}
-              <div className="p-5">
+              {/* 2. Text Settings */}
+              <div className="p-5 border-b border-gray-800">
                 <h3 className="text-[10px] uppercase text-gray-500 font-semibold mb-4 flex items-center gap-2">
                   <Type className="w-3 h-3" /> {t('text.title')}
                 </h3>
@@ -2035,18 +2474,41 @@ const App = () => {
                     </div>
                     {/* Stroke Color - only show when stroke is enabled */}
                     {globalSettings.textStroke && (
-                      <div className="mt-2">
-                        <div className="text-[10px] text-gray-400 mb-1">{t('text.strokeColor')}</div>
-                        <div className="flex gap-1.5">
-                          {STROKE_COLORS.map(c => (
-                            <button
-                              key={c.id}
-                              onClick={() => setGlobalSettings(s => ({ ...s, strokeColor: c.id }))}
-                              className={`w-5 h-5 rounded-md border-2 transition ${globalSettings.strokeColor === c.id ? 'border-blue-500 scale-110' : 'border-gray-600 hover:border-gray-500'}`}
-                              style={{ background: c.value }}
-                              title={c.name}
+                      <div className="mt-2 space-y-2">
+                        <div>
+                          <div className="text-[10px] text-gray-400 mb-1">{t('text.strokeColor')}</div>
+                          <div className="flex gap-1.5">
+                            {STROKE_COLORS.map(c => (
+                              <button
+                                key={c.id}
+                                onClick={() => setGlobalSettings(s => ({ ...s, strokeColor: c.id }))}
+                                className={`w-5 h-5 rounded-md border-2 transition ${globalSettings.strokeColor === c.id ? 'border-blue-500 scale-110' : 'border-gray-600 hover:border-gray-500'}`}
+                                style={{ background: c.value }}
+                                title={c.name}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                        {/* Stroke Width & Opacity */}
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <div className="flex justify-between text-[10px] text-gray-400 mb-1">{t('text.strokeWidth') || 'Width'} <span>{globalSettings.strokeWidth || 4}</span></div>
+                            <input
+                              type="range" min="1" max="15" step="1"
+                              value={globalSettings.strokeWidth || 4}
+                              onChange={(e) => setGlobalSettings(s => ({ ...s, strokeWidth: parseInt(e.target.value) }))}
+                              className="w-full h-1 bg-gray-700 rounded-lg accent-blue-500"
                             />
-                          ))}
+                          </div>
+                          <div>
+                            <div className="flex justify-between text-[10px] text-gray-400 mb-1">{t('text.strokeOpacity') || 'Opacity'} <span>{Math.round((globalSettings.strokeOpacity !== undefined ? globalSettings.strokeOpacity : 1) * 100)}%</span></div>
+                            <input
+                              type="range" min="0" max="1" step="0.1"
+                              value={globalSettings.strokeOpacity !== undefined ? globalSettings.strokeOpacity : 1}
+                              onChange={(e) => setGlobalSettings(s => ({ ...s, strokeOpacity: parseFloat(e.target.value) }))}
+                              className="w-full h-1 bg-gray-700 rounded-lg accent-blue-500"
+                            />
+                          </div>
                         </div>
                       </div>
                     )}
@@ -2056,7 +2518,7 @@ const App = () => {
                       <div>
                         <div className="flex justify-between text-[10px] text-gray-400 mb-1">{t('text.fadePosition')} <span>{Math.round(globalSettings.fadeStart * 100)}%</span></div>
                         <input
-                          type="range" min="0.3" max="1" step="0.05"
+                          type="range" min="-1" max="1" step="0.05"
                           value={globalSettings.fadeStart}
                           onChange={(e) => setGlobalSettings(s => ({ ...s, fadeStart: parseFloat(e.target.value) }))}
                           className="w-full h-1 bg-gray-700 rounded-lg accent-blue-500"
@@ -2258,9 +2720,95 @@ const App = () => {
                   )}
                 </div>
               </div>
+
+              {/* 3. Screenshot & Device Controls */}
+              <div className="p-5">
+                <div className="space-y-4">
+                  {/* Screenshot Controls */}
+                  <div className="bg-gray-800/50 rounded-lg p-3 border border-gray-700/50">
+                    <label className="text-[10px] uppercase text-gray-500 font-semibold mb-2 block flex items-center gap-2">
+                      <Settings className="w-3 h-3" /> {t('layout.title')}
+                    </label>
+                    <div className="space-y-3">
+                      <div className="group">
+                        <div className="flex justify-between text-[10px] text-gray-400 mb-1">
+                          {t('layout.scale')} <span>{Math.round(activeScene.settings.screenshotScale * 100)}%</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <input type="range" min="0.3" max="3.0" step="0.01" value={activeScene.settings.screenshotScale}
+                            onChange={(e) => updateSceneSettings('screenshotScale', parseFloat(e.target.value))}
+                            className="flex-1 h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                          />
+                          <button onClick={() => resetSceneSetting('screenshotScale')} className="p-1 text-gray-500 hover:text-blue-400 opacity-0 group-hover:opacity-100 transition"><RotateCcw className="w-3 h-3" /></button>
+                        </div>
+                      </div>
+                      <div className="group">
+                        <div className="flex justify-between text-[10px] text-gray-400 mb-1">{t('layout.verticalPosition')} <span>{activeScene.settings.screenshotY}</span></div>
+                        <div className="flex items-center gap-2">
+                          <input type="range" min="0" max="1500" step="10" value={activeScene.settings.screenshotY} onChange={(e) =>
+                            updateSceneSettings('screenshotY', parseInt(e.target.value))}
+                            className="flex-1 h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                          />
+                          <button onClick={() => resetSceneSetting('screenshotY')} className="p-1 text-gray-500 hover:text-blue-400 opacity-0 group-hover:opacity-100 transition"><RotateCcw className="w-3 h-3" /></button>
+                        </div>
+                      </div>
+                      <div className="group">
+                        <div className="flex justify-between text-[10px] text-gray-400 mb-1">{t('layout.horizontalPosition')} <span>{activeScene.settings.screenshotX}</span></div>
+                        <div className="flex items-center gap-2">
+                          <input type="range" min="-1000" max="1000" step="10" value={activeScene.settings.screenshotX}
+                            onChange={(e) => updateSceneSettings('screenshotX', parseInt(e.target.value))}
+                            className="flex-1 h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                          />
+                          <button onClick={() => resetSceneSetting('screenshotX')} className="p-1 text-gray-500 hover:text-blue-400 opacity-0 group-hover:opacity-100 transition"><RotateCcw className="w-3 h-3" /></button>
+                        </div>
+                      </div>
+                      {/* Screenshot Shadow Toggle */}
+                      <div className="pt-2 mt-2 border-t border-gray-700/50">
+                        <label className={`flex items-center gap-2 text-xs text-gray-400 ${mockupEnabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}>
+                          <input
+                            type="checkbox"
+                            checked={activeScene.settings.screenshotShadow !== false}
+                            onChange={(e) => updateSceneSettings('screenshotShadow', e.target.checked)}
+                            disabled={mockupEnabled}
+                            className="rounded bg-gray-800 border-gray-700 text-blue-500 disabled:opacity-50"
+                          />
+                          {t('layout.screenshotShadow')}
+                          {mockupEnabled && <span className="text-[10px] ml-auto italic opacity-70">({t('layout.disabledByMockup') || 'Disabled by Device'})</span>}
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Device Mockup Controls */}
+                  <DeviceMockup
+                    enabled={mockupEnabled}
+                    setEnabled={setMockupEnabled}
+                    selectedDevice={selectedDevice}
+                    setSelectedDevice={setSelectedDevice}
+                    frameColor={deviceFrameColor}
+                    setFrameColor={setDeviceFrameColor}
+                    showLockScreen={showLockScreenUI}
+                    setShowLockScreen={setShowLockScreenUI}
+                    showShadow={showMockupShadow}
+                    setShowShadow={setShowMockupShadow}
+                    shadowOpacity={shadowOpacity}
+                    setShadowOpacity={setShadowOpacity}
+                    deviceScale={deviceScale}
+                    setDeviceScale={setDeviceScale}
+                    deviceX={deviceX}
+                    setDeviceX={setDeviceX}
+                    deviceY={deviceY}
+                    setDeviceY={setDeviceY}
+                    iPadLandscape={iPadLandscape}
+                    setiPadLandscape={setiPadLandscape}
+                    t={t}
+                  />
+                </div>
+              </div>
             </div>
           </div >
-        )}
+        )
+      }
 
       {/* 底部进度条 */}
       {

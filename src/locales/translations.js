@@ -22,6 +22,8 @@ export const translations = {
             import: '导入',
             export: '导出',
             close: '关闭',
+            required: '必选',
+            recommended: '推荐',
         },
 
         // Header 区域
@@ -78,6 +80,8 @@ export const translations = {
             shadow: '阴影',
             stroke: '描边',
             strokeColor: '描边颜色',
+            strokeWidth: '描边粗细',
+            strokeOpacity: '描边透明度',
             gradientControl: '文字渐变控制',
             fadePosition: '渐变位置',
             bottomOpacity: '底部透明度',
@@ -410,6 +414,35 @@ export const translations = {
             steam: 'Steam',
             custom: '自定义',
         },
+
+        // 设备套壳
+        mockup: {
+            title: '设备套壳',
+            enable: '启用设备套壳',
+            selectDevice: '选择设备',
+            frameColor: '边框颜色',
+            showLockScreen: '显示锁屏 UI',
+            showShadow: '显示投影',
+            screenSize: '屏幕尺寸',
+            orientation: '方向',
+            portrait: '竖屏',
+            landscape: '横屏',
+            devices: {
+                'iphone-17-pro-max': 'iPhone 17 Pro Max',
+                'ipad-pro': 'iPad Pro',
+                'macbook-pro': 'MacBook Pro',
+                'android': 'Android',
+                'imac': 'iMac',
+                'apple-watch': 'Apple Watch',
+            },
+            colors: {
+                black: '深空黑',
+                silver: '银色',
+                gold: '金色',
+                titanium: '钛色',
+                spaceGray: '深空灰',
+            },
+        },
     },
 
     'en': {
@@ -426,6 +459,8 @@ export const translations = {
             import: 'Import',
             export: 'Export',
             close: 'Close',
+            required: 'Required',
+            recommended: 'Recommended',
         },
 
         header: {
@@ -477,6 +512,8 @@ export const translations = {
             shadow: 'Shadow',
             stroke: 'Stroke',
             strokeColor: 'Stroke Color',
+            strokeWidth: 'Stroke Width',
+            strokeOpacity: 'Stroke Opacity',
             gradientControl: 'Text Gradient Control',
             fadePosition: 'Fade Position',
             bottomOpacity: 'Bottom Opacity',
@@ -797,6 +834,35 @@ export const translations = {
             windows: 'Windows',
             steam: 'Steam',
             custom: 'Custom',
+        },
+
+        // Device Mockup
+        mockup: {
+            title: 'Device Mockup',
+            enable: 'Enable Device Mockup',
+            selectDevice: 'Select Device',
+            frameColor: 'Frame Color',
+            showLockScreen: 'Show Lock Screen UI',
+            showShadow: 'Show Shadow',
+            screenSize: 'Screen Size',
+            orientation: 'Orientation',
+            portrait: 'Portrait',
+            landscape: 'Landscape',
+            devices: {
+                'iphone-17-pro-max': 'iPhone 17 Pro Max',
+                'ipad-pro': 'iPad Pro',
+                'macbook-pro': 'MacBook Pro',
+                'android': 'Android',
+                'imac': 'iMac',
+                'apple-watch': 'Apple Watch',
+            },
+            colors: {
+                black: 'Space Black',
+                silver: 'Silver',
+                gold: 'Gold',
+                titanium: 'Titanium',
+                spaceGray: 'Space Gray',
+            },
         },
     },
 

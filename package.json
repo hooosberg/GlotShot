@@ -5,7 +5,7 @@
   "main": "electron/main.cjs",
   "type": "module",
   "scripts": {
-    "dev": "concurrently \"vite\" \"wait-on tcp:5173/app.html && cross-env NODE_ENV=development electron .\"",
+    "dev": "concurrently \"vite\" \"wait-on http-get://localhost:5173/app.html && cross-env NODE_ENV=development electron .\"",
     "build": "vite build",
     "electron:build": "vite build && electron-builder",
     "preview": "vite preview"

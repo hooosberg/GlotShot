@@ -12,15 +12,17 @@ const DesignTips = ({ tips, mode, className = '' }) => {
     const [isExpanded, setIsExpanded] = useState(true);
     const { t } = useTranslation();
 
-    // 每次切换模式或提示内容变化时，重置为展开状态，并在4秒后收起
+    // 每次切换模式或提示内容变化时，重置为展开状态，并在3秒后收起
+    // Use tips content string instead of array reference to prevent constant re-triggers
+    const tipsKey = tips?.join(',') || '';
     useEffect(() => {
         setIsExpanded(true);
         const timer = setTimeout(() => {
             setIsExpanded(false);
-        }, 4000);
+        }, 3000);
 
         return () => clearTimeout(timer);
-    }, [mode, tips]);
+    }, [mode, tipsKey]);
 
     const isScreenshotMode = mode === 'screenshot';
     // 使用透明毛玻璃背景，悬浮在预览区上方
@@ -42,7 +44,7 @@ const DesignTips = ({ tips, mode, className = '' }) => {
             className={`
                 ${bgColor} border rounded-lg shadow-lg ${className}
                 transition-all duration-300 ease-in-out
-                ${isExpanded ? 'p-3' : 'p-2 w-fit'}
+                ${isExpanded ? 'p-3' : 'p-2 w-8 h-8'}
             `}
             onMouseEnter={() => setIsExpanded(true)}
             onMouseLeave={() => setIsExpanded(false)}
@@ -53,9 +55,11 @@ const DesignTips = ({ tips, mode, className = '' }) => {
                 ) : (
                     <Lightbulb className={`w-4 h-4 ${iconColor}`} />
                 )}
-                <span className={`text-xs font-medium ${iconColor} whitespace-nowrap`}>
-                    {getTipLabel()}
-                </span>
+                {isExpanded && (
+                    <span className={`text-xs font-medium ${iconColor} whitespace-nowrap ml-1`}>
+                        {getTipLabel()}
+                    </span>
+                )}
             </div>
 
             <div className={`
