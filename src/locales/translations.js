@@ -159,6 +159,7 @@ export const translations = {
             confirmApplyAll: '确定要将当前截图大小、位置和文字布局应用到所有场景吗？',
             confirmDeleteScenes: '确定要删除选中的 {n} 个场景吗？',
             confirmDeleteBackground: '确定要删除这张背景图片吗？',
+            noDeviceConfigs: '没有已保存的设备配置，请先调整并保存设备配置',
         },
 
         // 图标工厂
@@ -434,6 +435,7 @@ export const translations = {
                 'android': 'Android',
                 'imac': 'iMac',
                 'apple-watch': 'Apple Watch',
+                'apple-family': 'Apple 全家福',
             },
             colors: {
                 black: '深空黑',
@@ -442,6 +444,19 @@ export const translations = {
                 titanium: '钛色',
                 spaceGray: '深空灰',
             },
+            exportAllDevices: '导出所有设备版本',
+            saveConfig: '保存当前设备配置',
+            updateConfig: '更新设备配置',
+            configSaved: '此设备已保存配置',
+            opacity: '透明度',
+        },
+
+        // 导出选项
+        export: {
+            byLanguage: '按语言导出',
+            byLanguageDesc: '中文/English 分文件夹',
+            byDevice: '按设备导出',
+            byDeviceDesc: '每设备一套截图',
         },
     },
 
@@ -588,6 +603,7 @@ export const translations = {
             confirmApplyAll: 'Apply current screenshot size, position, and text layout to all scenes?',
             confirmDeleteScenes: 'Delete {n} selected scenes?',
             confirmDeleteBackground: 'Are you sure you want to delete this background image?',
+            noDeviceConfigs: 'No saved device configs. Please adjust and save device settings first.',
         },
 
         iconFabric: {
@@ -855,6 +871,7 @@ export const translations = {
                 'android': 'Android',
                 'imac': 'iMac',
                 'apple-watch': 'Apple Watch',
+                'apple-family': 'Apple Family',
             },
             colors: {
                 black: 'Space Black',
@@ -863,6 +880,19 @@ export const translations = {
                 titanium: 'Titanium',
                 spaceGray: 'Space Gray',
             },
+            exportAllDevices: 'Export all device versions',
+            saveConfig: 'Save Device Config',
+            updateConfig: 'Update Device Config',
+            configSaved: 'Config saved for this device',
+            opacity: 'Opacity',
+        },
+
+        // Export options
+        export: {
+            byLanguage: 'Export by Language',
+            byLanguageDesc: 'Separate by language folder',
+            byDevice: 'Export by Device',
+            byDeviceDesc: 'One set per device',
         },
     },
 
@@ -1586,6 +1616,8 @@ export const translations = {
             import: '가져오기',
             export: '내보내기',
             close: '닫기',
+            required: '필수',
+            recommended: '권장',
         },
         header: {
             import: '가져오기',
@@ -1923,6 +1955,37 @@ export const translations = {
             windows: 'Windows',
             steam: 'Steam',
             custom: '사용자 지정',
+        },
+
+        // Device Mockup
+        mockup: {
+            title: '디바이스 목업',
+            enable: '디바이스 목업 활성화',
+            selectDevice: '기기 선택',
+            frameColor: '프레임 색상',
+            showLockScreen: '잠금 화면 UI 표시',
+            showShadow: '그림자 표시',
+            screenSize: '화면 크기',
+            orientation: '방향',
+            portrait: '세로',
+            landscape: '가로',
+            devices: {
+                'iphone-17-pro-max': 'iPhone 17 Pro Max',
+                'ipad-pro': 'iPad Pro',
+                'macbook-pro': 'MacBook Pro',
+                'android': 'Android',
+                'imac': 'iMac',
+                'apple-watch': 'Apple Watch',
+                'apple-family': 'Apple 패밀리',
+            },
+            colors: {
+                black: '스페이스 블랙',
+                silver: '실버',
+                gold: '골드',
+                titanium: '티타늄',
+                spaceGray: '스페이스 그레이',
+            },
+            exportAllDevices: '모든 기기 버전 내보내기',
         },
     },
     'fr': {

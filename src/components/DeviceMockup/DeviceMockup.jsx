@@ -1,5 +1,5 @@
 import React from 'react';
-import { Smartphone, Tablet, Laptop, Monitor, Watch, RotateCcw } from 'lucide-react';
+import { Smartphone, Tablet, Laptop, Monitor, Watch, RotateCcw, Save, Check } from 'lucide-react';
 import './DeviceMockup.css';
 
 /**
@@ -327,6 +327,61 @@ export const DEVICE_CONFIGS = {
       { id: 'silver', name: '银色', value: '#E3E4E6' },
     ],
     defaultFrameColor: '#C2BCB2',
+  },
+
+  // Apple Family Composite - 所有苹果设备合照
+  'apple-family': {
+    id: 'apple-family',
+    name: 'Apple Family',
+    icon: Monitor, // 使用 Monitor 图标
+    isComposite: true, // 标记为合成模式
+    // 包含的设备列表（按渲染顺序：底层到顶层）
+    devices: ['imac', 'macbook-pro', 'ipad-pro', 'iphone-17-pro-max', 'apple-watch'],
+    // 每个设备的布局配置（相对于画布的百分比位置和缩放）
+    // 布局参考用户提供的图片：iMac 后排中央，MacBook 右侧，iPad 左侧横屏，iPhone 中间，Watch 左前
+    layout: {
+      'imac': {
+        scale: 0.6,        // 放大 iMac 作为背景主体
+        x: 0.5,            // 居中
+        y: 0.1,            // 稍微靠上
+        zIndex: 1,
+      },
+      'macbook-pro': {
+        scale: 0.40,
+        x: 0.76,            // 右侧，与 iMac 重叠
+        y: 0.17,            // 底部位置
+        zIndex: 2,
+      },
+      'ipad-pro': {
+        scale: 0.3,
+        x: 0.24,            // 左侧，与 iMac 重叠
+        y: 0.2,
+        zIndex: 3,
+      },
+      'iphone-17-pro-max': {
+        scale: 0.12,
+        x: 0.4,            // 中间偏左，挡住 iMac 底座
+        y: 0.22,            // 前排
+        zIndex: 5,
+      },
+      'apple-watch': {
+        scale: 0.15,
+        x: 0.35,            // iPad 和 iPhone 之间
+        y: 0.3,            // 最前排
+        zIndex: 6,
+      },
+    },
+    // 不需要单独的屏幕/边框配置，使用子设备的配置
+    hasLockScreen: false,
+    isLandscape: true,
+    frameColors: [
+      { id: 'silver', name: '银色', value: '#E3E4E6' },
+      { id: 'space-black', name: '深空黑', value: '#2E2C2E' },
+      { id: 'gold', name: '金色', value: '#F5E6D3' },
+      { id: 'blue', name: '蓝色', value: '#4477BB' },
+      { id: 'green', name: '绿色', value: '#449966' },
+    ],
+    defaultFrameColor: '#E3E4E6',
   },
 };
 
@@ -1360,24 +1415,39 @@ const DeviceMockup = ({
           {/* 设备信息提示 */}
           <div className="mt-4 pt-3 border-t border-gray-800/50">
             <div className="text-[9px] text-gray-600 space-y-1">
-              <div className="flex justify-between">
-                <span>屏幕尺寸:</span>
-                <span className="font-mono">
-                  {selectedDevice === 'ipad-pro' && !iPadLandscape
-                    ? `${currentDevice?.screen.height} × ${currentDevice?.screen.width}`
-                    : `${currentDevice?.screen.width} × ${currentDevice?.screen.height}`
-                  }
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span>方向:</span>
-                <span>
-                  {selectedDevice === 'ipad-pro'
-                    ? (iPadLandscape ? '横屏' : '竖屏')
-                    : (currentDevice?.isLandscape ? '横屏' : '竖屏')
-                  }
-                </span>
-              </div>
+              {currentDevice?.isComposite ? (
+                <>
+                  <div className="flex justify-between">
+                    <span>模式:</span>
+                    <span>复合设备</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>包含设备:</span>
+                    <span>{currentDevice?.devices?.length || 0} 个</span>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="flex justify-between">
+                    <span>屏幕尺寸:</span>
+                    <span className="font-mono">
+                      {selectedDevice === 'ipad-pro' && !iPadLandscape
+                        ? `${currentDevice?.screen?.height} × ${currentDevice?.screen?.width}`
+                        : `${currentDevice?.screen?.width} × ${currentDevice?.screen?.height}`
+                      }
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>方向:</span>
+                    <span>
+                      {selectedDevice === 'ipad-pro'
+                        ? (iPadLandscape ? '横屏' : '竖屏')
+                        : (currentDevice?.isLandscape ? '横屏' : '竖屏')
+                      }
+                    </span>
+                  </div>
+                </>
+              )}
             </div>
           </div>
 
