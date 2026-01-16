@@ -35,5 +35,5 @@ release
 *.keystore
 
 # Ignored Directories
-public/
+public/设备外形/
 .agent/
