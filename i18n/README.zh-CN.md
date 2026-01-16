@@ -24,12 +24,23 @@
 **万语图** 内置**本地化**和**批量处理**支持，帮助您在几分钟内生成专业的营销素材，从而拓展应用的全球市场影响力。
 
 
+
+## 🍎 Mac App Store 及定价策略
+
+> **早期用户特别说明：**
+> 我们目前正在申请登录 **Mac App Store**。通过审核后，GlotShot 将对早期用户**免费**开放。
+> 后期虽然会转为收费模式，但**早期用户将永久免费**。
+> 
+> 请大家点击 **[Star ★](https://github.com/hooosberg/GlotShot)** 关注这个项目！如果成功上架苹果商店，我们会立刻通知大家。
+> 
+> *其他版本的用户可以随时自行构建项目。*
+
 ## 📸 软件截图
 
 <div align="center">
-  <img src="../public/截图/中文/双模式工具.jpg" width="30%" alt="双模式工具" />
-  <img src="../public/截图/中文/多平台图标裁切.jpg" width="30%" alt="多平台图标裁切" />
-  <img src="../public/截图/中文/批量制作截图海报.jpg" width="30%" alt="批量制作截图海报" />
+  <img src="../public/截图/中文/海报图标双模式切换.jpg" width="30%" alt="双模式工具" />
+  <img src="../public/截图/中文/图标模式支持多平台.jpg" width="30%" alt="多平台图标裁切" />
+  <img src="../public/截图/中文/多种商店海报尺寸.jpg" width="30%" alt="批量制作截图海报" />
 </div>
 
 ## ✨ 功能特点
@@ -108,6 +119,11 @@
 ## 📧 联系方式
 
 **邮箱**: zikedece@proton.me
+
+## 📖 开发日志
+
+对 GlotShot 的构建过程感兴趣？查看我们的开发日志和技术分享：
+- [开发日志：让软件能够自我学习和进化](../docs/dev-diaries/dev-diary.zh-CN.md)
 
 ## 📄 许可证与隐私
 

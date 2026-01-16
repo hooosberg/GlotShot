@@ -24,12 +24,23 @@ Avec une prise en charge intégrée de la **localisation** et du **traitement pa
 
 
 
+
+## 🍎 Mac App Store et Tarification
+
+> **Note pour les premiers utilisateurs :**
+> Nous demandons actuellement l'accès au **Mac App Store**. Une fois approuvé, GlotShot sera **gratuit** pour les premiers utilisateurs.
+> Plus tard, elle deviendra une application payante, mais **les premiers utilisateurs la garderont gratuite pour toujours**.
+>
+> Veuillez donner une **[Étoile ★](https://github.com/hooosberg/GlotShot)** à ce projet pour suivre nos progrès ! Si elle est listée sur l'App Store, nous informerons tout le monde immédiatement.
+>
+> *Les utilisateurs d'autres versions peuvent toujours la compiler eux-mêmes.*
+
 ## 📸 Captures d'écran
 
 <div align="center">
-  <img src="../public/截图/中文/双模式工具.jpg" width="30%" alt="Outil Double Mode" />
-  <img src="../public/截图/中文/多平台图标裁切.jpg" width="30%" alt="Découpeur d'Icônes" />
-  <img src="../public/截图/中文/批量制作截图海报.jpg" width="30%" alt="Créateur par Lots" />
+  <img src="../public/截图/English/海报图标双模式切换.jpg" width="30%" alt="Outil Double Mode" />
+  <img src="../public/截图/English/图标模式支持多平台.jpg" width="30%" alt="Découpeur d'Icônes" />
+  <img src="../public/截图/English/多种商店海报尺寸.jpg" width="30%" alt="Créateur de Lots" />
 </div>
 
 ## ✨ Fonctionnalités
@@ -52,6 +63,11 @@ Avec une prise en charge intégrée de la **localisation** et du **traitement pa
 ## 🤝 Contribuer
 
 Les contributions sont les bienvenues ! N'hésitez pas à soumettre une Pull Request.
+
+## 📖 Journal de Développement
+
+Intéressé par la façon dont GlotShot est construit ? Consultez nos journaux de développement :
+- [Journal de Dev : Permettre au logiciel d'apprendre et d'évoluer](../docs/dev-diaries/dev-diary.md)
 
 ## 📄 Licence
 

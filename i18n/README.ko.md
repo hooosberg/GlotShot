@@ -24,12 +24,23 @@
 
 
 
+
+## 🍎 Mac App Store 및 가격 책정
+
+> **초기 사용자를 위한 중요 알림:**
+> 현재 **Mac App Store** 등록을 신청 중입니다. 승인되면 GlotShot은 초기 사용자에게 **무료**로 제공됩니다.
+> 나중에 유료 앱으로 전환되지만, **초기 사용자는 영구적으로 무료로 사용할 수 있습니다**.
+> 
+> 진행 상황을 확인하려면 이 프로젝트에 **[스타 ★](https://github.com/hooosberg/GlotShot)**를 눌러주세요! App Store에 등록되면 즉시 모두에게 알리겠습니다.
+> 
+> *다른 버전 사용자는 언제든지 직접 빌드할 수 있습니다.*
+
 ## 📸 스크린샷
 
 <div align="center">
-  <img src="../public/截图/中文/双模式工具.jpg" width="30%" alt="듀얼 모드 도구" />
-  <img src="../public/截图/中文/多平台图标裁切.jpg" width="30%" alt="아이콘 커터" />
-  <img src="../public/截图/中文/批量制作截图海报.jpg" width="30%" alt="일괄 제작" />
+  <img src="../public/截图/English/海报图标双模式切换.jpg" width="30%" alt="듀얼 모드 도구" />
+  <img src="../public/截图/English/图标模式支持多平台.jpg" width="30%" alt="아이콘 커터" />
+  <img src="../public/截图/English/多种商店海报尺寸.jpg" width="30%" alt="배치 메이커" />
 </div>
 
 ## ✨ 특징
@@ -53,8 +64,12 @@
 
 기여는 언제나 환영합니다! Pull Request를 자유롭게 제출해주세요.
 
-## 📄 라이선스
+## 📖 개발 일지
 
+GlotShot이 어떻게 만들어지는지 궁금하신가요? 개발 로그를 확인하세요:
+- [개발 일지: 소프트웨어의 자기 학습 및 진화 가능하게 하기](../docs/dev-diaries/dev-diary.md)
+
+## 📄 라이선스 및 개인정보 보호
 이 프로젝트는 MIT 라이선스에 따라 라이선스가 부여됩니다. 자세한 내용은 [LICENSE](../LICENSE) 파일을 참조하세요.
 
 ---

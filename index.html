@@ -562,9 +562,16 @@
 
         <section class="showcase">
             <div class="showcase-controls">
-                <button class="showcase-btn active" onclick="switchMode('poster')" data-i18n="showcase_poster">Poster
-                    Design</button>
-                <button class="showcase-btn" onclick="switchMode('icon')" data-i18n="showcase_icon">Icon Design</button>
+                <button class="showcase-btn active" onclick="switchMode('mode_dual')" data-i18n="feat_mode_title">Dual
+                    Modes</button>
+                <button class="showcase-btn" onclick="switchMode('mode_icon')" data-i18n="feat_icon_title">Icon
+                    Fabric</button>
+                <button class="showcase-btn" onclick="switchMode('mode_batch')" data-i18n="feat_batch_title">Batch
+                    Processing</button>
+                <button class="showcase-btn" onclick="switchMode('mode_frames')" data-i18n="feat_frames_title">Device
+                    Frames</button>
+                <button class="showcase-btn" onclick="switchMode('mode_translate')" data-i18n="feat_translate_title">AI
+                    Translation</button>
             </div>
             <!-- Dynamic Image based on language and mode -->
             <img id="showcase-img" src="public/截图/English/批量制作截图海报.jpg" alt="GlotShot Interface">
@@ -688,6 +695,7 @@
                 btn_download_linux_2: "Linux",
                 showcase_poster: "Poster Design",
                 showcase_icon: "Icon Design",
+                feat_frames_title: "Device Frames",
                 projects_title: "Our Projects",
                 app_name: "GlotShot",
                 project_glotshot: "GlotShot"
@@ -707,6 +715,7 @@
                 btn_download_linux_2: "Linux",
                 showcase_poster: "海报/截图设计",
                 showcase_icon: "图标/Logo 设计",
+                feat_frames_title: "多设备边框",
                 projects_title: "我们的项目",
                 app_name: "万语图",
                 project_glotshot: "万语图",
@@ -750,6 +759,7 @@
                 btn_download_2: "Descargar Ahora",
                 showcase_poster: "Diseño de Póster",
                 showcase_icon: "Diseño de Ícono",
+                feat_frames_title: "Marcos de Dispositivo",
                 projects_title: "Nuestros Proyectos"
             },
             ja: {
@@ -777,6 +787,7 @@
                 btn_download_2: "今すぐDL",
                 showcase_poster: "ポスターデザイン",
                 showcase_icon: "アイコンデザイン",
+                feat_frames_title: "デバイスフレーム",
                 projects_title: "私たちのプロジェクト"
             },
             ko: {
@@ -804,6 +815,7 @@
                 btn_download_2: "지금 다운로드",
                 showcase_poster: "포스터 디자인",
                 showcase_icon: "아이콘 디자인",
+                feat_frames_title: "디바이스 프레임",
                 projects_title: "우리의 프로젝트"
             },
             fr: {
@@ -831,6 +843,7 @@
                 btn_download_2: "Télécharger",
                 showcase_poster: "Design d'Affiche",
                 showcase_icon: "Design d'Icône",
+                feat_frames_title: "Cadres d'Appareil",
                 projects_title: "Nos Projets"
             },
             de: {
@@ -858,6 +871,7 @@
                 btn_download_2: "Download",
                 showcase_poster: "Poster-Design",
                 showcase_icon: "Icon-Design",
+                feat_frames_title: "Geräterahmen",
                 projects_title: "Unsere Projekte"
             },
             it: {
@@ -885,6 +899,7 @@
                 btn_download_2: "Scarica",
                 showcase_poster: "Design Poster",
                 showcase_icon: "Design Icone",
+                feat_frames_title: "Cornici Dispositivo",
                 projects_title: "I Nostri Progetti"
             },
             pt: {
@@ -912,6 +927,7 @@
                 btn_download_2: "Baixar",
                 showcase_poster: "Design de Pôster",
                 showcase_icon: "Design de Ícone",
+                feat_frames_title: "Molduras de Dispositivo",
                 projects_title: "Nossos Projetos"
             },
             ru: {
@@ -939,6 +955,7 @@
                 btn_download_2: "Скачать",
                 showcase_poster: "Дизайн Постеров",
                 showcase_icon: "Дизайн Иконок",
+                feat_frames_title: "Рамки Устройств",
                 projects_title: "Наши Проекты"
             },
             ar: {
@@ -966,6 +983,7 @@
                 btn_download_2: "macOS",
                 showcase_poster: "تصميم الملصقات",
                 showcase_icon: "تصميم الأيقونات",
+                feat_frames_title: "إطارات الأجهزة",
                 projects_title: "مشاريعنا"
             },
             hi: {
@@ -993,34 +1011,51 @@
                 btn_download_2: "macOS",
                 showcase_poster: "पोस्टर डिज़ाइन",
                 showcase_icon: "आइकन डिज़ाइन",
+                feat_frames_title: "डिवाइस फ्रेम्स",
                 projects_title: "हमारी परियोजनाएँ"
             }
         };
 
         // Screenshot Paths
         const screenshots = {
-            poster: {
-                en: "public/截图/English/批量制作截图海报.jpg",
-                "zh-CN": "public/截图/中文/批量制作截图海报.jpg"
+            mode_dual: {
+                en: "public/截图/English/海报图标双模式切换.jpg",
+                "zh-CN": "public/截图/中文/海报图标双模式切换.jpg"
             },
-            icon: {
-                en: "public/截图/English/多平台图标裁切.jpg",
-                "zh-CN": "public/截图/中文/多平台图标裁切.jpg"
+            mode_icon: {
+                en: "public/截图/English/图标模式支持多平台.jpg",
+                "zh-CN": "public/截图/中文/图标模式支持多平台.jpg"
+            },
+            mode_batch: {
+                en: "public/截图/English/多种商店海报尺寸.jpg",
+                "zh-CN": "public/截图/中文/多种商店海报尺寸.jpg"
+            },
+            mode_frames: {
+                en: "public/截图/English/多设备边框支持.jpg",
+                "zh-CN": "public/截图/中文/多设备边框支持.jpg"
+            },
+            mode_translate: {
+                en: "public/截图/English/本地大语言模型翻译.jpg",
+                "zh-CN": "public/截图/中文/本地大语言模型翻译.jpg"
             }
         };
 
-        let currentMode = 'poster';
+        let currentMode = 'mode_dual';
         let currentLang = 'en';
 
         function switchMode(mode) {
             currentMode = mode;
             // Update buttons
             document.querySelectorAll('.showcase-btn').forEach(btn => btn.classList.remove('active'));
-            if (mode === 'poster') {
-                document.querySelector('.showcase-btn:nth-child(1)').classList.add('active');
-            } else {
-                document.querySelector('.showcase-btn:nth-child(2)').classList.add('active');
+
+            // Map mode to index (0-indexed)
+            const modes = ['mode_dual', 'mode_icon', 'mode_batch', 'mode_frames', 'mode_translate'];
+            const index = modes.indexOf(mode);
+
+            if (index !== -1) {
+                document.querySelector(`.showcase-btn:nth-child(${index + 1})`).classList.add('active');
             }
+
             updateShowcaseImage();
         }
 

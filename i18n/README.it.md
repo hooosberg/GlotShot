@@ -24,12 +24,23 @@ Con supporto integrato per la **localizzazione** e l'**elaborazione in batch**, 
 
 
 
+
+## 🍎 Mac App Store e Prezzi
+
+> **Nota per i primi utenti:**
+> Attualmente stiamo facendo domanda per il **Mac App Store**. Una volta approvato, GlotShot sarà **gratuito** per i primi utenti.
+> Più tardi diventerà un'app a pagamento, ma **i primi utenti la manterranno gratuita per sempre**.
+>
+> Per favore dai una **[Stella ★](https://github.com/hooosberg/GlotShot)** a questo progetto per seguire i nostri progressi! Se elencato sull'App Store, avviseremo tutti immediatamente.
+>
+> *Gli utenti di altre versioni possono sempre compilarlo da soli.*
+
 ## 📸 Screenshot
 
 <div align="center">
-  <img src="../public/截图/中文/双模式工具.jpg" width="30%" alt="Strumento Doppia Modalità" />
-  <img src="../public/截图/中文/多平台图标裁切.jpg" width="30%" alt="Taglierina Icone" />
-  <img src="../public/截图/中文/批量制作截图海报.jpg" width="30%" alt="Creatore Batch" />
+  <img src="../public/截图/English/海报图标双模式切换.jpg" width="30%" alt="Strumento Dual Mode" />
+  <img src="../public/截图/English/图标模式支持多平台.jpg" width="30%" alt="Taglierina Icone" />
+  <img src="../public/截图/English/多种商店海报尺寸.jpg" width="30%" alt="Batch Maker" />
 </div>
 
 ## ✨ Funzionalità
@@ -52,6 +63,11 @@ Con supporto integrato per la **localizzazione** e l'**elaborazione in batch**, 
 ## 🤝 Contribuire
 
 I contributi sono benvenuti! Sentiti libero di inviare una Pull Request.
+
+## 📖 Diario di Sviluppo
+
+Interessato a come è costruito GlotShot? Dai un'occhiata ai nostri log di sviluppo:
+- [Diario di Dev: Abilitare l'autoapprendimento e l'evoluzione del software](../docs/dev-diaries/dev-diary.md)
 
 ## 📄 Licenza
 

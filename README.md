@@ -29,12 +29,22 @@ With built-in support for **localization** and **batch processing**, GlotShot he
 
 
 
+
+## 🍎 Mac App Store & Pricing
+
+> **Note for Early Adopters:**
+> We are currently applying for the **Mac App Store**. Once approved, GlotShot will be free for early users. Later it will become a paid app, but **early users will keep it for free forever**.
+> 
+> Please **[Star ★](https://github.com/hooosberg/GlotShot)** this project to follow our progress! If listed on the App Store, we will notify everyone immediately.
+> 
+> *Users of other platforms or versions can always build it themselves from source.*
+
 ## 📸 Screenshots
 
 <div align="center">
-  <img src="public/截图/English/双模式工具.jpg" width="30%" alt="Dual Mode Tool" />
-  <img src="public/截图/English/多平台图标裁切.jpg" width="30%" alt="Icon Cutter" />
-  <img src="public/截图/English/批量制作截图海报.jpg" width="30%" alt="Batch Maker" />
+  <img src="public/截图/English/海报图标双模式切换.jpg" width="30%" alt="Dual Mode Tool" />
+  <img src="public/截图/English/图标模式支持多平台.jpg" width="30%" alt="Icon Cutter" />
+  <img src="public/截图/English/多种商店海报尺寸.jpg" width="30%" alt="Batch Maker" />
 </div>
 
 ## ✨ Features
@@ -112,6 +122,11 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 ## 📧 Contact
 
 **Email**: zikedece@proton.me
+
+## 📖 Development Diary
+
+Interested in how GlotShot is built? Check out our development logs and technical insights:
+- [Dev Diary: Enabling Software Self-Learning and Evolution](docs/dev-diaries/dev-diary.md)
 
 ## 📄 License & Privacy
 

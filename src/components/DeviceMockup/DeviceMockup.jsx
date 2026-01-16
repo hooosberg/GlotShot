@@ -20,9 +20,9 @@ export const DEVICE_CONFIGS = {
     // 使用单一 SVG 素材
     useSvgLayers: true,
     // SVG 文件路径
-    svgPath: '/设备外形/iphone.svg',
+    svgPath: './设备外形/iphone.svg',
     // 投影 PNG 文件路径
-    shadowPng: '/设备外形/iphone投影.png',
+    shadowPng: './设备外形/iphone投影.png',
     // 投影变换参数 (基于 SVG 中的 image 标签属性)
     shadowTransform: {
       width: 345,
@@ -80,9 +80,9 @@ export const DEVICE_CONFIGS = {
     // 使用单一 SVG 素材
     useSvgLayers: true,
     // SVG 文件路径
-    svgPath: '/设备外形/ipad.svg',
+    svgPath: './设备外形/ipad.svg',
     // 投影 PNG 文件路径
-    shadowPng: '/设备外形/ipad投影.png',
+    shadowPng: './设备外形/ipad投影.png',
     // 投影变换参数
     shadowTransform: {
       width: 820,
@@ -129,9 +129,9 @@ export const DEVICE_CONFIGS = {
     // 使用单一 SVG 素材
     useSvgLayers: true,
     // SVG 文件路径
-    svgPath: '/设备外形/macbook.svg',
+    svgPath: './设备外形/macbook.svg',
     // 投影 PNG 文件路径
-    shadowPng: '/设备外形/macbook投影.png',
+    shadowPng: './设备外形/macbook投影.png',
     // 投影变换参数
     shadowTransform: {
       width: 975,
@@ -191,8 +191,8 @@ export const DEVICE_CONFIGS = {
     name: 'Android',
     icon: Smartphone,
     useSvgLayers: true,
-    svgPath: '/设备外形/Android.svg',
-    shadowPng: '/设备外形/Android投影.png',
+    svgPath: './设备外形/Android.svg',
+    shadowPng: './设备外形/Android投影.png',
     // 投影变换参数
     shadowTransform: {
       width: 326,
@@ -238,8 +238,8 @@ export const DEVICE_CONFIGS = {
     name: 'iMac',
     icon: Monitor,
     useSvgLayers: true,
-    svgPath: '/设备外形/imac.svg',
-    shadowPng: '/设备外形/imac投影.png',
+    svgPath: './设备外形/imac.svg',
+    shadowPng: './设备外形/imac投影.png',
     // 投影变换参数
     shadowTransform: {
       width: 718,
@@ -287,8 +287,8 @@ export const DEVICE_CONFIGS = {
     name: 'Apple Watch',
     icon: Watch,
     useSvgLayers: true,
-    svgPath: '/设备外形/iwatch.svg',
-    shadowPng: '/设备外形/iwatch投影.png',
+    svgPath: './设备外形/iwatch.svg',
+    shadowPng: './设备外形/iwatch投影.png',
     // 投影变换参数
     shadowTransform: {
       width: 341,

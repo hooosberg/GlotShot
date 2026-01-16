@@ -24,12 +24,23 @@ Mit integrierter Unterstützung für **Lokalisierung** und **Stapelverarbeitung*
 
 
 
+
+## 🍎 Mac App Store & Preise
+
+> **Hinweis für frühe Nutzer:**
+> Wir bewerben uns derzeit für den **Mac App Store**. Nach der Genehmigung wird GlotShot für frühe Nutzer **kostenlos** sein.
+> Später wird es eine kostenpflichtige App, aber **frühe Nutzer behalten sie für immer kostenlos**.
+>
+> Bitte geben Sie diesem Projekt einen **[Stern ★](https://github.com/hooosberg/GlotShot)**, um unserem Fortschritt zu folgen! Wenn es im App Store gelistet ist, werden wir alle sofort benachrichtigen.
+>
+> *Nutzer anderer Versionen können es immer selbst kompilieren.*
+
 ## 📸 Screenshots
 
 <div align="center">
-  <img src="../public/截图/中文/双模式工具.jpg" width="30%" alt="Dual-Modus Werkzeug" />
-  <img src="../public/截图/中文/多平台图标裁切.jpg" width="30%" alt="Icon Schneider" />
-  <img src="../public/截图/中文/批量制作截图海报.jpg" width="30%" alt="Stapel Ersteller" />
+  <img src="../public/截图/English/海报图标双模式切换.jpg" width="30%" alt="Dual-Modus-Tool" />
+  <img src="../public/截图/English/图标模式支持多平台.jpg" width="30%" alt="Icon Cutter" />
+  <img src="../public/截图/English/多种商店海报尺寸.jpg" width="30%" alt="Batch Maker" />
 </div>
 
 ## ✨ Funktionen
@@ -52,6 +63,11 @@ Mit integrierter Unterstützung für **Lokalisierung** und **Stapelverarbeitung*
 ## 🤝 Mitwirken
 
 Beiträge sind willkommen! Zögern Sie nicht, einen Pull Request zu senden.
+
+## 📖 Entwicklungstagebuch
+
+Interessiert daran, wie GlotShot gebaut ist? Schauen Sie sich unsere Entwicklungsprotokolle an:
+- [Dev Diary: Software-Selbstlernen und Evolution ermöglichen](../docs/dev-diaries/dev-diary.md)
 
 ## 📄 Lizenz
 

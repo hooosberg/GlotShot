@@ -24,12 +24,23 @@ Con soporte integrado para **localización** y **procesamiento por lotes**, Glot
 
 
 
-## 📸 Capturas de Pantalla
+
+## 🍎 Mac App Store y Precios
+
+> **Nota para los primeros usuarios:**
+> Actualmente estamos solicitando el ingreso a la **Mac App Store**. Una vez aprobado, GlotShot será **gratuito** para los primeros usuarios.
+> Más tarde se convertirá en una aplicación de pago, pero **los primeros usuarios la conservarán gratis para siempre**.
+> 
+> Por favor, ¡dales una **[Estrella ★](https://github.com/hooosberg/GlotShot)** a este proyecto para seguir nuestro progreso! Si aparece en la App Store, notificaremos a todos de inmediato.
+> 
+> *Los usuarios de otras versiones pueden compilarlo ellos mismos.*
+
+## 📸 Capturas de pantalla
 
 <div align="center">
-  <img src="../public/截图/中文/双模式工具.jpg" width="30%" alt="Herramienta de Modo Dual" />
-  <img src="../public/截图/中文/多平台图标裁切.jpg" width="30%" alt="Cortador de Íconos" />
-  <img src="../public/截图/中文/批量制作截图海报.jpg" width="30%" alt="Creador por Lotes" />
+  <img src="../public/截图/English/海报图标双模式切换.jpg" width="30%" alt="Herramienta de Modo Dual" />
+  <img src="../public/截图/English/图标模式支持多平台.jpg" width="30%" alt="Cortador de Iconos" />
+  <img src="../public/截图/English/多种商店海报尺寸.jpg" width="30%" alt="Creador de Lotes" />
 </div>
 
 ## ✨ Características
@@ -53,7 +64,12 @@ Con soporte integrado para **localización** y **procesamiento por lotes**, Glot
 
 ¡Las contribuciones son bienvenidas! No dude en enviar una solicitud de extracción (Pull Request).
 
-## 📄 Licencia
+## 📖 Diario de Desarrollo
+
+¿Interesado en cómo se construye GlotShot? Echa un vistazo a nuestros registros de desarrollo:
+- [Diario de Desarrollo: Permitiendo que el software aprenda y evolucione](../docs/dev-diaries/dev-diary.md)
+
+## 📄 Licencia y Privacidad
 
 Este proyecto está bajo la Licencia MIT - vea el archivo [LICENSE](../LICENSE) para más detalles.
 
