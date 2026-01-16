@@ -4,7 +4,7 @@ import { translations } from './translations';
 // 支持的12种语言
 export const SUPPORTED_UI_LANGUAGES = [
     { code: 'zh-CN', name: '简体中文', nativeName: '简体中文', flag: '🇨🇳' },
-    { code: 'zh-TW', name: '繁體中文', nativeName: '繁體中文', flag: '🇹🇼' },
+    { code: 'zh-TW', name: '繁體中文', nativeName: '繁體中文', flag: '🌐' },
     { code: 'en', name: 'English', nativeName: 'English', flag: '🇺🇸' },
     { code: 'ja', name: '日本語', nativeName: '日本語', flag: '🇯🇵' },
     { code: 'ko', name: '한국어', nativeName: '한국어', flag: '🇰🇷' },

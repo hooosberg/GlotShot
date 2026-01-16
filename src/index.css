@@ -1,30 +1,37 @@
 @import "tailwindcss";
 
 /* ============================================
-   全局主题系统 - 苹果设计规范
+   全局主题系统 - 基于 shadcn/ui 设计规范
+   支持三种主题模式: dark (默认), light, sepia
    ============================================ */
 
 /* 深色模式（默认） */
-:root {
-  /* 主背景色 */
+:root,
+[data-theme="dark"] {
+  /* Layout Backgrounds */
+  --app-bg-header: rgba(15, 23, 42, 0.95);
+  --app-bg-sidebar: #0f172a;
+  --app-bg-canvas-gradient: radial-gradient(circle at center, rgba(30, 41, 59, 0.5) 0%, rgba(15, 23, 42, 1) 100%);
+  --app-bg-panel-header: rgba(15, 23, 42, 0.5);
+
+  /* 主背景色 (Foundation) */
   --app-bg-primary: #020617;
-  /* gray-950 */
   --app-bg-secondary: #0f172a;
-  /* gray-900 */
   --app-bg-tertiary: #1e293b;
-  /* gray-800 */
   --app-bg-elevated: #334155;
-  /* gray-700 */
+  --app-control-track: #334155;
 
   /* 文字颜色 */
   --app-text-primary: #ffffff;
   --app-text-secondary: rgba(255, 255, 255, 0.7);
   --app-text-muted: rgba(255, 255, 255, 0.4);
   --app-text-inverted: #0f172a;
+  --app-text-hover: #ffffff;
 
   /* 边框颜色 */
   --app-border: rgba(255, 255, 255, 0.1);
   --app-border-strong: rgba(255, 255, 255, 0.2);
+  --app-border-hover: rgba(255, 255, 255, 0.2);
 
   /* 卡片/面板背景 */
   --app-card-bg: rgba(30, 41, 59, 0.5);
@@ -46,23 +53,162 @@
   --app-input-border: rgba(255, 255, 255, 0.1);
   --app-input-focus: rgba(59, 130, 246, 0.5);
 
-  /* 标题栏背景（无毛玻璃时） */
+  /* 标题栏背景 */
   --titlebar-bg: rgba(15, 23, 42, 0.95);
 
-  /* 毛玻璃效果（默认关闭） */
+  /* 毛玻璃效果 */
   --glass-blur: 0px;
   --glass-bg-titlebar: rgba(15, 23, 42, 0.95);
   --glass-bg-modal: var(--app-bg-secondary);
+
+  /* 滚动条颜色 */
+  --scrollbar-thumb: rgba(255, 255, 255, 0.2);
+  --scrollbar-thumb-hover: rgba(255, 255, 255, 0.4);
 }
 
 /* 浅色模式 */
+[data-theme="light"] {
+  /* Layout Backgrounds */
+  --app-bg-header: rgba(255, 255, 255, 0.95);
+  --app-bg-sidebar: #ffffff;
+  --app-bg-canvas-gradient: radial-gradient(circle at center, #f1f5f9 0%, #e2e8f0 100%);
+  --app-bg-panel-header: rgba(241, 245, 249, 0.8);
 
+  /* 主背景色 */
+  --app-bg-primary: #ffffff;
+  --app-bg-secondary: #f8fafc;
+  --app-bg-tertiary: #f1f5f9;
+  --app-bg-elevated: #e2e8f0;
+  --app-control-track: #cbd5e1;
 
-/* 毛玻璃效果激活 */
-[data-glass='true'] {
+  /* 文字颜色 */
+  --app-text-primary: #0f172a;
+  --app-text-secondary: rgba(15, 23, 42, 0.8);
+  --app-text-muted: rgba(15, 23, 42, 0.5);
+  --app-text-inverted: #ffffff;
+  --app-text-hover: #0f172a;
+
+  /* 边框颜色 */
+  --app-border: rgba(15, 23, 42, 0.1);
+  --app-border-strong: rgba(15, 23, 42, 0.2);
+  --app-border-hover: rgba(15, 23, 42, 0.2);
+
+  /* 卡片/面板背景 */
+  --app-card-bg: rgba(241, 245, 249, 0.8);
+  --app-card-bg-hover: rgba(226, 232, 240, 0.8);
+  --app-card-bg-solid: #f1f5f9;
+
+  /* 强调色 */
+  --app-accent: #2563eb;
+  --app-accent-hover: #1d4ed8;
+  --app-accent-light: rgba(37, 99, 235, 0.15);
+
+  /* 功能色 */
+  --app-success: #16a34a;
+  --app-warning: #d97706;
+  --app-danger: #dc2626;
+
+  /* 输入框 */
+  --app-input-bg: rgba(255, 255, 255, 0.9);
+  --app-input-border: rgba(15, 23, 42, 0.15);
+  --app-input-focus: rgba(37, 99, 235, 0.4);
+
+  /* 标题栏背景 */
+  --titlebar-bg: rgba(248, 250, 252, 0.95);
+
+  /* 毛玻璃效果 */
+  --glass-blur: 0px;
+  --glass-bg-titlebar: rgba(248, 250, 252, 0.85);
+  --glass-bg-modal: rgba(255, 255, 255, 0.95);
+
+  /* 滚动条颜色 */
+  --scrollbar-thumb: rgba(15, 23, 42, 0.2);
+  --scrollbar-thumb-hover: rgba(15, 23, 42, 0.35);
+}
+
+/* 茶色模式 (Sepia) - 温暖的阅读模式 */
+[data-theme="sepia"] {
+  /* Layout Backgrounds */
+  --app-bg-header: #f5ede4;
+  --app-bg-sidebar: #e6dccf;
+  --app-bg-canvas-gradient: radial-gradient(circle at center, #f5ede4 0%, #e0d5c7 100%);
+  --app-bg-panel-header: rgba(230, 220, 207, 0.6);
+
+  /* 主背景色 */
+  --app-bg-primary: #f5ede4;
+  --app-bg-secondary: #e6dccf;
+  --app-bg-tertiary: #ede4d8;
+  --app-bg-elevated: #e0d5c7;
+
+  /* 文字颜色 */
+  --app-text-primary: #3d2e1e;
+  --app-text-secondary: rgba(61, 46, 30, 0.85);
+  --app-text-muted: rgba(61, 46, 30, 0.55);
+  --app-text-inverted: #faf6f1;
+  --app-text-hover: #3d2e1e;
+
+  /* 边框颜色 */
+  --app-border: rgba(61, 46, 30, 0.12);
+  --app-border-strong: rgba(61, 46, 30, 0.22);
+  --app-border-hover: rgba(61, 46, 30, 0.22);
+
+  /* 卡片/面板背景 */
+  --app-card-bg: rgba(237, 228, 216, 0.7);
+  --app-card-bg-hover: rgba(224, 213, 199, 0.8);
+  --app-card-bg-solid: #ede4d8;
+
+  /* 强调色 - 温暖的褐色 (茶色) */
+  --app-accent: #a16207;
+  --app-accent-hover: #854d0e;
+  --app-accent-light: rgba(161, 98, 7, 0.15);
+
+  /* 控件专属 */
+  --app-control-track: rgba(161, 98, 7, 0.3);
+  /* 深褐色横条 */
+
+  /* 功能色 */
+  --app-success: #15803d;
+  --app-warning: #b45309;
+  --app-danger: #b91c1c;
+
+  /* 输入框 */
+  --app-input-bg: rgba(250, 246, 241, 0.9);
+  --app-input-border: rgba(61, 46, 30, 0.15);
+  --app-input-focus: rgba(161, 98, 7, 0.4);
+
+  /* 标题栏背景 */
+  --titlebar-bg: rgba(245, 237, 228, 0.95);
+
+  /* 毛玻璃效果 */
+  --glass-blur: 0px;
+  --glass-bg-titlebar: rgba(245, 237, 228, 0.85);
+  --glass-bg-modal: rgba(250, 246, 241, 0.95);
+
+  /* 滚动条颜色 */
+  --scrollbar-thumb: rgba(61, 46, 30, 0.2);
+  --scrollbar-thumb-hover: rgba(61, 46, 30, 0.35);
+}
+
+/* 毛玻璃效果激活 - 深色模式 */
+[data-theme="dark"][data-glass='true'],
+:root[data-glass='true'] {
   --glass-blur: 20px;
   --glass-bg-titlebar: rgba(15, 23, 42, 0.75);
   --glass-bg-modal: rgba(30, 30, 35, 0.85);
+}
+
+/* 毛玻璃效果激活 - 浅色模式 */
+[data-theme="light"][data-glass='true'] {
+  --glass-blur: 20px;
+  --glass-bg-titlebar: rgba(248, 250, 252, 0.75);
+  --glass-bg-modal: rgba(255, 255, 255, 0.85);
+}
+
+/* 毛玻璃效果激活 - 茶色模式 */
+[data-theme="sepia"][data-glass='true'] {
+  --glass-blur: 20px;
+  --glass-bg-titlebar: rgba(245, 237, 228, 0.75);
+  --glass-bg-modal: rgba(250, 246, 241, 0.85);
 }
 
 /* ============================================
@@ -76,7 +222,7 @@ body {
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-/* 滚动条样式 - 深色模式 */
+/* 滚动条样式 */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -87,10 +233,35 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--app-border-strong);
+  background: var(--scrollbar-thumb);
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--app-text-muted);
+  background: var(--scrollbar-thumb-hover);
+}
+
+/* Custom Slider Styling - No Progress Fill */
+.app-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  background: var(--app-control-track);
+  height: 4px;
+  border-radius: 9999px;
+  outline: none;
+}
+
+.app-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--app-accent);
+  cursor: pointer;
+  transition: transform 0.1s;
+}
+
+.app-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
 }

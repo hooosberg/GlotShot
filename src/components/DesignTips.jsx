@@ -25,12 +25,10 @@ const DesignTips = ({ tips, mode, className = '' }) => {
     }, [mode, tipsKey]);
 
     const isScreenshotMode = mode === 'screenshot';
-    // 使用透明毛玻璃背景，悬浮在预览区上方
-    const bgColor = isScreenshotMode
-        ? 'bg-blue-500/10 border-blue-500/20 backdrop-blur-md'
-        : 'bg-amber-500/10 border-amber-500/20 backdrop-blur-md';
-    const iconColor = isScreenshotMode ? 'text-blue-400' : 'text-amber-400';
-    const bulletColor = isScreenshotMode ? 'text-blue-500/60' : 'text-amber-500/60';
+    // Standardized styles using theme variables
+    const bgColor = 'bg-[var(--app-accent-light)] border-[var(--app-accent)]/30 backdrop-blur-md';
+    const iconColor = 'text-[var(--app-accent)]';
+    const bulletColor = 'text-[var(--app-accent)]/60';
 
     // 根据模式获取对应的标题文本
     const getTipLabel = () => {
@@ -56,7 +54,7 @@ const DesignTips = ({ tips, mode, className = '' }) => {
                     <Lightbulb className={`w-4 h-4 ${iconColor}`} />
                 )}
                 {isExpanded && (
-                    <span className={`text-xs font-medium ${iconColor} whitespace-nowrap ml-1`}>
+                    <span className={`text-xs font-bold uppercase text-[var(--app-text-secondary)] whitespace-nowrap ml-1`}>
                         {getTipLabel()}
                     </span>
                 )}
@@ -66,7 +64,7 @@ const DesignTips = ({ tips, mode, className = '' }) => {
                 overflow-hidden transition-all duration-300 ease-in-out
                 ${isExpanded ? 'max-h-40 opacity-100' : 'max-h-0 opacity-0'}
             `}>
-                <ul className="text-xs text-gray-400 space-y-1.5">
+                <ul className="text-[10px] text-[var(--app-text-secondary)] space-y-1.5">
                     {tips.map((tip, i) => (
                         <li key={i} className="flex items-start gap-2 whitespace-nowrap">
                             <span className={`${bulletColor} mt-0.5`}>•</span>

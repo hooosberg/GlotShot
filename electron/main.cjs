@@ -31,6 +31,11 @@ function createWindow() {
     shell.openExternal(url);
     return { action: 'deny' };
   });
+
+  // 监听窗口关闭事件
+  mainWindow.on('closed', () => {
+    mainWindow = null;
+  });
 }
 
 function createMenu(labels = {}) {
@@ -152,6 +157,18 @@ function createMenu(labels = {}) {
     {
       label: T('window', '窗口'),
       submenu: [
+        {
+          label: T('showMainWindow', '显示主窗口'),
+          click: () => {
+            if (mainWindow) {
+              mainWindow.show();
+              mainWindow.focus();
+            } else {
+              createWindow();
+            }
+          }
+        },
+        { type: 'separator' },
         { role: 'minimize', label: labels?.minimize },
         { role: 'zoom', label: labels?.zoom },
         { type: 'separator' },
@@ -308,7 +325,15 @@ app.whenReady().then(() => {
   });
 
   app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow();
+    // macOS: 点击 Dock 图标时重新显示或创建窗口
+    if (mainWindow) {
+      // 窗口存在但可能被隐藏或最小化
+      mainWindow.show();
+      mainWindow.focus();
+    } else if (BrowserWindow.getAllWindows().length === 0) {
+      // 没有任何窗口，创建新窗口
+      createWindow();
+    }
   });
 });
 

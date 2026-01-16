@@ -1215,19 +1215,19 @@ const DeviceMockup = ({
 
 
   return (
-    <div className="device-mockup-panel p-4 border-b border-gray-800">
-      <h3 className="text-[10px] uppercase text-gray-500 font-semibold mb-4 flex items-center gap-2">
+    <div className="bg-[var(--app-card-bg)] rounded-lg p-3 border border-[var(--app-border)] mb-4">
+      <h3 className="text-xs uppercase text-[var(--app-text-secondary)] font-bold mb-4 flex items-center gap-2">
         <Smartphone className="w-3 h-3" />
         {t?.('mockup.title') || '设备模拟'}
       </h3>
 
       {/* 启用开关 */}
-      <label className="flex items-center gap-2 text-xs text-gray-400 cursor-pointer mb-4">
+      <label className="flex items-center gap-2 text-[10px] text-[var(--app-text-secondary)] cursor-pointer mb-4">
         <input
           type="checkbox"
           checked={enabled}
           onChange={(e) => setEnabled(e.target.checked)}
-          className="rounded bg-gray-800 border-gray-700 text-blue-500"
+          className="rounded bg-[var(--app-input-bg)] border-[var(--app-border)] text-[var(--app-accent)]"
         />
         {t?.('mockup.enable') || '启用设备模拟'}
       </label>
@@ -1236,14 +1236,14 @@ const DeviceMockup = ({
         <>
           {/* 设备选择下拉菜单 */}
           <div className="mb-4">
-            <div className="text-[10px] text-gray-500 mb-2">
+            <div className="text-[10px] text-[var(--app-text-secondary)] mb-2">
               {t?.('mockup.selectDevice') || '选择设备'}
             </div>
             <div className="relative">
               <select
                 value={selectedDevice}
                 onChange={(e) => setSelectedDevice(e.target.value)}
-                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white appearance-none cursor-pointer hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full bg-[var(--app-input-bg)] border border-[var(--app-border)] rounded-lg px-3 py-2 text-sm text-[var(--app-text-primary)] appearance-none cursor-pointer hover:bg-[var(--app-input-focus)] focus:outline-none focus:ring-2 focus:ring-[var(--app-accent)]"
               >
                 {Object.entries(DEVICE_CONFIGS).map(([id, config]) => (
                   <option key={id} value={id}>
@@ -1252,7 +1252,7 @@ const DeviceMockup = ({
                 ))}
               </select>
               <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 text-[var(--app-text-secondary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
               </div>
@@ -1263,7 +1263,7 @@ const DeviceMockup = ({
 
           {/* 设备缩放控制 */}
           <div className="mb-3 group/scale">
-            <div className="flex justify-between text-[10px] text-gray-500 mb-1">
+            <div className="flex justify-between text-[10px] text-[var(--app-text-secondary)] mb-1">
               <span>{t?.('layout.scale') || '缩放'}</span>
               <span className="font-mono">{Math.round(deviceScale * 100)}%</span>
             </div>
@@ -1275,11 +1275,11 @@ const DeviceMockup = ({
                 step="0.05"
                 value={deviceScale}
                 onChange={(e) => setDeviceScale(parseFloat(e.target.value))}
-                className="flex-1 h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                className="flex-1 h-1 bg-[var(--app-control-track)] rounded-lg appearance-none cursor-pointer accent-[var(--app-accent)]"
               />
               <button
                 onClick={() => setDeviceScale(1.0)}
-                className="text-gray-500 hover:text-blue-400 opacity-0 group-hover/scale:opacity-100 transition"
+                className="text-[var(--app-text-secondary)] hover:text-[var(--app-accent)] opacity-0 group-hover/scale:opacity-100 transition"
                 title="重置"
               >
                 <RotateCcw className="w-3.5 h-3.5" />
@@ -1289,7 +1289,7 @@ const DeviceMockup = ({
 
           {/* 设备位置控制 - Y */}
           <div className="mb-3 group/y">
-            <div className="flex justify-between text-[10px] text-gray-500 mb-1">
+            <div className="flex justify-between text-[10px] text-[var(--app-text-secondary)] mb-1">
               <span>{t?.('layout.verticalPosition') || '垂直位置 (Y)'}</span>
               <span className="font-mono">{deviceY}</span>
             </div>
@@ -1301,11 +1301,11 @@ const DeviceMockup = ({
                 step="10"
                 value={deviceY}
                 onChange={(e) => setDeviceY(parseInt(e.target.value))}
-                className="flex-1 h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                className="flex-1 h-1 bg-[var(--app-control-track)] rounded-lg appearance-none cursor-pointer accent-[var(--app-accent)]"
               />
               <button
                 onClick={() => setDeviceY(400)}
-                className="text-gray-500 hover:text-blue-400 opacity-0 group-hover/y:opacity-100 transition"
+                className="text-[var(--app-text-secondary)] hover:text-[var(--app-accent)] opacity-0 group-hover/y:opacity-100 transition"
                 title="重置"
               >
                 <RotateCcw className="w-3.5 h-3.5" />
@@ -1315,7 +1315,7 @@ const DeviceMockup = ({
 
           {/* 设备位置控制 - X */}
           <div className="mb-4 group/x">
-            <div className="flex justify-between text-[10px] text-gray-500 mb-1">
+            <div className="flex justify-between text-[10px] text-[var(--app-text-secondary)] mb-1">
               <span>{t?.('layout.horizontalPosition') || '水平位置 (X)'}</span>
               <span className="font-mono">{deviceX}</span>
             </div>
@@ -1327,11 +1327,11 @@ const DeviceMockup = ({
                 step="10"
                 value={deviceX}
                 onChange={(e) => setDeviceX(parseInt(e.target.value))}
-                className="flex-1 h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                className="flex-1 h-1 bg-[var(--app-control-track)] rounded-lg appearance-none cursor-pointer accent-[var(--app-accent)]"
               />
               <button
                 onClick={() => setDeviceX(0)}
-                className="text-gray-500 hover:text-blue-400 opacity-0 group-hover/x:opacity-100 transition"
+                className="text-[var(--app-text-secondary)] hover:text-[var(--app-accent)] opacity-0 group-hover/x:opacity-100 transition"
                 title="重置"
               >
                 <RotateCcw className="w-3.5 h-3.5" />
@@ -1341,7 +1341,7 @@ const DeviceMockup = ({
 
           {/* 边框颜色选择 */}
           <div className="mb-4">
-            <div className="text-[10px] text-gray-500 mb-2">
+            <div className="text-[10px] text-[var(--app-text-secondary)] mb-2">
               {t?.('mockup.frameColor') || '边框颜色'}
             </div>
             <div className="flex flex-wrap gap-2">
@@ -1350,8 +1350,8 @@ const DeviceMockup = ({
                   key={color.id}
                   onClick={() => setFrameColor(color.value)}
                   className={`w-7 h-7 rounded-full border-2 transition-all ${frameColor === color.value
-                    ? 'border-blue-500 scale-110'
-                    : 'border-gray-600 hover:border-gray-400'
+                    ? 'border-[var(--app-accent)] scale-110'
+                    : 'border-[var(--app-border-strong)] hover:border-[var(--app-border-hover)]'
                     }`}
                   style={{ backgroundColor: color.value }}
                   title={color.name}
@@ -1362,24 +1362,24 @@ const DeviceMockup = ({
 
           {/* 锁屏 UI 开关 */}
           {currentDevice?.hasLockScreen && (
-            <label className="flex items-center gap-2 text-xs text-gray-400 cursor-pointer">
+            <label className="flex items-center gap-2 text-[10px] text-[var(--app-text-secondary)] cursor-pointer">
               <input
                 type="checkbox"
                 checked={showLockScreen}
                 onChange={(e) => setShowLockScreen(e.target.checked)}
-                className="rounded bg-gray-800 border-gray-700 text-blue-500"
+                className="rounded bg-[var(--app-input-bg)] border-[var(--app-border)] text-[var(--app-accent)]"
               />
               {t?.('mockup.showLockScreen') || '显示锁屏 UI'}
             </label>
           )}
 
           {/* 投影开关 */}
-          <label className="flex items-center gap-2 text-xs text-gray-400 cursor-pointer mb-2">
+          <label className="flex items-center gap-2 text-[10px] text-[var(--app-text-secondary)] cursor-pointer mb-2">
             <input
               type="checkbox"
               checked={showShadow}
               onChange={(e) => setShowShadow(e.target.checked)}
-              className="rounded bg-gray-800 border-gray-700 text-blue-500"
+              className="rounded bg-[var(--app-input-bg)] border-[var(--app-border)] text-[var(--app-accent)]"
             />
             {t?.('mockup.showShadow') || '显示投影'}
           </label>
@@ -1387,7 +1387,7 @@ const DeviceMockup = ({
           {/* 投影透明度滑块 */}
           {showShadow && (
             <div className="pl-6 mb-4 group/shadow">
-              <div className="flex justify-between text-[10px] text-gray-500 mb-1">
+              <div className="flex justify-between text-[10px] text-[var(--app-text-secondary)] mb-1">
                 <span>{t?.('mockup.opacity') || '透明度'}</span>
                 <span className="font-mono">{Math.round((shadowOpacity || 0.5) * 100)}%</span>
               </div>
@@ -1399,11 +1399,11 @@ const DeviceMockup = ({
                   step="0.05"
                   value={shadowOpacity || 0.5}
                   onChange={(e) => setShadowOpacity && setShadowOpacity(parseFloat(e.target.value))}
-                  className="flex-1 h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                  className="flex-1 h-1 bg-[var(--app-control-track)] rounded-lg appearance-none cursor-pointer accent-[var(--app-accent)]"
                 />
                 <button
                   onClick={() => setShadowOpacity && setShadowOpacity(0.5)}
-                  className="text-gray-500 hover:text-blue-400 opacity-0 group-hover/shadow:opacity-100 transition"
+                  className="text-[var(--app-text-secondary)] hover:text-[var(--app-accent)] opacity-0 group-hover/shadow:opacity-100 transition"
                   title="重置"
                 >
                   <RotateCcw className="w-3.5 h-3.5" />
@@ -1413,23 +1413,23 @@ const DeviceMockup = ({
           )}
 
           {/* 设备信息提示 */}
-          <div className="mt-4 pt-3 border-t border-gray-800/50">
-            <div className="text-[9px] text-gray-600 space-y-1">
+          <div className="mt-4 pt-3 border-t border-[var(--app-border)]">
+            <div className="text-[9px] text-[var(--app-text-muted)] space-y-1">
               {currentDevice?.isComposite ? (
                 <>
                   <div className="flex justify-between">
-                    <span>模式:</span>
-                    <span>复合设备</span>
+                    <span>{t('mockup.mode')}:</span>
+                    <span>{t('mockup.compositeDevice')}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span>包含设备:</span>
+                    <span>{t('mockup.includedDevices')}:</span>
                     <span>{currentDevice?.devices?.length || 0} 个</span>
                   </div>
                 </>
               ) : (
                 <>
                   <div className="flex justify-between">
-                    <span>屏幕尺寸:</span>
+                    <span>{t('mockup.screenSize')}:</span>
                     <span className="font-mono">
                       {selectedDevice === 'ipad-pro' && !iPadLandscape
                         ? `${currentDevice?.screen?.height} × ${currentDevice?.screen?.width}`
@@ -1438,11 +1438,11 @@ const DeviceMockup = ({
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span>方向:</span>
+                    <span>{t('mockup.orientation')}:</span>
                     <span>
                       {selectedDevice === 'ipad-pro'
-                        ? (iPadLandscape ? '横屏' : '竖屏')
-                        : (currentDevice?.isLandscape ? '横屏' : '竖屏')
+                        ? (iPadLandscape ? t('mockup.landscape') : t('mockup.portrait'))
+                        : (currentDevice?.isLandscape ? t('mockup.landscape') : t('mockup.portrait'))
                       }
                     </span>
                   </div>

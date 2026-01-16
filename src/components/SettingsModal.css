@@ -1,14 +1,46 @@
 /* Global Variables & Theming */
-:root {
+/* Dark mode (default) */
+:root,
+[data-theme="dark"] {
   --settings-bg: #1e1e24;
   --settings-sidebar-bg: #15151a;
   --settings-text: #ffffff;
   --settings-text-secondary: rgba(255, 255, 255, 0.6);
   --settings-border: rgba(255, 255, 255, 0.1);
   --settings-accent: #6366f1;
+  --settings-accent-rgb: 99, 102, 241;
   --settings-accent-hover: #4f46e5;
   --settings-card-bg: rgba(255, 255, 255, 0.04);
   --settings-card-bg-hover: rgba(255, 255, 255, 0.08);
+}
+
+/* Light mode */
+[data-theme="light"] {
+  --settings-bg: #ffffff;
+  --settings-sidebar-bg: #f8fafc;
+  --settings-text: #0f172a;
+  --settings-text-secondary: rgba(15, 23, 42, 0.65);
+  --settings-border: rgba(15, 23, 42, 0.12);
+  --settings-accent: #2563eb;
+  --settings-accent-rgb: 37, 99, 235;
+  --settings-accent-hover: #1d4ed8;
+  --settings-card-bg: rgba(15, 23, 42, 0.04);
+  --settings-card-bg-hover: rgba(15, 23, 42, 0.08);
+}
+
+/* Sepia mode */
+[data-theme="sepia"] {
+  --settings-bg: #f5ede4;
+  --settings-sidebar-bg: #e6dccf;
+  --settings-text: #3d2e1e;
+  --settings-text-secondary: rgba(61, 46, 30, 0.7);
+  --settings-border: rgba(61, 46, 30, 0.12);
+  --settings-accent: #a16207;
+  --settings-accent-rgb: 161, 98, 7;
+  --settings-accent-hover: #854d0e;
+  --settings-card-bg: rgba(61, 46, 30, 0.05);
+  --settings-card-bg-hover: rgba(61, 46, 30, 0.1);
+  --glass-bg-modal: rgba(245, 237, 228, 0.95);
 }
 
 /* Modal Overlay & Container */
@@ -113,13 +145,13 @@
 .sidebar-item.active {
   background: var(--settings-accent);
   color: #fff;
-  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+  box-shadow: 0 2px 8px rgba(var(--settings-accent-rgb), 0.3);
 }
 
 [data-theme='light'] .sidebar-item.active {
   background: var(--settings-accent);
   color: #fff;
-  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+  box-shadow: 0 2px 8px rgba(var(--settings-accent-rgb), 0.3);
 }
 
 
@@ -188,7 +220,14 @@
   background: var(--settings-card-bg);
   color: var(--settings-text);
   font-size: 14px;
+  font-size: 14px;
   transition: border-color 0.2s;
+}
+
+.form-input::placeholder,
+.form-select::placeholder {
+  color: var(--settings-text-secondary);
+  opacity: 1;
 }
 
 .form-input:focus,
@@ -236,8 +275,8 @@
 
 .mode-card.active {
   border-color: var(--settings-accent);
-  background: rgba(99, 102, 241, 0.08);
-  box-shadow: 0 0 0 1px var(--settings-accent), 0 12px 32px rgba(99, 102, 241, 0.2);
+  background: rgba(var(--settings-accent-rgb), 0.08);
+  box-shadow: 0 0 0 1px var(--settings-accent), 0 12px 32px rgba(var(--settings-accent-rgb), 0.2);
 }
 
 .mode-card-header {
@@ -717,7 +756,7 @@ input:checked+.toggle-slider:before {
 
 .settings-item input[type="text"]:focus {
   outline: none;
-  border-color: rgba(99, 102, 241, 0.5);
+  border-color: rgba(var(--settings-accent-rgb), 0.5);
   background: rgba(255, 255, 255, 0.08);
 }
 
@@ -731,7 +770,7 @@ input:checked+.toggle-slider:before {
 .settings-item.checkbox input[type="checkbox"] {
   width: 18px;
   height: 18px;
-  accent-color: #6366f1;
+  accent-color: var(--settings-accent);
 }
 
 /* About Modal Styles */
@@ -739,12 +778,12 @@ input:checked+.toggle-slider:before {
   width: 80px;
   height: 80px;
   margin: 0 auto 20px;
-  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  background: linear-gradient(135deg, var(--settings-accent) 0%, var(--settings-accent-hover) 100%);
   border-radius: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 10px 30px rgba(99, 102, 241, 0.3);
+  box-shadow: 0 10px 30px rgba(var(--settings-accent-rgb), 0.3);
 }
 
 .about-logo svg {

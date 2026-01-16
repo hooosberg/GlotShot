@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, LayoutGrid, Monitor, Palette, Keyboard, Settings, Info, Image as ImageIcon, Layers, Github, ExternalLink, Star } from 'lucide-react';
+import { X, LayoutGrid, Monitor, Palette, Keyboard, Settings, Info, Image as ImageIcon, Layers, Github, ExternalLink, Star, Sun, Moon, Coffee } from 'lucide-react';
 import './SettingsModal.css';
 import { useTranslation, SUPPORTED_UI_LANGUAGES } from '../locales/i18n';
 import appLogo from '../../public/icon/DMG_Icon_1024x1024.png';
@@ -29,9 +29,12 @@ const SettingsModal = ({ isOpen, onClose, initialTab = 'start', appMode, setAppM
         { id: 'about', icon: Info, label: t('settings.nav.about') },
     ];
 
-    const toggleTheme = () => {
-        setTheme(theme === 'dark' ? 'light' : 'dark');
-    };
+    // Theme mode options
+    const THEME_OPTIONS = [
+        { id: 'dark', icon: Moon, label: t('settings.appearance.dark') },
+        { id: 'light', icon: Sun, label: t('settings.appearance.light') },
+        { id: 'sepia', icon: Coffee, label: t('settings.appearance.sepia') },
+    ];
 
     return (
         <div className="modal-overlay" onClick={onClose}>
@@ -40,7 +43,7 @@ const SettingsModal = ({ isOpen, onClose, initialTab = 'start', appMode, setAppM
                 {/* Sidebar */}
                 <div className="settings-sidebar">
                     <div className="sidebar-title">
-                        <Settings className="w-5 h-5 text-indigo-500" />
+                        <Settings className="w-5 h-5" style={{ color: 'var(--settings-accent)' }} />
                         {t('settings.title')}
                     </div>
                     {sections.map(section => (
@@ -181,6 +184,23 @@ const SettingsModal = ({ isOpen, onClose, initialTab = 'start', appMode, setAppM
                                 </select>
                             </div>
 
+                            {/* Theme Mode */}
+                            <div className="form-group">
+                                <label className="form-label">{t('settings.appearance.theme_title')}</label>
+                                <div className="theme-options">
+                                    {THEME_OPTIONS.map(option => (
+                                        <button
+                                            key={option.id}
+                                            className={`theme-option ${theme === option.id ? 'active' : ''}`}
+                                            onClick={() => setTheme(option.id)}
+                                        >
+                                            <option.icon size={18} />
+                                            <span>{option.label}</span>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
                             {/* Ollama */}
                             <div className="form-group">
                                 <label className="form-label">{t('settings.general.ollama_title')}</label>
@@ -227,7 +247,7 @@ const SettingsModal = ({ isOpen, onClose, initialTab = 'start', appMode, setAppM
                                         src={appLogo}
                                         alt="GlotShot"
                                         className="w-full h-full object-cover rounded-[22%]"
-                                        style={{ boxShadow: '0 0 20px rgba(0,0,0,0.2)' }}
+                                        style={{}}
                                     />
                                 </div>
                                 <div className="about-app-name">GlotShot</div>
@@ -236,7 +256,7 @@ const SettingsModal = ({ isOpen, onClose, initialTab = 'start', appMode, setAppM
 
                             <div className="about-scroll-container" style={{ marginTop: '20px' }}>
                                 <div className="about-block mb-4">
-                                    <h4 className="text-sm font-semibold text-indigo-400 mb-2">{t('settings.about.features_title')}</h4>
+                                    <h4 className="text-sm font-semibold mb-2" style={{ color: 'var(--settings-accent)' }}>{t('settings.about.features_title')}</h4>
                                     <ul className="text-sm opacity-80 space-y-1 list-disc pl-4">
                                         <li>{t('settings.about.feature_poster')}</li>
                                         <li>{t('settings.about.feature_icon')}</li>

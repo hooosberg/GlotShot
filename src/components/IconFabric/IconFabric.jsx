@@ -82,14 +82,17 @@ const PLATFORMS = {
     }
 };
 
-const SHAPE_OPTS = [
-    { id: 'circle', name: '圆形', icon: '●' },
-    { id: 'squircle', name: '圆角矩形', icon: '▢' },
-    { id: 'square', name: '方形', icon: '■' },
-];
 
 const IconFabric = () => {
     const { t } = useTranslation();
+
+    // 移动到组件内部以使用 t 函数
+    const SHAPE_OPTS = [
+        { id: 'circle', name: t('iconFabric.shapes.circle'), icon: '●' },
+        { id: 'squircle', name: t('iconFabric.shapes.squircle'), icon: '▢' },
+        { id: 'square', name: t('iconFabric.shapes.square'), icon: '■' },
+    ];
+
     const [activePlatform, setActivePlatform] = useState('apple');
     const [previewShape, setPreviewShape] = useState('circle');
 
@@ -474,17 +477,17 @@ const IconFabric = () => {
         <div className="flex flex-1 overflow-hidden" style={{ background: 'var(--app-bg-primary)' }}>
             {/* 左侧：平台选择 + 控制 */}
             <div className="w-[300px] border-r flex flex-col shrink-0" style={{ background: 'var(--app-bg-primary)', borderColor: 'var(--app-border)' }}>
-                <div className="flex p-2 gap-1 border-b border-gray-800">
+                <div className="flex p-2 gap-1 border-b border-[var(--app-border)]">
                     {Object.values(PLATFORMS).map(p => (
                         <button
                             key={p.id}
                             onClick={() => setActivePlatform(p.id)}
                             className={`flex-1 py-3 rounded-lg flex flex-col items-center gap-1 transition-all ${activePlatform === p.id
-                                ? 'bg-blue-600/20 text-blue-400 ring-1 ring-blue-500/50'
-                                : 'text-gray-500 hover:bg-gray-800/50 hover:text-gray-300'}`}
+                                ? 'bg-[var(--app-accent-light)] text-[var(--app-accent)] ring-1 ring-[var(--app-accent)]/50'
+                                : 'text-[var(--app-text-secondary)] hover:bg-[var(--app-bg-elevated)] hover:text-[var(--app-text-primary)]'}`}
                         >
                             <span className="text-xl">
-                                {ICONS[p.id] && ICONS[p.id]({ className: `w-6 h-6 ${activePlatform === p.id ? 'fill-blue-400' : 'fill-gray-500 group-hover:fill-gray-300'}` })}
+                                {ICONS[p.id] && ICONS[p.id]({ className: `w-6 h-6 ${activePlatform === p.id ? 'fill-[var(--app-accent)]' : 'fill-[var(--app-text-secondary)] group-hover:fill-[var(--app-text-primary)]'}` })}
                             </span>
                             <span className="text-[10px] font-medium">{p.name}</span>
                         </button>
@@ -493,43 +496,43 @@ const IconFabric = () => {
 
                 <div className="flex-1 overflow-y-auto p-4 space-y-6">
                     <div>
-                        <h3 className="text-xs font-bold text-gray-400 mb-3 flex items-center gap-2">
+                        <h3 className="text-xs font-bold text-[var(--app-text-secondary)] mb-3 flex items-center gap-2">
                             <Layers className="w-3.5 h-3.5" /> {t('iconFabric.resourceLayers')}
                         </h3>
 
                         {activePlatform === 'android' ? (
                             <div className="space-y-3">
-                                <div className="bg-gray-800/40 rounded-xl p-3 border border-gray-700/50">
+                                <div className="bg-[var(--app-card-bg)] rounded-xl p-3 border border-[var(--app-border)]">
                                     <div className="flex justify-between items-center mb-2">
-                                        <span className="text-xs text-gray-300">{t('iconFabric.foreground')}</span>
-                                        {platformData.android.foreground && <span className="text-[10px] text-green-400">{t('iconFabric.loaded')}</span>}
+                                        <span className="text-xs text-[var(--app-text-secondary)]">{t('iconFabric.foreground')}</span>
+                                        {platformData.android.foreground && <span className="text-[10px] text-[var(--app-success)]">{t('iconFabric.loaded')}</span>}
                                     </div>
                                     <div
                                         onClick={() => fileInputRef.current?.click()}
-                                        className="h-20 border-2 border-dashed border-gray-700 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-gray-500 hover:bg-gray-700/30 transition-all"
+                                        className="h-20 border-2 border-dashed border-[var(--app-border)] rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-[var(--app-text-muted)] hover:bg-[var(--app-bg-elevated)] transition-all"
                                     >
                                         {platformData.android.foreground ? (
                                             <img src={platformData.android.foreground} className="h-16 w-16 object-contain" />
                                         ) : (
                                             <>
-                                                <Upload className="w-5 h-5 text-gray-500 mb-1" />
-                                                <span className="text-[10px] text-gray-500">{t('iconFabric.uploadPng')}</span>
+                                                <Upload className="w-5 h-5 text-[var(--app-text-muted)] mb-1" />
+                                                <span className="text-[10px] text-[var(--app-text-muted)]">{t('iconFabric.uploadPng')}</span>
                                             </>
                                         )}
                                     </div>
                                 </div>
 
-                                <div className="bg-gray-800/40 rounded-xl p-3 border border-gray-700/50">
+                                <div className="bg-[var(--app-card-bg)] rounded-xl p-3 border border-[var(--app-border)]">
                                     <div className="flex justify-between items-center mb-2">
-                                        <span className="text-xs text-gray-300">{t('iconFabric.background')}</span>
-                                        <div className="flex bg-gray-900 rounded p-0.5">
+                                        <span className="text-xs text-[var(--app-text-secondary)]">{t('iconFabric.background')}</span>
+                                        <div className="flex bg-[var(--app-bg-tertiary)] rounded p-0.5">
                                             <button
                                                 onClick={() => updatePlatformData('android', { backgroundType: 'color' })}
-                                                className={`p-1 rounded ${platformData.android.backgroundType === 'color' ? 'bg-gray-700 text-white' : 'text-gray-500'}`}
+                                                className={`p-1 rounded ${platformData.android.backgroundType === 'color' ? 'bg-[var(--app-bg-elevated)] text-[var(--app-text-primary)] shadow-sm' : 'text-[var(--app-text-muted)]'}`}
                                             ><Palette className="w-3 h-3" /></button>
                                             <button
                                                 onClick={() => updatePlatformData('android', { backgroundType: 'image' })}
-                                                className={`p-1 rounded ${platformData.android.backgroundType === 'image' ? 'bg-gray-700 text-white' : 'text-gray-500'}`}
+                                                className={`p-1 rounded ${platformData.android.backgroundType === 'image' ? 'bg-[var(--app-bg-elevated)] text-[var(--app-text-primary)] shadow-sm' : 'text-[var(--app-text-muted)]'}`}
                                             ><ImageIcon className="w-3 h-3" /></button>
                                         </div>
                                     </div>
@@ -540,7 +543,7 @@ const IconFabric = () => {
                                                 <button
                                                     key={color}
                                                     onClick={() => updatePlatformData('android', { backgroundColor: color })}
-                                                    className={`w-6 h-6 rounded-full border border-gray-600 ${platformData.android.backgroundColor === color ? 'ring-2 ring-white' : ''}`}
+                                                    className={`w-6 h-6 rounded-full border border-[var(--app-border)] ${platformData.android.backgroundColor === color ? 'ring-2 ring-[var(--app-text-primary)]' : ''}`}
                                                     style={{ backgroundColor: color }}
                                                 />
                                             ))}
@@ -554,12 +557,12 @@ const IconFabric = () => {
                                     ) : (
                                         <div
                                             onClick={() => bgFileInputRef.current?.click()}
-                                            className="h-16 border-2 border-dashed border-gray-700 rounded-lg flex items-center justify-center cursor-pointer hover:border-gray-500"
+                                            className="h-16 border-2 border-dashed border-[var(--app-border)] rounded-lg flex items-center justify-center cursor-pointer hover:border-[var(--app-text-muted)]"
                                         >
                                             {platformData.android.backgroundImage ? (
                                                 <img src={platformData.android.backgroundImage} className="w-full h-full object-cover rounded" />
                                             ) : (
-                                                <span className="text-[10px] text-gray-500">{t('iconFabric.uploadBackground')}</span>
+                                                <span className="text-[10px] text-[var(--app-text-muted)]">{t('iconFabric.uploadBackground')}</span>
                                             )}
                                         </div>
                                     )}
@@ -568,15 +571,15 @@ const IconFabric = () => {
                         ) : (
                             <div
                                 onClick={() => fileInputRef.current?.click()}
-                                className="aspect-square border-2 border-dashed border-gray-700 rounded-xl flex flex-col items-center justify-center cursor-pointer hover:border-blue-500/50 hover:bg-blue-900/10 transition-all group"
+                                className="aspect-square border-2 border-dashed border-[var(--app-border)] rounded-xl flex flex-col items-center justify-center cursor-pointer hover:border-[var(--app-accent)] hover:bg-[var(--app-accent-light)] transition-all group"
                             >
                                 {platformData[activePlatform].image ? (
                                     <img src={platformData[activePlatform].image} className="w-32 h-32 object-contain rounded-lg shadow-lg mb-2" />
                                 ) : (
-                                    <Upload className="w-8 h-8 text-gray-600 group-hover:text-blue-400 mb-2 transition-colors" />
+                                    <Upload className="w-8 h-8 text-[var(--app-text-muted)] group-hover:text-[var(--app-accent)] mb-2 transition-colors" />
                                 )}
-                                <span className="text-xs text-gray-500 group-hover:text-blue-300">
-                                    {platformData[activePlatform].image ? '点击更换图片' : '上传源图片'}
+                                <span className="text-xs text-[var(--app-text-secondary)] group-hover:text-[var(--app-accent)]">
+                                    {platformData[activePlatform].image ? t('iconFabric.changeImage') : t('iconFabric.uploadImage')}
                                 </span>
                             </div>
                         )}
@@ -587,28 +590,28 @@ const IconFabric = () => {
 
                     <div>
                         <div className="flex justify-between items-center mb-3">
-                            <h3 className="text-xs font-bold text-gray-400 flex items-center gap-2">
+                            <h3 className="text-xs font-bold text-[var(--app-text-secondary)] flex items-center gap-2">
                                 <Move className="w-3.5 h-3.5" /> {t('iconFabric.transform')}
                             </h3>
-                            <button onClick={resetSettings} className="text-[10px] text-blue-400 hover:text-blue-300">{t('iconFabric.reset')}</button>
+                            <button onClick={resetSettings} className="text-[10px] text-[var(--app-accent)] hover:text-[var(--app-accent-hover)]">{t('iconFabric.reset')}</button>
                         </div>
 
-                        <div className="bg-gray-800/40 rounded-xl p-4 border border-gray-700/50">
+                        <div className="bg-[var(--app-card-bg)] rounded-xl p-4 border border-[var(--app-border)]">
                             <div className="mb-4">
-                                <div className="flex justify-between text-[11px] mb-1.5 text-gray-400">
+                                <div className="flex justify-between text-[11px] mb-1.5 text-[var(--app-text-secondary)]">
                                     <span>{t('iconFabric.scale')}</span>
-                                    <span className="text-white">{platformData[activePlatform].scale}%</span>
+                                    <span className="text-[var(--app-text-primary)]">{platformData[activePlatform].scale}%</span>
                                 </div>
                                 <input
                                     type="range" min="50" max="400" step="5"
                                     value={platformData[activePlatform].scale}
                                     onChange={e => updatePlatformData(activePlatform, { scale: parseInt(e.target.value), offsetX: 0, offsetY: 0 })}
-                                    className="w-full h-1.5 bg-gray-700 rounded-lg accent-blue-500 cursor-pointer"
+                                    className="w-full h-1.5 bg-[var(--app-bg-tertiary)] rounded-lg accent-[var(--app-accent)] cursor-pointer"
                                 />
                             </div>
 
-                            <div className="text-[10px] text-gray-500 flex items-start gap-2 bg-blue-500/5 p-2 rounded border border-blue-500/10">
-                                <Move className="w-3 h-3 text-blue-400 shrink-0 mt-0.5" />
+                            <div className="text-[10px] text-[var(--app-text-muted)] flex items-start gap-2 bg-[var(--app-accent-light)] p-2 rounded border border-[var(--app-accent)]/20">
+                                <Move className="w-3 h-3 text-[var(--app-accent)] shrink-0 mt-0.5" />
                                 <span>{activePlatform === 'android' ? t('iconFabric.fgOnlyTip') : t('iconFabric.dragTip')}</span>
                             </div>
                         </div>
@@ -618,8 +621,8 @@ const IconFabric = () => {
 
             {/* 中间：编辑器 */}
             <div className="flex-1 flex flex-col min-w-0" style={{ background: 'var(--app-bg-secondary)' }}>
-                <div className="h-10 flex items-center justify-center border-b border-gray-800/50">
-                    <span className="text-xs text-gray-500">{platform.name} {t('iconFabric.editor')} · {t(`iconFabric.platforms.${activePlatform}.guide`)}</span>
+                <div className="h-10 flex items-center justify-center border-b border-[var(--app-border)]">
+                    <span className="text-xs text-[var(--app-text-secondary)]">{platform.name} {t('iconFabric.editor')} · {t(`iconFabric.platforms.${activePlatform}.guide`)}</span>
                 </div>
                 <div className="flex-1 flex items-center justify-center overflow-hidden p-8">
                     <canvas
@@ -632,21 +635,21 @@ const IconFabric = () => {
 
             {/* 右侧：预览 + 导出 */}
             <div className="w-[340px] border-l flex flex-col shrink-0" style={{ background: 'var(--app-bg-primary)', borderColor: 'var(--app-border)' }}>
-                <div className="p-4 border-b border-gray-800">
-                    <h3 className="text-sm font-semibold text-gray-200 flex items-center gap-2">
-                        <LayoutTemplate className="w-4 h-4 text-blue-400" /> {t('iconFabric.livePreview')}
+                <div className="p-4 border-b border-[var(--app-border)]">
+                    <h3 className="text-sm font-semibold text-[var(--app-text-primary)] flex items-center gap-2">
+                        <LayoutTemplate className="w-4 h-4 text-[var(--app-accent)]" /> {t('iconFabric.livePreview')}
                     </h3>
                 </div>
 
-                <div className="flex-1 p-6 flex flex-col items-center bg-gradient-to-b from-[#0F1115] to-[#000]">
+                <div className="flex-1 p-6 flex flex-col items-center" style={{ background: 'var(--app-bg-tertiary)' }}>
                     {(activePlatform === 'android' || activePlatform === 'windows') && (
-                        <div className="flex gap-2 mb-6 bg-gray-800/50 p-1 rounded-lg border border-gray-700">
+                        <div className="flex gap-2 mb-6 bg-[var(--app-card-bg)] p-1 rounded-lg border border-[var(--app-border)]">
                             {SHAPE_OPTS.map(m => (
                                 <button
                                     key={m.id}
                                     onClick={() => setPreviewShape(m.id)}
                                     title={t(`iconFabric.shapes.${m.id}`)}
-                                    className={`w-8 h-8 flex items-center justify-center rounded ${previewShape === m.id ? 'bg-gray-600 text-white' : 'text-gray-500 hover:text-gray-300'}`}
+                                    className={`w-8 h-8 flex items-center justify-center rounded ${previewShape === m.id ? 'bg-[var(--app-bg-elevated)] text-[var(--app-text-primary)] shadow-sm' : 'text-[var(--app-text-muted)] hover:text-[var(--app-text-primary)]'}`}
                                 >
                                     <span className="text-lg leading-none">{m.icon}</span>
                                 </button>
@@ -654,38 +657,38 @@ const IconFabric = () => {
                         </div>
                     )}
 
-                    <canvas ref={previewCanvasRef} className="w-[200px] h-[200px] shadow-[0_20px_50px_-12px_rgba(0,0,0,0.5)]" />
+                    <canvas ref={previewCanvasRef} className="w-[200px] h-[200px]" />
 
                     <div className="mt-8 w-full">
-                        <div className="bg-gray-800/30 rounded-lg p-4 border border-gray-700/30">
-                            <h4 className="text-xs font-medium text-gray-400 mb-3">{t('iconFabric.exportFiles')}</h4>
+                        <div className="bg-[var(--app-card-bg)] rounded-lg p-4 border border-[var(--app-border)]">
+                            <h4 className="text-xs font-medium text-[var(--app-text-secondary)] mb-3">{t('iconFabric.exportFiles')}</h4>
                             {activePlatform === 'apple' ? (
                                 <div className="space-y-2">
-                                    <div className="flex items-center gap-3 p-3 bg-gray-900/50 rounded-lg">
-                                        <Check className="w-4 h-4 text-green-500 shrink-0" />
+                                    <div className="flex items-center gap-3 p-3 bg-[var(--app-bg-elevated)] rounded-lg">
+                                        <Check className="w-4 h-4 text-[var(--app-success)] shrink-0" />
                                         <div>
-                                            <p className="text-sm text-white font-medium">AppIcon_1024x1024.png</p>
-                                            <p className="text-[10px] text-gray-500">1024×1024 px · MAS 满铺</p>
+                                            <p className="text-sm text-[var(--app-text-primary)] font-medium">AppIcon_1024x1024.png</p>
+                                            <p className="text-[10px] text-[var(--app-text-secondary)]">1024×1024 px · {t('iconFabric.masFullBleed')}</p>
                                         </div>
                                     </div>
-                                    <div className="flex items-center gap-3 p-3 bg-gray-900/50 rounded-lg">
-                                        <Check className="w-4 h-4 text-green-500 shrink-0" />
+                                    <div className="flex items-center gap-3 p-3 bg-[var(--app-bg-elevated)] rounded-lg">
+                                        <Check className="w-4 h-4 text-[var(--app-success)] shrink-0" />
                                         <div>
-                                            <p className="text-sm text-white font-medium">DMG_Icon_1024x1024.png</p>
-                                            <p className="text-[10px] text-gray-500">1024×1024 px · Squircle + 投影</p>
+                                            <p className="text-sm text-[var(--app-text-primary)] font-medium">DMG_Icon_1024x1024.png</p>
+                                            <p className="text-[10px] text-[var(--app-text-secondary)]">1024×1024 px · {t('iconFabric.squircleWithShadow')}</p>
                                         </div>
                                     </div>
                                 </div>
                             ) : (
-                                <div className="flex items-center gap-3 p-3 bg-gray-900/50 rounded-lg">
-                                    <Check className="w-4 h-4 text-green-500 shrink-0" />
+                                <div className="flex items-center gap-3 p-3 bg-[var(--app-bg-elevated)] rounded-lg">
+                                    <Check className="w-4 h-4 text-[var(--app-success)] shrink-0" />
                                     <div>
-                                        <p className="text-sm text-white font-medium">{platform.exportName}</p>
-                                        <p className="text-[10px] text-gray-500">{platform.exportSize}×{platform.exportSize} px · PNG</p>
+                                        <p className="text-sm text-[var(--app-text-primary)] font-medium">{platform.exportName}</p>
+                                        <p className="text-[10px] text-[var(--app-text-secondary)]">{platform.exportSize}×{platform.exportSize} px · PNG</p>
                                     </div>
                                 </div>
                             )}
-                            <p className="text-[10px] text-gray-600 mt-3 flex items-start gap-1.5">
+                            <p className="text-[10px] text-[var(--app-text-muted)] mt-3 flex items-start gap-1.5">
                                 <AlertCircle className="w-3 h-3 shrink-0 mt-0.5" />
                                 {t(`iconFabric.platforms.${activePlatform}.guide`)}
                             </p>
