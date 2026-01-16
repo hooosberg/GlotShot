@@ -1,13 +1,14 @@
 {
   "name": "electron_app",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.0.1",
   "main": "electron/main.cjs",
   "type": "module",
   "scripts": {
     "dev": "concurrently \"vite\" \"wait-on http-get://localhost:5173/app.html && cross-env NODE_ENV=development electron .\"",
     "build": "vite build",
     "electron:build": "vite build && electron-builder",
+    "build:mas": "vite build && electron-builder --mac mas",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -33,6 +34,12 @@
         "dmg"
       ],
       "icon": "public/icon/DMG_Icon_1024x1024.png"
+    },
+    "mas": {
+      "category": "public.app-category.graphics-design",
+      "entitlements": "build/entitlements.mas.plist",
+      "entitlementsInherit": "build/entitlements.mas.inherit.plist",
+      "hardenedRuntime": false
     },
     "dmg": {
       "background": "assets/dmg_background.png",

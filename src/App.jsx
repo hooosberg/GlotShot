@@ -25,18 +25,20 @@ const DEFAULT_HEIGHT = 1800;
 
 // Built-in backgrounds - 渐变配色
 const PRESETS = [
-  { id: 'white', name: '纯白', value: '#FFFFFF' },
-  { id: 'white-gray', name: '白灰渐变', value: 'linear-gradient(180deg, #FFFFFF 0%, #F3F4F6 100%)' },
-  { id: 'titanium', name: '钛金属', value: 'linear-gradient(135deg, #e0e0e0 0%, #9ca3af 100%)' },
-  { id: 'midnight', name: '午夜黑', value: 'linear-gradient(135deg, #020617 0%, #1e293b 100%)' },
-  { id: 'mystic', name: '幻影紫', value: 'linear-gradient(135deg, #4c1d95 0%, #8b5cf6 100%)' },
-  { id: 'sunset', name: '日落金', value: 'linear-gradient(135deg, #f59e0b 0%, #f43f5e 100%)' },
-  { id: 'ocean-breeze', name: '海风蓝', value: 'linear-gradient(135deg, #a5f3fc 0%, #3b82f6 100%)' },
-  { id: 'forest', name: '极光绿', value: 'linear-gradient(135deg, #10b981 0%, #064e3b 100%)' },
-  { id: 'berry-smoothie', name: '浆果粉', value: 'linear-gradient(135deg, #f9a8d4 0%, #be185d 100%)' },
-  { id: 'royal', name: '皇家蓝', value: 'linear-gradient(135deg, #1e40af 0%, #172554 100%)' },
-  { id: 'candy', name: '糖果炫彩', value: 'linear-gradient(135deg, #ff9a9e 0%, #fecfef 99%, #fecfef 100%)' },
-  { id: 'cyber', name: '赛博朋克', value: 'linear-gradient(135deg, #ff00cc 0%, #333399 100%)' },
+  // Row 1: Light & Neutrals
+  { id: 'titanium-white', name: '钛金白', value: 'linear-gradient(180deg, #FFFFFF 0%, #F2F2F7 100%)' },
+  { id: 'starlight', name: '星光色', value: 'linear-gradient(180deg, #Fbfbfd 0%, #e8e6e1 100%)' },
+  { id: 'natural-titanium', name: '原色钛', value: 'linear-gradient(180deg, #Bdbcb7 0%, #8f8e89 100%)' },
+  { id: 'silver', name: '银色', value: 'linear-gradient(180deg, #ececed 0%, #d1d1d6 100%)' },
+  { id: 'space-gray', name: '深空灰', value: 'linear-gradient(180deg, #48484a 0%, #2c2c2e 100%)' },
+  { id: 'midnight', name: '午夜色', value: 'linear-gradient(180deg, #262a34 0%, #15181e 100%)' },
+  // Row 2: Colorful Premium
+  { id: 'blue-titanium', name: '钛蓝', value: 'linear-gradient(180deg, #2f384b 0%, #18202f 100%)' },
+  { id: 'pacific-blue', name: '海蓝色', value: 'linear-gradient(180deg, #375368 0%, #1c2b36 100%)' },
+  { id: 'alpine-green', name: '苍岭绿', value: 'linear-gradient(180deg, #495a4c 0%, #29332b 100%)' },
+  { id: 'deep-purple', name: '暗夜紫', value: 'linear-gradient(180deg, #534556 0%, #322934 100%)' },
+  { id: 'rose-gold', name: '玫瑰金', value: 'linear-gradient(180deg, #fadadd 0%, #f4b4ba 100%)' },
+  { id: 'sunrise', name: '晨曦', value: 'linear-gradient(180deg, #ffecd2 0%, #fcb69f 100%)' },
 ];
 
 // 内置背景图片 (public/背景/)
@@ -1296,6 +1298,10 @@ const App = () => {
                     );
                     ctx.clip();
 
+                    // Fill screen background with gray to prevent transparency
+                    ctx.fillStyle = '#E5E5E5';
+                    ctx.fill();
+
                     // 绘制截图
                     // Get screenshot scale from scene settings (default 1.0 for device mode)
                     const ssScale = scene.settings.screenshotScale || 1.0;
@@ -1474,6 +1480,10 @@ const App = () => {
               scaledCornerRadius
             );
             ctx.clip();
+
+            // Fill screen background with gray to prevent transparency
+            ctx.fillStyle = '#E5E5E5';
+            ctx.fill();
 
             // Draw screenshot within clipped area using scene settings
             const ssAspect = ssImg.width / ssImg.height;
@@ -2639,10 +2649,10 @@ const App = () => {
                             };
                           });
                         }}
-                        className={`w-full h-8 rounded-md transition-all flex items-center justify-center bg-gradient-to-b from-white to-[#9CA3AF] overflow-hidden ${globalSettings.backgroundType === 'custom-gradient' ? 'ring-2 ring-blue-500 scale-110 z-10' : 'opacity-70 hover:opacity-100'}`}
+                        className={`w-full h-8 rounded-md transition-all flex items-center justify-center bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 overflow-hidden ${globalSettings.backgroundType === 'custom-gradient' ? 'ring-2 ring-blue-500 scale-110 z-10' : 'opacity-70 hover:opacity-100'}`}
                         title={t('sidebar.customGradient')}
                       >
-                        <Palette className="w-3.5 h-3.5 text-[var(--app-text-secondary)] mix-blend-multiply" />
+                        <Palette className="w-4 h-4 text-white drop-shadow-sm" />
                       </button>
                     </div>
 
@@ -3380,7 +3390,7 @@ const App = () => {
                       <div className="group">
                         <div className="flex justify-between text-[10px] text-[var(--app-text-secondary)] mb-1">{t('layout.verticalPosition')} <span>{activeScene.settings.screenshotY}</span></div>
                         <div className="flex items-center gap-2">
-                          <input type="range" min="0" max="1500" step="10" value={activeScene.settings.screenshotY} onChange={(e) =>
+                          <input type="range" min="-1000" max="1000" step="10" value={activeScene.settings.screenshotY} onChange={(e) =>
                             updateSceneSettings('screenshotY', parseInt(e.target.value))}
                             className="flex-1 h-1 bg-[var(--app-control-track)] rounded-lg appearance-none cursor-pointer accent-[var(--app-accent)]"
                           />

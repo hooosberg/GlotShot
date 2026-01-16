@@ -33,3 +33,7 @@ release
 *.p12
 *.pfx
 *.keystore
+
+# Ignored Directories
+public/
+.agent/

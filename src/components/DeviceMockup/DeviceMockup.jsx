@@ -1296,8 +1296,8 @@ const DeviceMockup = ({
             <div className="flex items-center gap-3">
               <input
                 type="range"
-                min="0"
-                max="2000"
+                min="-1000"
+                max="1000"
                 step="10"
                 value={deviceY}
                 onChange={(e) => setDeviceY(parseInt(e.target.value))}
