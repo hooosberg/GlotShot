@@ -11,12 +11,20 @@ function createWindow() {
     height: 800,
     minWidth: 1080,
     minHeight: 720,
+    show: false, // 先隐藏，等内容加载完成后再显示
+    backgroundColor: '#1a1a2e', // 设置背景色与应用一致，避免白色闪烁
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
       preload: path.join(__dirname, 'preload.cjs'),
     },
     titleBarStyle: 'hiddenInset', // Mac-style title bar
+  });
+
+  // 窗口准备好后再显示，避免闪烁
+  mainWindow.once('ready-to-show', () => {
+    mainWindow.show();
+    mainWindow.focus();
   });
 
   if (isDev) {
@@ -30,6 +38,58 @@ function createWindow() {
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     shell.openExternal(url);
     return { action: 'deny' };
+  });
+
+  // Handle page load failures (防止白屏)
+  mainWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription, validatedURL) => {
+    console.error('Page load failed:', errorCode, errorDescription, validatedURL);
+    // 加载失败时显示错误页面
+    mainWindow.loadURL(`data:text/html;charset=utf-8,
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>Load Error</title>
+        <style>
+          body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            background: #1a1a2e;
+            color: #fff;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
+            text-align: center;
+          }
+          h1 { font-size: 24px; margin-bottom: 16px; }
+          p { color: #a1a1a6; margin-bottom: 24px; }
+          button {
+            padding: 12px 32px;
+            font-size: 16px;
+            background: #0d84ff;
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+          }
+          button:hover { background: #0a6ecc; }
+        </style>
+      </head>
+      <body>
+        <div style="font-size: 64px; margin-bottom: 20px;">📦</div>
+        <h1>Unable to load application</h1>
+        <p>Error: ${errorDescription} (${errorCode})</p>
+        <button onclick="location.reload()">Retry</button>
+      </body>
+      </html>
+    `);
+  });
+
+  // Log when page finishes loading
+  mainWindow.webContents.on('did-finish-load', () => {
+    console.log('Page loaded successfully');
   });
 
   // 监听窗口关闭事件

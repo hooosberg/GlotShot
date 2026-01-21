@@ -43,11 +43,11 @@ const PRESETS = [
 
 // 内置背景图片 (public/背景/)
 const BUILTIN_BACKGROUNDS = [
-  { id: 'builtin1', name: '金色', src: './背景/金色.png' },
-  { id: 'builtin2', name: '壁纸', src: './背景/wallpaper003.png' },
-  { id: 'builtin3', name: '渐变', src: './背景/ChatGPT Image 2025年6月2日 12_55_05.png' },
-  { id: 'builtin4', name: '海纹', src: './背景/Gemini_Generated_Image_eecq6reecq6reecq.png' },
-  { id: 'builtin5', name: '沙丘', src: './背景/Gemini_Generated_Image_qukbslqukbslqukb.png' },
+  { id: 'builtin1', name: '金色', src: './背景/金色.jpg' },
+  { id: 'builtin2', name: '壁纸', src: './背景/wallpaper003.jpg' },
+  { id: 'builtin3', name: '渐变', src: './背景/ChatGPT Image 2025年6月2日 12_55_05.jpg' },
+  { id: 'builtin4', name: '海纹', src: './背景/Gemini_Generated_Image_eecq6reecq6reecq.jpg' },
+  { id: 'builtin5', name: '沙丘', src: './背景/Gemini_Generated_Image_qukbslqukbslqukb.jpg' },
 ];
 
 // Platform presets for promotional images (官方规格)
