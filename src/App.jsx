@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Upload, Download, Image as ImageIcon, Type, FolderInput, Plus, Trash2, Globe, Settings, Copy, RefreshCw, Cpu, Monitor, RotateCcw, Save, Archive, ChevronDown, ChevronRight, ChevronUp, AlignLeft, AlignCenter, AlignRight, Palette, Smartphone, Layers } from 'lucide-react';
+import { Upload, Download, Image as ImageIcon, Type, FolderInput, Plus, Trash2, Globe, Settings, Copy, RefreshCw, Cpu, Monitor, RotateCcw, Save, Archive, ChevronDown, ChevronRight, ChevronUp, AlignLeft, AlignCenter, AlignRight, Palette, Smartphone, Layers, CheckSquare } from 'lucide-react';
 import './App.css';
 import useClickOutside from './hooks/useClickOutside';
 import IconFabric from './components/IconFabric/IconFabric';
@@ -273,7 +273,7 @@ const STROKE_COLORS = [
 // 全球语言列表
 const LANGUAGES = [
   { code: 'zh-CN', name: '简体中文', nativeName: '简体中文', flag: '🇨🇳' },
-  { code: 'zh-TW', name: '繁體中文', nativeName: '繁體中文', flag: '🇹🇼' },
+  { code: 'zh-TW', name: '繁體中文', nativeName: '繁體中文', flag: '🌐' },
   { code: 'en', name: 'English', nativeName: 'English', flag: '🇺🇸' },
   { code: 'ja', name: '日本語', nativeName: '日本語', flag: '🇯🇵' },
   { code: 'ko', name: '한국어', nativeName: '한국어', flag: '🇰🇷' },
@@ -322,14 +322,8 @@ const DEFAULT_SCENE_SETTINGS = {
 };
 
 const App = () => {
+  // useTranslation hook provides language and changeLanguage
   const { t, language, changeLanguage } = useTranslation();
-
-  // Update Electron menu language
-  useEffect(() => {
-    if (window.electron && translations[language] && translations[language].menu) {
-      window.electron.updateMenuLanguage(translations[language].menu);
-    }
-  }, [language]);
 
   // Translation mapping for preset names
   const PRESET_NAME_MAP = {
@@ -863,6 +857,9 @@ const App = () => {
     console.log(`[DeviceConfig] Saved ${selectedDevice} config for scene ${activeSceneId}`, config);
   }, [deviceScale, deviceX, deviceY, deviceFrameColor, showLockScreenUI, showMockupShadow, shadowOpacity, activeSceneId, selectedDevice]);
 
+  // State for Selection Mode
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
+
   // 切换设备或场景时加载已保存的配置
   useEffect(() => {
     if (!mockupEnabled) return;
@@ -971,10 +968,10 @@ const App = () => {
   // 用于跟踪渲染版本，避免异步渲染竞态条件导致拖影
   const renderVersionRef = useRef(0);
 
-  const drawCanvas = useCallback(async (canvas, scene, language, isExport = false) => {
+  const drawCanvas = useCallback(async (canvas, scene, language, isExport = false, overrideOptions = {}) => {
     if (!canvas || !scene) return;
 
-    // 增加渲染版本号
+    // 增加渲染版本号 (only track if not exporting with overrides, to avoid race conditions in UI but allow export to proceed)
     const currentVersion = ++renderVersionRef.current;
 
     const ctx = canvas.getContext('2d');
@@ -994,8 +991,21 @@ const App = () => {
     ctx.shadowOffsetX = 0;
     ctx.shadowOffsetY = 0;
 
-    // 检查渲染版本是否仍然有效的辅助函数
-    const isRenderValid = () => renderVersionRef.current === currentVersion;
+    // Resolve variables from overrides or state
+    // If overrideOptions has a property, use it. Otherwise use the state value.
+    const effectiveMockupEnabled = overrideOptions.mockupEnabled !== undefined ? overrideOptions.mockupEnabled : mockupEnabled;
+    const effectiveSelectedDevice = overrideOptions.selectedDevice !== undefined ? overrideOptions.selectedDevice : selectedDevice;
+    const effectiveDeviceLayers = overrideOptions.deviceLayers !== undefined ? overrideOptions.deviceLayers : deviceLayers;
+    const effectiveDeviceScale = overrideOptions.deviceScale !== undefined ? overrideOptions.deviceScale : deviceScale;
+    const effectiveDeviceX = overrideOptions.deviceX !== undefined ? overrideOptions.deviceX : deviceX;
+    const effectiveDeviceY = overrideOptions.deviceY !== undefined ? overrideOptions.deviceY : deviceY;
+    const effectiveFrameColor = overrideOptions.deviceFrameColor !== undefined ? overrideOptions.deviceFrameColor : deviceFrameColor;
+    const effectiveShowUI = overrideOptions.showLockScreenUI !== undefined ? overrideOptions.showLockScreenUI : showLockScreenUI;
+    const effectiveShowShadow = overrideOptions.showMockupShadow !== undefined ? overrideOptions.showMockupShadow : showMockupShadow;
+    const effectiveShadowOpacity = overrideOptions.shadowOpacity !== undefined ? overrideOptions.shadowOpacity : shadowOpacity;
+
+    // 检查渲染版本是否仍然有效的辅助函数 (skip check for exports)
+    const isRenderValid = () => isExport ? true : renderVersionRef.current === currentVersion;
 
     // 1. Draw Background
     if ((backgroundType === 'upload' || backgroundType === 'builtin') && backgroundUpload) {
@@ -1197,9 +1207,9 @@ const App = () => {
 
         const baseScale = scene.settings.screenshotScale || 0.8;
 
-        // Check if device mockup is enabled
-        if (mockupEnabled && DEVICE_CONFIGS[selectedDevice]) {
-          const deviceConfig = DEVICE_CONFIGS[selectedDevice];
+        // Check if device mockup is enabled use effective value
+        if (effectiveMockupEnabled && DEVICE_CONFIGS[effectiveSelectedDevice]) {
+          const deviceConfig = DEVICE_CONFIGS[effectiveSelectedDevice];
 
           // ====== Apple Family Composite Mode ======
           if (deviceConfig.isComposite && deviceConfig.devices && deviceConfig.layout) {
@@ -1214,9 +1224,9 @@ const App = () => {
               .sort((a, b) => a.layoutConfig.zIndex - b.layoutConfig.zIndex); // 按 zIndex 排序
 
             // 整体缩放和位移（使用设备面板的控制值）
-            const groupScale = deviceScale || 1.0;
-            const groupOffsetX = deviceX || 0;
-            const groupOffsetY = deviceY || 0;
+            const groupScale = effectiveDeviceScale || 1.0;
+            const groupOffsetX = effectiveDeviceX || 0;
+            const groupOffsetY = effectiveDeviceY || 0;
 
             // Define reference dimensions (standard Mac canvas)
             // Use these to lock the relative positions and sizes
@@ -1276,8 +1286,8 @@ const App = () => {
                 if (dConfig.useSvgLayers && dConfig.svgPath) {
                   try {
                     const layers = await loadDeviceSvgLayers(dConfig.svgPath, {
-                      frameColor: deviceFrameColor,
-                      showUI: showLockScreenUI,
+                      frameColor: effectiveFrameColor,
+                      showUI: effectiveShowUI,
                       showShadow: false, // 复合模式下关闭投影
                       deviceConfig: dConfig,
                     });
@@ -1333,7 +1343,7 @@ const App = () => {
                     ctx.drawImage(ssImg, drawX, drawY, drawWidth, drawHeight);
 
                     // 绘制 UI 层
-                    if (showLockScreenUI && layers.ui) {
+                    if (effectiveShowUI && layers.ui) {
                       ctx.drawImage(layers.ui, frameX, frameY, scaledFrameWidth, scaledFrameHeight);
                     }
 
@@ -1357,8 +1367,8 @@ const App = () => {
 
             // Handle iPad orientation switch
             let actualIsLandscape = deviceConfig.isLandscape;
-            if (selectedDevice === 'ipad-pro') {
-              actualIsLandscape = iPadLandscape;
+            if (effectiveSelectedDevice === 'ipad-pro') {
+              actualIsLandscape = iPadLandscape; // This probably should also come from override if needed, but for now state is ok or add to overrides
               // Swap dimensions if orientation is different from default
               if (!iPadLandscape) {
                 // Switch to portrait - swap screen and frame dimensions
@@ -1376,7 +1386,7 @@ const App = () => {
             }
 
             // Use deviceScale for independent device sizing
-            const finalDeviceScale = deviceScale;
+            const finalDeviceScale = effectiveDeviceScale;
 
             // Calculate base scale to fit device reasonably
             const baseDeviceWidth = width * 0.35;
@@ -1402,8 +1412,8 @@ const App = () => {
             const scaledCornerRadius = cornerRadius * scaleRatio;
 
             // Use deviceX and deviceY for device position (independent of screenshot position)
-            const frameX = (width - scaledFrameWidth) / 2 + deviceX;
-            const frameY = deviceY;
+            const frameX = (width - scaledFrameWidth) / 2 + effectiveDeviceX;
+            const frameY = effectiveDeviceY;
 
             // Shadow for device frame
             // Shadow for device frame - REMOVED: Managed by DeviceMockup settings (showMockupShadow)
@@ -1412,7 +1422,7 @@ const App = () => {
             // Draw device frame background (for shadow) - skip for SVG layers and PNG frames
             // These modes will have shadow applied directly when drawing the image
             if (!deviceConfig.useSvgLayers && !deviceConfig.usePngFrame) {
-              ctx.fillStyle = deviceFrameColor;
+              ctx.fillStyle = effectiveFrameColor;
               const outerRadius = scaledCornerRadius + 8 * scaleRatio;
               ctx.beginPath();
               ctx.roundRect(frameX, frameY, scaledFrameWidth, scaledFrameHeight, outerRadius);
@@ -1427,7 +1437,7 @@ const App = () => {
 
             // 预加载 SVG 图层（从外部状态获取缓存的图层）
             // 如果图层尚未加载完成，暂时不绘制（或者等待下一帧）
-            const svgLayers = deviceLayers;
+            const svgLayers = effectiveDeviceLayers;
 
             if (deviceConfig.useSvgLayers && deviceConfig.svgPath && svgLayers) {
               try {
@@ -1435,7 +1445,7 @@ const App = () => {
                 if (!isRenderValid()) return;
 
                 // 在裁剪区之前绘制投影层（投影应该在设备外围）
-                if (showMockupShadow && svgLayers.shadow) {
+                if (effectiveShowShadow && svgLayers.shadow) {
                   // 使用 shadowTransform 配置计算投影的绘制位置和尺寸
                   const st = deviceConfig.shadowTransform;
                   if (st) {
@@ -1453,13 +1463,13 @@ const App = () => {
                     const shadowDrawY = frameY + (shadowYInSvg * scaleRatio);
 
                     ctx.save();
-                    ctx.globalAlpha = shadowOpacity;
+                    ctx.globalAlpha = effectiveShadowOpacity;
                     ctx.drawImage(svgLayers.shadow, shadowDrawX, shadowDrawY, shadowDrawWidth, shadowDrawHeight);
                     ctx.restore();
                   } else {
                     // 没有 shadowTransform 配置时使用设备框架尺寸
                     ctx.save();
-                    ctx.globalAlpha = shadowOpacity;
+                    ctx.globalAlpha = effectiveShadowOpacity;
                     ctx.drawImage(svgLayers.shadow, frameX, frameY, scaledFrameWidth, scaledFrameHeight);
                     ctx.restore();
                   }
@@ -1517,7 +1527,7 @@ const App = () => {
             ctx.drawImage(ssImg, drawX, drawY, drawWidth, drawHeight);
 
             // Draw Lock Screen UI overlay if enabled
-            if (showLockScreenUI && deviceConfig.hasLockScreen) {
+            if (effectiveShowUI && deviceConfig.hasLockScreen) {
               try {
                 // Check if using SVG layers or legacy modes
                 if (deviceConfig.useSvgLayers && deviceConfig.svgPath) {
@@ -1535,7 +1545,7 @@ const App = () => {
                   );
                 } else {
                   // Use generated lock screen SVG
-                  const lockScreenSVG = generateLockScreenUI(selectedDevice);
+                  const lockScreenSVG = generateLockScreenUI(effectiveSelectedDevice);
                   if (lockScreenSVG) {
                     const lockScreenImg = await svgToImage(lockScreenSVG);
                     ctx.drawImage(
@@ -1561,7 +1571,7 @@ const App = () => {
                 // 使用预加载的 SVG 图层
 
                 // Draw UI layer (if enabled and available)
-                if (showLockScreenUI && svgLayers.ui) {
+                if (effectiveShowUI && svgLayers.ui) {
                   ctx.drawImage(svgLayers.ui, frameX, frameY, scaledFrameWidth, scaledFrameHeight);
                 }
 
@@ -1592,10 +1602,10 @@ const App = () => {
               } else {
                 // Use generated device frame SVG
                 // For iPad portrait mode, we need to generate rotated SVG
-                const effectiveDevice = selectedDevice === 'ipad-pro' && !iPadLandscape
+                const effectiveDevice = effectiveSelectedDevice === 'ipad-pro' && !iPadLandscape
                   ? 'ipad-pro-portrait'
-                  : selectedDevice;
-                const frameSVG = generateDeviceFrameSVG(selectedDevice, deviceFrameColor, !iPadLandscape && selectedDevice === 'ipad-pro');
+                  : effectiveSelectedDevice;
+                const frameSVG = generateDeviceFrameSVG(effectiveSelectedDevice, effectiveFrameColor, !iPadLandscape && effectiveSelectedDevice === 'ipad-pro');
                 if (frameSVG) {
                   const frameImg = await svgToImage(frameSVG);
                   ctx.drawImage(frameImg, frameX, frameY, scaledFrameWidth, scaledFrameHeight);
@@ -2059,16 +2069,26 @@ const App = () => {
       return tempCanvas.toDataURL('image/jpeg', 0.9);
     };
 
-    alert(t('alerts.exportStart', { path: basePath }));
+    // alert(t('alerts.exportStart'));
 
     for (const scene of scenes) {
       if (!scene.screenshot) continue;
 
-      const cnData = await getCanvasData(scene, 'CN');
-      exportFiles.push({ path: `中文/${scene.name}.jpg`, data: cnData });
+      // Get language names dynamically
+      const primaryLangInfo = LANGUAGES.find(l => l.code === globalSettings.primaryLang) || LANGUAGES.find(l => l.code === 'zh-CN');
+      const secondaryLangInfo = LANGUAGES.find(l => l.code === globalSettings.secondaryLang);
 
-      const enData = await getCanvasData(scene, 'EN');
-      exportFiles.push({ path: `English/${scene.name}.jpg`, data: enData });
+      const primaryFolderName = primaryLangInfo ? primaryLangInfo.name : 'Primary'; // Fallback
+
+      const cnData = await getCanvasData(scene, 'CN');
+      exportFiles.push({ path: `${primaryFolderName}/${scene.name}.jpg`, data: cnData });
+
+      // Only export secondary if it's not 'none' and exists
+      if (secondaryLangInfo && secondaryLangInfo.code !== 'none') {
+        const secondaryFolderName = secondaryLangInfo.name;
+        const enData = await getCanvasData(scene, 'EN');
+        exportFiles.push({ path: `${secondaryFolderName}/${scene.name}.jpg`, data: enData });
+      }
     }
 
     // 2. Save via Electron
@@ -2081,7 +2101,7 @@ const App = () => {
     }
   };
 
-  // 按设备导出 - 导出已配置设备的截图
+  // 按设备导出 - 导出已配置设备的截图 (Refactored to support proper looping)
   const handleExportByDevice = async () => {
     if (appMode === 'icon') {
       window.dispatchEvent(new CustomEvent('trigger-icon-export'));
@@ -2099,9 +2119,10 @@ const App = () => {
     const tempCanvas = document.createElement('canvas');
     const exportFiles = [];
 
-    alert(t('alerts.exportStart', { path: basePath }) + `\n(${allDevices.length} 个设备)`);
+    // alert(t('alerts.exportStart') + `\n(${allDevices.length} 个设备)`);
 
     // 遍历每个设备
+    // Use for..of loop to handle async await correctly
     for (const deviceId of allDevices) {
       const deviceConfig = DEVICE_CONFIGS[deviceId];
       if (!deviceConfig) continue;
@@ -2115,52 +2136,66 @@ const App = () => {
         // 获取已保存的配置，如果没有则使用默认值
         const savedConfig = scene.settings?.deviceConfigs?.[deviceId] || {};
 
-        // 临时应用设备配置
-        const originalScale = deviceScale;
-        const originalX = deviceX;
-        const originalY = deviceY;
-        const originalFrameColor = deviceFrameColor;
-        const originalShowUI = showLockScreenUI;
-        const originalShowShadow = showMockupShadow;
-        const originalShadowOpacity = shadowOpacity;
-        const originalSelectedDevice = selectedDevice;
-        const originalMockupEnabled = mockupEnabled;
+        // 准备覆盖配置 (Prepare Override Config)
+        // These values will be passed directly to drawCanvas, bypassing state
+        const overrideConfig = {
+          mockupEnabled: true,
+          selectedDevice: deviceId,
+          deviceScale: savedConfig.scale ?? 1.0,
+          deviceX: savedConfig.x ?? 0,
+          deviceY: savedConfig.y ?? 400,
+          deviceFrameColor: savedConfig.frameColor ?? deviceConfig.defaultFrameColor ?? '#C2BCB2',
+          showLockScreenUI: savedConfig.showUI ?? false,
+          showMockupShadow: savedConfig.showShadow ?? true,
+          shadowOpacity: savedConfig.shadowOpacity ?? 0.5,
+          // Important: We must load layers manually for export since we aren't using the hook's state
+          deviceLayers: null
+        };
 
-        // 应用已保存的配置
-        setDeviceScale(savedConfig.scale ?? 1.0);
-        setDeviceX(savedConfig.x ?? 0);
-        setDeviceY(savedConfig.y ?? 400);
-        setDeviceFrameColor(savedConfig.frameColor ?? deviceConfig.defaultFrameColor ?? '#C2BCB2');
-        setShowLockScreenUI(savedConfig.showUI ?? false);
-        setShowMockupShadow(savedConfig.showShadow ?? true);
-        setShadowOpacity(savedConfig.shadowOpacity ?? 0.5);
-        setSelectedDevice(deviceId);
-        setMockupEnabled(true);
-
-        // 等待设备图层加载
-        await new Promise(resolve => setTimeout(resolve, 200));
-
-        // 绘制中英文版本
-        for (const lang of ['CN', 'EN']) {
-          await drawCanvas(tempCanvas, scene, lang, true);
-          const data = tempCanvas.toDataURL('image/jpeg', 0.9);
-          const langFolder = lang === 'CN' ? '中文' : 'English';
-          exportFiles.push({
-            path: `${deviceName}/${langFolder}/${scene.name}.jpg`,
-            data
-          });
+        // Load layers for this device if needed
+        if (deviceConfig.useSvgLayers && deviceConfig.svgPath) {
+          try {
+            const layers = await loadDeviceSvgLayers(
+              deviceConfig.svgPath,
+              {
+                frameColor: overrideConfig.deviceFrameColor,
+                showUI: overrideConfig.showLockScreenUI,
+                showShadow: true, // Always load shadow, visibility controlled by showMockupShadow in drawCanvas
+                deviceConfig: deviceConfig,
+              }
+            );
+            overrideConfig.deviceLayers = layers;
+          } catch (e) {
+            console.warn(`Failed to export load layers for ${deviceId}:`, e);
+          }
         }
 
-        // 恢复原始配置
-        setDeviceScale(originalScale);
-        setDeviceX(originalX);
-        setDeviceY(originalY);
-        setDeviceFrameColor(originalFrameColor);
-        setShowLockScreenUI(originalShowUI);
-        setShowMockupShadow(originalShowShadow);
-        setShadowOpacity(originalShadowOpacity);
-        setSelectedDevice(originalSelectedDevice);
-        setMockupEnabled(originalMockupEnabled);
+        // 绘制中英文版本 (Now Primary/Secondary)
+        const primaryLangInfo = LANGUAGES.find(l => l.code === globalSettings.primaryLang) || LANGUAGES.find(l => l.code === 'zh-CN');
+        const secondaryLangInfo = LANGUAGES.find(l => l.code === globalSettings.secondaryLang);
+
+        const primaryFolderName = primaryLangInfo ? primaryLangInfo.name : 'Primary';
+
+        // Export Primary
+        // Pass overrideConfig as the last argument
+        await drawCanvas(tempCanvas, scene, 'CN', true, overrideConfig);
+        const primaryData = tempCanvas.toDataURL('image/jpeg', 0.9);
+        exportFiles.push({
+          path: `${deviceName}/${primaryFolderName}/${scene.name}.jpg`,
+          data: primaryData
+        });
+
+        // Export Secondary if valid
+        if (secondaryLangInfo && secondaryLangInfo.code !== 'none') {
+          const secondaryFolderName = secondaryLangInfo.name;
+          // Pass overrideConfig as the last argument
+          await drawCanvas(tempCanvas, scene, 'EN', true, overrideConfig);
+          const secondaryData = tempCanvas.toDataURL('image/jpeg', 0.9);
+          exportFiles.push({
+            path: `${deviceName}/${secondaryFolderName}/${scene.name}.jpg`,
+            data: secondaryData
+          });
+        }
       }
     }
 
@@ -2371,7 +2406,7 @@ const App = () => {
                         // Auto detect system language
                         const sysLangCode = navigator.language;
                         const matchedLang = LANGUAGES.find(l => l.code === sysLangCode || (sysLangCode.startsWith(l.code) && l.code !== 'none'))?.code || 'en';
-                        setGlobalSettings(s => ({ ...s, primaryLang: matchedLang, secondaryLang: 'en' }));
+                        setGlobalSettings(s => ({ ...s, primaryLang: matchedLang }));
                       }}
                       className="text-[10px] text-[var(--app-accent)] hover:text-[var(--app-accent-hover)] flex items-center gap-1"
                     >
@@ -2895,36 +2930,50 @@ const App = () => {
 
               {/* Scene List - Flow within parent scroll */}
               <div className="p-4 sidebar-panel">
-                <div className="flex justify-between items-center mb-3">
-                  <div className="flex items-center gap-2">
-                    {scenes.filter(s => s.screenshot).length > 0 && (
+                <div className="px-4 py-3 border-b border-[var(--app-border)] bg-[var(--app-bg-panel-header)] flex items-center justify-between shrink-0">
+                  <div className="flex items-center gap-2 overflow-hidden">
+                    {/* Select All Checkbox - Only in Selection Mode */}
+                    {isSelectionMode && (
                       <input
                         type="checkbox"
                         checked={selectedSceneIds.size === scenes.filter(s => s.screenshot).length && scenes.filter(s => s.screenshot).length > 0}
                         onChange={toggleSelectAll}
                         className="rounded bg-[var(--app-input-bg)] border-[var(--app-border)] text-[var(--app-accent)] cursor-pointer"
-                        title="全选/取消全选"
+                        title={t('scenes.selectAll')}
                       />
                     )}
-                    <h3 className="text-xs uppercase text-[var(--app-text-secondary)] font-bold mb-3">{t('scenes.sceneList')} ({scenes.filter(s => s.screenshot).length})</h3>
+                    <h2 className="text-xs font-semibold text-[var(--app-text-secondary)] uppercase truncate">
+                      {t('scenes.sceneList')} ({scenes.filter(s => s.screenshot).length})
+                    </h2>
                   </div>
-                  <div className="flex items-center gap-2">
-                    {/* 批量删除按钮 */}
-                    {selectedSceneIds.size > 0 && (
+                  <div className="flex items-center gap-1 shrink-0">
+                    {/* Selection Mode Toggle */}
+                    <button
+                      onClick={() => {
+                        setIsSelectionMode(!isSelectionMode);
+                        if (isSelectionMode) setSelectedSceneIds(new Set()); // Clear selection when exiting mode
+                      }}
+                      className={`p-1.5 rounded transition ${isSelectionMode ? 'bg-[var(--app-accent)] text-white' : 'text-[var(--app-text-secondary)] hover:bg-[var(--app-bg-elevated)] hover:text-[var(--app-text-primary)]'}`}
+                      title={isSelectionMode ? t('common.cancel') : t('scenes.selectAll')} // Reusing translations broadly
+                    >
+                      <CheckSquare className="w-4 h-4" />
+                    </button>
+
+                    {/* Delete Selected (Only in Selection Mode) */}
+                    {isSelectionMode && selectedSceneIds.size > 0 && (
                       <button
                         onClick={deleteSelectedScenes}
-                        className="p-1.5 bg-red-600 hover:bg-red-500 text-white rounded transition text-[10px] flex items-center gap-1"
-                        title={`删除选中的 ${selectedSceneIds.size} 项`}
+                        className="p-1.5 text-red-400 hover:text-red-500 hover:bg-red-500/10 rounded transition"
+                        title={t('scenes.deleteSelected').replace('{n}', selectedSceneIds.size)}
                       >
-                        <Trash2 className="w-3 h-3" />
-                        <span>{selectedSceneIds.size}</span>
+                        <Trash2 className="w-4 h-4" />
                       </button>
                     )}
-                    {/* 导入按钮 - 使用 Electron 两步选择 */}
+
                     <button
                       onClick={handleElectronBatchUpload}
-                      className="p-1.5 bg-[var(--app-accent)] hover:bg-[var(--app-accent-hover)] text-white rounded transition shadow-lg shadow-[var(--app-accent)]/50"
-                      title="导入截图（选择文件夹后选择文件）"
+                      className="p-1.5 text-[var(--app-accent)] hover:text-white hover:bg-[var(--app-accent)] rounded transition"
+                      title={t('scenes.importScreenshots')}
                     >
                       <FolderInput className="w-4 h-4" />
                     </button>
@@ -2937,14 +2986,16 @@ const App = () => {
                     <div key={scene.id} onClick={() => setActiveSceneId(scene.id)}
                       className={`group p-2 rounded-lg cursor-pointer flex items-center gap-3 border transition-all ${selectedSceneIds.has(scene.id) ? 'bg-[var(--app-accent-light)] border-[var(--app-accent)]' : activeSceneId === scene.id ? 'bg-[var(--app-card-bg-solid)] border-[var(--app-accent)] shadow-lg' : 'bg-[var(--app-card-bg)] border-[var(--app-border)] hover:bg-[var(--app-card-bg-hover)]'}`}
                     >
-                      {/* 多选 Checkbox */}
-                      <input
-                        type="checkbox"
-                        checked={selectedSceneIds.has(scene.id)}
-                        onChange={(e) => toggleSceneSelection(scene.id, e)}
-                        onClick={(e) => e.stopPropagation()}
-                        className="rounded bg-[var(--app-input-bg)] border-[var(--app-border)] text-[var(--app-accent)] cursor-pointer flex-shrink-0"
-                      />
+                      {/* 多选 Checkbox - Conditional */}
+                      {isSelectionMode && (
+                        <input
+                          type="checkbox"
+                          checked={selectedSceneIds.has(scene.id)}
+                          onChange={(e) => toggleSceneSelection(scene.id, e)}
+                          onClick={(e) => e.stopPropagation()}
+                          className="rounded bg-[var(--app-input-bg)] border-[var(--app-border)] text-[var(--app-accent)] cursor-pointer flex-shrink-0"
+                        />
+                      )}
                       <div className="w-8 h-12 bg-[var(--app-bg-elevated)] rounded overflow-hidden flex-shrink-0 border border-[var(--app-border)] relative">
                         <img src={scene.screenshot} className="w-full h-full object-cover" alt="" />
                       </div>

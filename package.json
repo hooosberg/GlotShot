@@ -9,6 +9,7 @@
     "build": "vite build",
     "electron:build": "vite build && electron-builder",
     "build:mas": "vite build && electron-builder --mac mas",
+    "build:mas-dev": "vite build && electron-builder --mac mas --config.mas.type=development",
     "preview": "vite preview"
   },
   "dependencies": {

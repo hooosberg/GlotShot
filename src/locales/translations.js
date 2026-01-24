@@ -26,6 +26,9 @@ export const translations = {
             recommended: '推荐',
         },
 
+        // 菜单栏
+
+
         // Header 区域
         header: {
             import: '导入',
@@ -152,7 +155,7 @@ export const translations = {
             electronOnly: '文件选择功能仅在 Electron 应用中可用',
             readFilesError: '无法读取选中的图片文件',
             outputDirElectronOnly: '输出目录选择仅在 Electron 应用中可用',
-            exportStart: '开始导出到: {path}...',
+            exportStart: '开始导出...',
             confirmDeleteSelected: '确定要删除选中的 {n} 个场景吗？',
             exportDesktopOnly: '导出功能仅在 Electron 桌面应用中可用',
             exportedImages: '已导出 {count} 张图片',
@@ -319,8 +322,14 @@ export const translations = {
         // Electron 菜单
         menu: {
             about: '关于 GlotShot',
+            services: '服务',
+            hide: '隐藏 GlotShot',
+            hideOthers: '隐藏其他',
+            showAll: '显示全部',
+            quit: '退出 GlotShot',
             settings: '设置...',
             file: '文件',
+            close: '关闭窗口',
             importScreenshots: '导入截图...',
             exportAll: '导出全部...',
             edit: '编辑',
@@ -485,6 +494,9 @@ export const translations = {
     },
 
     'en': {
+        // Menu Bar
+
+
         common: {
             cancel: 'Cancel',
             save: 'Save',
@@ -620,7 +632,7 @@ export const translations = {
             electronOnly: 'File selection is only available in the Electron app',
             readFilesError: 'Unable to read selected image files',
             outputDirElectronOnly: 'Output directory selection is only available in the Electron app',
-            exportStart: 'Starting export to: {path}...',
+            exportStart: 'Starting export...',
             confirmDeleteSelected: 'Are you sure you want to delete the selected {n} scene(s)?',
             exportDesktopOnly: 'Export is only available in the Electron desktop app',
             exportedImages: 'Exported {count} images',
@@ -781,8 +793,14 @@ export const translations = {
 
         menu: {
             about: 'About GlotShot',
+            services: 'Services',
+            hide: 'Hide GlotShot',
+            hideOthers: 'Hide Others',
+            showAll: 'Show All',
+            quit: 'Quit GlotShot',
             settings: 'Settings...',
             file: 'File',
+            close: 'Close Window',
             importScreenshots: 'Import Screenshots...',
             exportAll: 'Export All...',
             edit: 'Edit',
@@ -1301,6 +1319,12 @@ export const translations = {
             steam: 'Steam',
             custom: '自訂',
         },
+        export: {
+            byLanguage: '按語言匯出',
+            byLanguageDesc: '中/英 分資料夾',
+            byDevice: '按裝置匯出',
+            byDeviceDesc: '每裝置一套截圖',
+        },
     },
     'ja': {
         common: {
@@ -1659,6 +1683,12 @@ export const translations = {
             steam: 'Steam',
             custom: 'カスタム',
         },
+        export: {
+            byLanguage: '言語別エクスポート',
+            byLanguageDesc: '言語別フォルダ',
+            byDevice: 'デバイス別エクスポート',
+            byDeviceDesc: 'デバイス毎のセット',
+        },
     },
     'ko': {
         common: {
@@ -1676,6 +1706,63 @@ export const translations = {
             close: '닫기',
             required: '필수',
             recommended: '권장',
+        },
+        menu: {
+            app: {
+                about: 'GlotShot 정보',
+                services: '서비스',
+                hide: 'GlotShot 숨기기',
+                hideOthers: '기타 숨기기',
+                showAll: '모두 보기',
+                quit: 'GlotShot 종료',
+                settings: '설정...',
+            },
+            file: {
+                label: '파일',
+                import: '스크린샷 가져오기...',
+                exportAll: '모두 내보내기...',
+                close: '창 닫기',
+            },
+            edit: {
+                label: '편집',
+                undo: '실행 취소',
+                redo: '다시 실행',
+                cut: '오려두기',
+                copy: '복사하기',
+                paste: '붙여넣기',
+                delete: '삭제',
+                selectAll: '모두 선택',
+                startSpeaking: '말하기 시작',
+                stopSpeaking: '말하기 중단',
+            },
+            view: {
+                label: '보기',
+                reload: '새로 고침',
+                forceReload: '강제 새로 고침',
+                toggleDevTools: '개발자 도구 전환',
+                resetZoom: '실제 크기',
+                zoomIn: '확대',
+                zoomOut: '축소',
+                toggleFullscreen: '전체 화면 전환',
+            },
+            mode: {
+                label: '모드',
+                poster: '포스터 디자인 (Poster Design)',
+                icon: '아이콘 디자인 (Icon Design)',
+            },
+            window: {
+                label: '창',
+                minimize: '최소화',
+                zoom: '확대/축소',
+                front: '모두 앞으로 가져오기',
+                showMain: '메인 창 보기',
+            },
+            help: {
+                label: '도움말',
+                website: '웹사이트 방문',
+                github: 'GitHub 저장소 방문',
+                developer: '개발자 정보 (hooosberg)',
+            },
         },
         header: {
             import: '가져오기',
@@ -2050,6 +2137,12 @@ export const translations = {
             },
             exportAllDevices: '모든 기기 버전 내보내기',
         },
+        export: {
+            byLanguage: '언어별 내보내기',
+            byLanguageDesc: '언어별 폴더',
+            byDevice: '기기별 내보내기',
+            byDeviceDesc: '기기별 세트',
+        },
     },
     'fr': {
         common: {
@@ -2407,6 +2500,12 @@ export const translations = {
             windows: 'Windows',
             steam: 'Steam',
             custom: 'Personnalisé',
+        },
+        export: {
+            byLanguage: 'Exporter par langue',
+            byLanguageDesc: 'Dossiers par langue',
+            byDevice: 'Exporter par appareil',
+            byDeviceDesc: 'Un ensemble par appareil',
         },
     },
     'de': {
@@ -2766,6 +2865,12 @@ export const translations = {
             steam: 'Steam',
             custom: 'Benutzerdefiniert',
         },
+        export: {
+            byLanguage: 'Nach Sprache exportieren',
+            byLanguageDesc: 'Nach Sprachordner trennen',
+            byDevice: 'Nach Gerät exportieren',
+            byDeviceDesc: 'Ein Set pro Gerät',
+        },
     },
     'es': {
         common: {
@@ -3123,6 +3228,12 @@ export const translations = {
             steam: 'Steam',
             custom: 'Personalizado',
         },
+        export: {
+            byLanguage: 'Exportar por idioma',
+            byLanguageDesc: 'Separar por carpeta de idioma',
+            byDevice: 'Exportar por dispositivo',
+            byDeviceDesc: 'Un conjunto por dispositivo',
+        },
     },
     'pt': {
         common: {
@@ -3479,6 +3590,12 @@ export const translations = {
             windows: 'Windows',
             steam: 'Steam',
             custom: 'Personalizado',
+        },
+        export: {
+            byLanguage: 'Exportar por idioma',
+            byLanguageDesc: 'Separar por pasta de idioma',
+            byDevice: 'Exportar por dispositivo',
+            byDeviceDesc: 'Um conjunto por dispositivo',
         },
     },
     'it': {

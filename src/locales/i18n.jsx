@@ -19,17 +19,31 @@ export const SUPPORTED_UI_LANGUAGES = [
 
 /**
  * 检测系统语言并匹配到支持的语言
+ * @param {string} [lang] - 可选的语言代码，如果不传则使用 navigator.language
  */
-export const detectSystemLanguage = () => {
+export const detectSystemLanguage = (lang) => {
     try {
-        const systemLang = navigator.language || navigator.userLanguage;
+        const systemLang = lang || navigator.language || navigator.userLanguage;
+        if (!systemLang) return 'en';
 
-        // 精确匹配
+        // 1. 精确匹配 (Code match)
         const exactMatch = SUPPORTED_UI_LANGUAGES.find(l => l.code === systemLang);
         if (exactMatch) return exactMatch.code;
 
-        // 前缀匹配 (如 zh-Hans -> zh-CN)
+        // 2. 尝试匹配 Electron 的 app.getLocale() 返回的格式 (e.g., 'zh-CN')
+        // 如果 systemLang 是 'zh'，也就是 navigator.language 可能返回的值
+        if (systemLang === 'zh') return 'zh-CN';
+
+        // 3.前缀匹配 (e.g. zh-Hans -> zh-CN, en-US -> en)
         const langPrefix = systemLang.split('-')[0];
+
+        // 特殊处理中文：如果前缀是 zh，优先匹配 zh-CN
+        if (langPrefix === 'zh') {
+            // 检查是否有对应的中文变体
+            const zhMatch = SUPPORTED_UI_LANGUAGES.find(l => l.code === 'zh-CN');
+            if (zhMatch) return zhMatch.code;
+        }
+
         const prefixMatch = SUPPORTED_UI_LANGUAGES.find(l => l.code.startsWith(langPrefix));
         if (prefixMatch) return prefixMatch.code;
 
@@ -60,9 +74,53 @@ export const I18nProvider = ({ children, initialLanguage }) => {
                 return saved;
             }
         } catch { }
-        // 检测系统语言
+        // 检测浏览器语言作为初始值
         return detectSystemLanguage();
     });
+
+    // 初始化时从主进程获取准确的系统语言
+    useEffect(() => {
+        const initLanguage = async () => {
+            // 如果用户已经手动设置了语言，或者传入了初始语言，则跳过
+            if (initialLanguage && initialLanguage !== 'auto') return;
+            const saved = localStorage.getItem('app_ui_language');
+            if (saved && saved !== 'auto') return;
+
+            // 获取 Electron 主进程的 locale (更准确)
+            if (window.electron?.getAppLocale) {
+                try {
+                    const appLocale = await window.electron.getAppLocale();
+                    console.log('App Locale:', appLocale);
+                    if (appLocale) {
+                        const detected = detectSystemLanguage(appLocale);
+                        // 如果检测到的语言与当前不同，则更新
+                        if (detected !== language) {
+                            setLanguage(detected);
+                        }
+                    }
+                } catch (e) {
+                    console.error('Failed to get app locale:', e);
+                }
+            }
+        };
+
+        initLanguage();
+    }, []);
+
+    // 监听语言变化，更新菜单
+    useEffect(() => {
+        if (window.electron?.updateMenuLanguage) {
+            // 获取当前语言的完整翻译对象
+            const currentTrans = translations[language] || translations['zh-CN'];
+            // 优先使用当前语言的菜单，如果没有则回退到英文菜单 (避免显示默认的中文)
+            const menuSource = currentTrans.menu || translations['en'].menu || translations['zh-CN'].menu;
+
+            // 由于 we standardized on Flat structure in translations.js, we can pass it directly
+            const menuLabels = menuSource;
+
+            window.electron.updateMenuLanguage(menuLabels);
+        }
+    }, [language]);
 
     // 更新语言设置
     const changeLanguage = useCallback((newLang) => {
@@ -71,11 +129,6 @@ export const I18nProvider = ({ children, initialLanguage }) => {
         try {
             localStorage.setItem('app_ui_language', newLang);
         } catch { }
-
-        // 通知 Electron 更新菜单语言（如果可用）
-        if (window.electron?.updateMenuLanguage) {
-            window.electron.updateMenuLanguage(actualLang);
-        }
     }, []);
 
     // 翻译函数

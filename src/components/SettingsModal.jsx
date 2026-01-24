@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { X, LayoutGrid, Monitor, Palette, Keyboard, Settings, Info, Image as ImageIcon, Layers, Github, ExternalLink, Star, Sun, Moon, Coffee } from 'lucide-react';
 import './SettingsModal.css';
-import { useTranslation, SUPPORTED_UI_LANGUAGES } from '../locales/i18n';
+import { useTranslation, SUPPORTED_UI_LANGUAGES, detectSystemLanguage } from '../locales/i18n';
 import appLogo from '../../public/icon/DMG_Icon_1024x1024.png';
 
 const SettingsModal = ({ isOpen, onClose, initialTab = 'start', appMode, setAppMode, globalSettings, setGlobalSettings, theme, setTheme, glassEffect, setGlassEffect }) => {
@@ -175,7 +175,9 @@ const SettingsModal = ({ isOpen, onClose, initialTab = 'start', appMode, setAppM
                                     value={globalSettings.uiLanguage || 'auto'}
                                     onChange={(e) => handleLanguageChange(e.target.value)}
                                 >
-                                    <option value="auto">{t('settings.general.language_auto')}</option>
+                                    <option value="auto">
+                                        {t('settings.general.language_auto')}
+                                    </option>
                                     {SUPPORTED_UI_LANGUAGES.map(lang => (
                                         <option key={lang.code} value={lang.code}>
                                             {lang.flag} {lang.nativeName}

@@ -124,13 +124,13 @@ function createMenu(labels = {}) {
           }
         },
         { type: 'separator' },
-        { role: 'services' },
+        { role: 'services', label: T('services', '服务') },
         { type: 'separator' },
-        { role: 'hide' },
-        { role: 'hideOthers' },
-        { role: 'unhide' },
+        { role: 'hide', label: T('hide', '隐藏 GlotShot') },
+        { role: 'hideOthers', label: T('hideOthers', '隐藏其他') },
+        { role: 'unhide', label: T('showAll', '显示全部') },
         { type: 'separator' },
-        { role: 'quit' }
+        { role: 'quit', label: T('quit', '退出 GlotShot') }
       ]
     }] : []),
     // { role: 'fileMenu' }
@@ -152,21 +152,21 @@ function createMenu(labels = {}) {
           }
         },
         { type: 'separator' },
-        isMac ? { role: 'close' } : { role: 'quit' }
+        isMac ? { role: 'close', label: T('close', '关闭窗口') } : { role: 'quit', label: T('quit', '退出') }
       ]
     },
     // { role: 'editMenu' }
     {
       label: T('edit', '编辑'),
       submenu: [
-        { role: 'undo', label: labels?.undo },
-        { role: 'redo', label: labels?.redo },
+        { role: 'undo', label: T('undo', '撤销') },
+        { role: 'redo', label: T('redo', '重做') },
         { type: 'separator' },
-        { role: 'cut', label: labels?.cut },
-        { role: 'copy', label: labels?.copy },
-        { role: 'paste', label: labels?.paste },
-        { role: 'delete', label: labels?.delete },
-        { role: 'selectAll', label: labels?.selectAll },
+        { role: 'cut', label: T('cut', '剪切') },
+        { role: 'copy', label: T('copy', '复制') },
+        { role: 'paste', label: T('paste', '粘贴') },
+        { role: 'delete', label: T('delete', '删除') },
+        { role: 'selectAll', label: T('selectAll', '全选') },
         { type: 'separator' },
         {
           label: T('startSpeaking', '语音听写'),
@@ -182,15 +182,15 @@ function createMenu(labels = {}) {
     {
       label: T('view', '视图'),
       submenu: [
-        { role: 'reload', label: labels?.reload },
-        { role: 'forceReload', label: labels?.forceReload },
-        { role: 'toggleDevTools', label: labels?.toggleDevTools },
+        { role: 'reload', label: T('reload', '重新加载') },
+        { role: 'forceReload', label: T('forceReload', '强制重新加载') },
+        { role: 'toggleDevTools', label: T('toggleDevTools', '切换开发者工具') },
         { type: 'separator' },
-        { role: 'resetZoom', label: labels?.resetZoom },
-        { role: 'zoomIn', label: labels?.zoomIn },
-        { role: 'zoomOut', label: labels?.zoomOut },
+        { role: 'resetZoom', label: T('resetZoom', '重置缩放') },
+        { role: 'zoomIn', label: T('zoomIn', '放大') },
+        { role: 'zoomOut', label: T('zoomOut', '缩小') },
         { type: 'separator' },
-        { role: 'togglefullscreen', label: labels?.toggleFullscreen }
+        { role: 'togglefullscreen', label: T('toggleFullscreen', '切换全屏') }
       ]
     },
     // { Mode Menu }
@@ -229,14 +229,15 @@ function createMenu(labels = {}) {
           }
         },
         { type: 'separator' },
-        { role: 'minimize', label: labels?.minimize },
-        { role: 'zoom', label: labels?.zoom },
+        { role: 'minimize', label: T('minimize', '最小化') },
+        { role: 'zoom', label: T('zoom', '缩放') },
         { type: 'separator' },
-        { role: 'front', label: labels?.front },
+        { role: 'front', label: T('front', '前置全部窗口') },
         { type: 'separator' },
-        { role: 'window' }
+        { role: 'window', label: T('window', '窗口') }
       ]
     },
+    // { role: 'help' }
     {
       role: 'help',
       label: T('help', '帮助'),
@@ -276,10 +277,18 @@ app.whenReady().then(() => {
     createMenu(labels);
   });
 
+  // IPC: Get App Locale
+  ipcMain.handle('get-app-locale', () => {
+    return app.getLocale();
+  });
+
   // IPC: Select Directory
   ipcMain.handle('select-directory', async () => {
     const result = await dialog.showOpenDialog({
-      properties: ['openDirectory']
+      title: '选择导出保存位置',
+      buttonLabel: '选择',
+      defaultPath: app.getPath('downloads'),
+      properties: ['openDirectory', 'createDirectory']
     });
     return result.filePaths[0];
   });

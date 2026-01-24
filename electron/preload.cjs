@@ -7,6 +7,7 @@ contextBridge.exposeInMainWorld('electron', {
     selectFiles: (options) => ipcRenderer.invoke('select-files', options),
     readFiles: (filePaths) => ipcRenderer.invoke('read-files', filePaths),
     updateMenuLanguage: (menuData) => ipcRenderer.send('update-menu-language', menuData),
+    getAppLocale: () => ipcRenderer.invoke('get-app-locale'),
     on: (channel, func) => {
         const validChannels = ['show-settings', 'show-about', 'menu-import', 'menu-export', 'menu-mode-screenshot', 'menu-mode-icon'];
         if (validChannels.includes(channel)) {
