@@ -766,8 +766,10 @@ const App = () => {
 
   // Persist globalSettings to localStorage
   useEffect(() => {
-    const { backgroundUpload, ...settingsToSave } = globalSettings;
-    localStorage.setItem('appstore_builder_global', JSON.stringify(settingsToSave));
+    // 移除之前的解构，直接保存所有设置，包括 backgroundUpload
+    // 注意：如果是超大图片可能会导致 localStorage 满，但对于单张当前背景通常没问题
+    // 且已有的 uploadedBackgrounds 已经占用了空间，这里只是存一份当前引用的
+    localStorage.setItem('appstore_builder_global', JSON.stringify(globalSettings));
   }, [globalSettings]);
 
   // Persist uploaded backgrounds to localStorage
@@ -1709,7 +1711,7 @@ const App = () => {
         cancelAnimationFrame(rafIdRef.current);
       }
     };
-  }, [activeScene, globalSettings, previewLanguage, drawCanvas, mockupEnabled, selectedDevice, deviceFrameColor, showLockScreenUI, showMockupShadow, deviceScale, deviceX, deviceY, iPadLandscape]);
+  }, [activeScene, globalSettings, previewLanguage, drawCanvas, mockupEnabled, selectedDevice, deviceFrameColor, showLockScreenUI, showMockupShadow, deviceScale, deviceX, deviceY, iPadLandscape, appMode]);
 
 
   // --- HANDLERS ---
@@ -2143,14 +2145,16 @@ const App = () => {
 
         const primaryFolderName = primaryLangInfo ? primaryLangInfo.name : 'Primary'; // Fallback
 
+        const safeSceneName = scene.name ? scene.name.replace(/[\\/:*?"<>|]/g, '_').trim() : 'Screenshot';
+
         const cnData = await getCanvasData(scene, 'CN');
-        exportFiles.push({ path: `${primaryFolderName}/${scene.name}.jpg`, data: cnData });
+        exportFiles.push({ path: `${primaryFolderName}/${safeSceneName}.jpg`, data: cnData });
 
         // Only export secondary if it's not 'none' and exists
         if (secondaryLangInfo && secondaryLangInfo.code !== 'none') {
           const secondaryFolderName = secondaryLangInfo.name;
           const enData = await getCanvasData(scene, 'EN');
-          exportFiles.push({ path: `${secondaryFolderName}/${scene.name}.jpg`, data: enData });
+          exportFiles.push({ path: `${secondaryFolderName}/${safeSceneName}.jpg`, data: enData });
         }
 
         completedCount++;
@@ -2285,8 +2289,11 @@ const App = () => {
           // Pass overrideConfig as the last argument
           await drawCanvas(tempCanvas, scene, 'CN', true, overrideConfig);
           const primaryData = tempCanvas.toDataURL('image/jpeg', 0.9);
+
+          const safeSceneName = scene.name ? scene.name.replace(/[\\/:*?"<>|]/g, '_').trim() : 'Screenshot';
+
           exportFiles.push({
-            path: `${deviceName}/${primaryFolderName}/${scene.name}.jpg`,
+            path: `${deviceName}/${primaryFolderName}/${safeSceneName}.jpg`,
             data: primaryData
           });
 
@@ -2297,7 +2304,7 @@ const App = () => {
             await drawCanvas(tempCanvas, scene, 'EN', true, overrideConfig);
             const secondaryData = tempCanvas.toDataURL('image/jpeg', 0.9);
             exportFiles.push({
-              path: `${deviceName}/${secondaryFolderName}/${scene.name}.jpg`,
+              path: `${deviceName}/${secondaryFolderName}/${safeSceneName}.jpg`,
               data: secondaryData
             });
           }

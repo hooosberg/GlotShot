@@ -94,20 +94,114 @@ const IconFabric = () => {
         { id: 'square', name: t('iconFabric.shapes.square'), icon: '■' },
     ];
 
-    const [activePlatform, setActivePlatform] = useState('apple');
+    // === State with Persistence ===
+    const [activePlatform, setActivePlatform] = useState(() => {
+        return localStorage.getItem('icon_fabric_active_platform') || 'apple';
+    });
     const [previewShape, setPreviewShape] = useState('circle');
 
-    const [platformData, setPlatformData] = useState({
-        apple: { image: null, canvas: null, scale: 100, offsetX: 0, offsetY: 0 },
-        android: {
-            foreground: null, fgCanvas: null,
-            backgroundType: 'color', backgroundColor: '#448AFF',
-            backgroundImage: null, bgCanvas: null,
-            scale: 100, offsetX: 0, offsetY: 0
-        },
-        steam: { image: null, canvas: null, scale: 100, offsetX: 0, offsetY: 0 },
-        windows: { image: null, canvas: null, scale: 100, offsetX: 0, offsetY: 0 }
+    const [platformData, setPlatformData] = useState(() => {
+        const defaultData = {
+            apple: { image: null, canvas: null, scale: 100, offsetX: 0, offsetY: 0 },
+            android: {
+                foreground: null, fgCanvas: null,
+                backgroundType: 'color', backgroundColor: '#448AFF',
+                backgroundImage: null, bgCanvas: null,
+                scale: 100, offsetX: 0, offsetY: 0
+            },
+            steam: { image: null, canvas: null, scale: 100, offsetX: 0, offsetY: 0 },
+            windows: { image: null, canvas: null, scale: 100, offsetX: 0, offsetY: 0 }
+        };
+        try {
+            const saved = localStorage.getItem('icon_fabric_data');
+            if (saved) {
+                return { ...defaultData, ...JSON.parse(saved) };
+            }
+        } catch (e) { console.warn('Failed to load icon fabric data', e); }
+        return defaultData;
     });
+
+    // Persist activePlatform
+    useEffect(() => {
+        localStorage.setItem('icon_fabric_active_platform', activePlatform);
+    }, [activePlatform]);
+
+    // Persist platformData (exclude canvases)
+    useEffect(() => {
+        const cleanData = {};
+        Object.keys(platformData).forEach(k => {
+            // eslint-disable-next-line no-unused-vars
+            const { canvas, fgCanvas, bgCanvas, ...rest } = platformData[k];
+            cleanData[k] = rest;
+        });
+        localStorage.setItem('icon_fabric_data', JSON.stringify(cleanData));
+    }, [platformData]);
+
+    // Restore canvases from Data URLs on mount
+    useEffect(() => {
+        const restoreCanvases = async () => {
+            let hasUpdates = false;
+            const updates = {};
+
+            for (const key of Object.keys(platformData)) {
+                const p = platformData[key];
+                const newProps = {};
+
+                // Restore standard canvas
+                if (p.image && !p.canvas) {
+                    try {
+                        const img = await loadImage(p.image);
+                        const cvs = document.createElement('canvas');
+                        cvs.width = img.width; cvs.height = img.height;
+                        cvs.getContext('2d').drawImage(img, 0, 0);
+                        newProps.canvas = cvs;
+                        hasUpdates = true;
+                    } catch (e) { console.warn('Failed to restore canvas', e); }
+                }
+
+                // Restore Android foreground
+                if (p.foreground && !p.fgCanvas) {
+                    try {
+                        const img = await loadImage(p.foreground);
+                        const cvs = document.createElement('canvas');
+                        cvs.width = img.width; cvs.height = img.height;
+                        cvs.getContext('2d').drawImage(img, 0, 0);
+                        newProps.fgCanvas = cvs;
+                        hasUpdates = true;
+                    } catch (e) { console.warn('Failed to restore fgCanvas', e); }
+                }
+
+                // Restore Android background image
+                if (p.backgroundImage && !p.bgCanvas) {
+                    try {
+                        const img = await loadImage(p.backgroundImage);
+                        const cvs = document.createElement('canvas');
+                        cvs.width = img.width; cvs.height = img.height;
+                        cvs.getContext('2d').drawImage(img, 0, 0);
+                        newProps.bgCanvas = cvs;
+                        hasUpdates = true;
+                    } catch (e) { console.warn('Failed to restore bgCanvas', e); }
+                }
+
+                if (Object.keys(newProps).length > 0) {
+                    updates[key] = newProps;
+                }
+            }
+
+            if (hasUpdates) {
+                setPlatformData(prev => {
+                    const next = { ...prev };
+                    Object.keys(updates).forEach(key => {
+                        next[key] = { ...next[key], ...updates[key] };
+                    });
+                    return next;
+                });
+            }
+        };
+
+        restoreCanvases();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []); // Run once on mount to hydrate canvases
 
     const [isDragging, setIsDragging] = useState(false);
     const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
