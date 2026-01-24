@@ -138,6 +138,19 @@ function createMenu(labels = {}) {
       label: T('file', '文件'),
       submenu: [
         {
+          label: T('newWindow', '新建窗口'),
+          accelerator: 'CmdOrCtrl+N',
+          click: () => {
+            if (mainWindow && !mainWindow.isDestroyed()) {
+              if (mainWindow.isMinimized()) mainWindow.restore();
+              mainWindow.show();
+              mainWindow.focus();
+            } else {
+              createWindow();
+            }
+          }
+        },
+        {
           label: T('importScreenshots', '导入截图...'),
           accelerator: 'CmdOrCtrl+O',
           click: () => {
@@ -145,11 +158,23 @@ function createMenu(labels = {}) {
           }
         },
         {
-          label: T('exportAll', '导出全部...'),
-          accelerator: 'CmdOrCtrl+E',
-          click: () => {
-            if (mainWindow) mainWindow.webContents.send('menu-export');
-          }
+          label: T('export', '导出'),
+          submenu: [
+            {
+              label: T('exportByLanguage', '按语言导出...'),
+              accelerator: 'CmdOrCtrl+E',
+              click: () => {
+                if (mainWindow) mainWindow.webContents.send('menu-export-language');
+              }
+            },
+            {
+              label: T('exportByDevice', '按设备导出...'),
+              accelerator: 'CmdOrCtrl+Shift+E',
+              click: () => {
+                if (mainWindow) mainWindow.webContents.send('menu-export-device');
+              }
+            }
+          ]
         },
         { type: 'separator' },
         isMac ? { role: 'close', label: T('close', '关闭窗口') } : { role: 'quit', label: T('quit', '退出') }

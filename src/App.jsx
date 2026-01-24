@@ -4,6 +4,7 @@ import './App.css';
 import useClickOutside from './hooks/useClickOutside';
 import IconFabric from './components/IconFabric/IconFabric';
 import SettingsModal from './components/SettingsModal';
+import ExportProgressModal from './components/ExportProgressModal';
 import DesignTips from './components/DesignTips';
 import { useTranslation, I18nProvider, detectSystemLanguage } from './locales/i18n';
 import ConfirmDialog from './components/ConfirmDialog';
@@ -543,6 +544,19 @@ const App = () => {
   const [platformDropdownOpen, setPlatformDropdownOpen] = useState(false);
   const [langSettingsOpen, setLangSettingsOpen] = useState(false);
 
+  // Export Progress State
+  const [exportProgress, setExportProgress] = useState({ active: false, current: 0, total: 0, message: '', status: 'generating' }); // status: generating, saving, completed, cancelled, error
+  const isExportCancelled = useRef(false);
+
+  const handleCancelExport = () => {
+    isExportCancelled.current = true;
+    setExportProgress(prev => ({ ...prev, status: 'cancelled', message: t('export.cancelling') || 'Cancelling...' }));
+  };
+
+  const closeExportModal = () => {
+    setExportProgress({ active: false, current: 0, total: 0, message: '', status: 'generating' });
+  };
+
   // App mode: 'screenshot' for screenshot builder, 'icon' for icon factory
   const [appMode, setAppMode] = useState(() => {
     return localStorage.getItem('glotshot-app-mode') || 'screenshot';
@@ -700,6 +714,37 @@ const App = () => {
     localStorage.setItem('appstore_builder_shadow_opacity', shadowOpacity.toString());
   }, [showMockupShadow, shadowOpacity, deviceLayers]);
 
+  // Listen for IPC events from Main Process
+  useEffect(() => {
+    if (window.electron) {
+      const unsubs = [];
+
+      unsubs.push(window.electron.on('show-settings', () => {
+        setSettingsInitialTab('start');
+        setShowSettingsModal(true);
+      }));
+
+      unsubs.push(window.electron.on('show-about', () => {
+        setSettingsInitialTab('about');
+        setShowSettingsModal(true);
+      }));
+
+      unsubs.push(window.electron.on('menu-mode-screenshot', () => setAppMode('screenshot')));
+      unsubs.push(window.electron.on('menu-mode-icon', () => setAppMode('icon')));
+
+      // Import
+      unsubs.push(window.electron.on('menu-import', () => handleElectronBatchUpload()));
+
+      // Export - Match the UI dropdown options
+      unsubs.push(window.electron.on('menu-export-language', () => handleExportAll()));
+      unsubs.push(window.electron.on('menu-export-device', () => handleExportByDevice()));
+
+      // Cleanup
+      return () => {
+        unsubs.forEach(unsub => unsub && unsub());
+      };
+    }
+  }, []); // eslint-disable-line
   // Refs for click outside
   const platformDropdownRef = useRef(null);
   const langSettingsRef = useRef(null);
@@ -709,23 +754,15 @@ const App = () => {
   useClickOutside(langSettingsRef, () => setLangSettingsOpen(false));
   useClickOutside(savePresetModalRef, () => setShowSavePresetModal(false));
 
-  // Listen for IPC events from Main Process
+
+  // Sync Menu Language
   useEffect(() => {
-    if (window.electron) {
-      window.electron.on('show-settings', () => {
-        setSettingsInitialTab('start');
-        setShowSettingsModal(true);
-      });
-      window.electron.on('show-about', () => {
-        setSettingsInitialTab('about');
-        setShowSettingsModal(true);
-      });
-      window.electron.on('menu-mode-screenshot', () => setAppMode('screenshot'));
-      window.electron.on('menu-mode-icon', () => setAppMode('icon'));
-      window.electron.on('menu-import', () => handleElectronBatchUpload());
-      window.electron.on('menu-export', () => handleExportAll());
+    if (window.electron && translations[language] && translations[language].menu) {
+      if (window.electron.updateMenuLanguage) {
+        window.electron.updateMenuLanguage(translations[language].menu);
+      }
     }
-  }, []); // eslint-disable-line
+  }, [language]);
 
   // Persist globalSettings to localStorage
   useEffect(() => {
@@ -2060,6 +2097,18 @@ const App = () => {
     const basePath = await window.electron.selectDirectory();
     if (!basePath) return; // User cancelled
 
+    // Initialize Progress
+    const scenesToExport = scenes.filter(s => s.screenshot);
+    const totalSteps = scenesToExport.length;
+    isExportCancelled.current = false;
+    setExportProgress({
+      active: true,
+      current: 0,
+      total: totalSteps,
+      message: t('export.preparing') || 'Preparing export...',
+      status: 'generating'
+    });
+
     const tempCanvas = document.createElement('canvas');
     const exportFiles = [];
 
@@ -2069,35 +2118,66 @@ const App = () => {
       return tempCanvas.toDataURL('image/jpeg', 0.9);
     };
 
-    // alert(t('alerts.exportStart'));
+    try {
+      let completedCount = 0;
 
-    for (const scene of scenes) {
-      if (!scene.screenshot) continue;
+      for (const scene of scenesToExport) {
+        // Check Cancellation
+        if (isExportCancelled.current) {
+          throw new Error('Cancelled by user');
+        }
 
-      // Get language names dynamically
-      const primaryLangInfo = LANGUAGES.find(l => l.code === globalSettings.primaryLang) || LANGUAGES.find(l => l.code === 'zh-CN');
-      const secondaryLangInfo = LANGUAGES.find(l => l.code === globalSettings.secondaryLang);
+        const sceneName = scene.name || t('scenes.unnamed');
+        setExportProgress(prev => ({
+          ...prev,
+          current: completedCount + 1,
+          message: `${t('export.exporting') || 'Exporting'} ${sceneName}...`
+        }));
 
-      const primaryFolderName = primaryLangInfo ? primaryLangInfo.name : 'Primary'; // Fallback
+        // Allow UI to update
+        await new Promise(r => setTimeout(r, 0));
 
-      const cnData = await getCanvasData(scene, 'CN');
-      exportFiles.push({ path: `${primaryFolderName}/${scene.name}.jpg`, data: cnData });
+        // Get language names dynamically
+        const primaryLangInfo = LANGUAGES.find(l => l.code === globalSettings.primaryLang) || LANGUAGES.find(l => l.code === 'zh-CN');
+        const secondaryLangInfo = LANGUAGES.find(l => l.code === globalSettings.secondaryLang);
 
-      // Only export secondary if it's not 'none' and exists
-      if (secondaryLangInfo && secondaryLangInfo.code !== 'none') {
-        const secondaryFolderName = secondaryLangInfo.name;
-        const enData = await getCanvasData(scene, 'EN');
-        exportFiles.push({ path: `${secondaryFolderName}/${scene.name}.jpg`, data: enData });
+        const primaryFolderName = primaryLangInfo ? primaryLangInfo.name : 'Primary'; // Fallback
+
+        const cnData = await getCanvasData(scene, 'CN');
+        exportFiles.push({ path: `${primaryFolderName}/${scene.name}.jpg`, data: cnData });
+
+        // Only export secondary if it's not 'none' and exists
+        if (secondaryLangInfo && secondaryLangInfo.code !== 'none') {
+          const secondaryFolderName = secondaryLangInfo.name;
+          const enData = await getCanvasData(scene, 'EN');
+          exportFiles.push({ path: `${secondaryFolderName}/${scene.name}.jpg`, data: enData });
+        }
+
+        completedCount++;
       }
-    }
 
-    // 2. Save via Electron
-    const result = await window.electron.saveFiles({ basePath, files: exportFiles });
+      // Check Cancellation before saving
+      if (isExportCancelled.current) {
+        throw new Error('Cancelled by user');
+      }
 
-    if (result.success) {
-      alert(t('alerts.exportSuccess'));
-    } else {
-      alert(t('alerts.exportFailed') + result.error);
+      setExportProgress(prev => ({ ...prev, message: t('export.saving') || 'Saving files...', status: 'saving' }));
+
+      // 2. Save via Electron
+      const result = await window.electron.saveFiles({ basePath, files: exportFiles });
+
+      if (result.success) {
+        setExportProgress(prev => ({ ...prev, status: 'completed', message: t('alerts.exportSuccess') }));
+      } else {
+        setExportProgress(prev => ({ ...prev, status: 'error', message: result.error }));
+      }
+    } catch (error) {
+      if (isExportCancelled.current) {
+        setExportProgress(prev => ({ ...prev, status: 'cancelled', message: t('export.cancelled') || 'Export Cancelled' }));
+      } else {
+        console.error('Export failed:', error);
+        setExportProgress(prev => ({ ...prev, status: 'error', message: error.message }));
+      }
     }
   };
 
@@ -2116,100 +2196,140 @@ const App = () => {
     const basePath = await window.electron.selectDirectory();
     if (!basePath) return;
 
+    // Initialize Progress
+    const scenesToExport = scenes.filter(s => s.screenshot);
+    const totalSteps = allDevices.length * scenesToExport.length;
+
+    isExportCancelled.current = false;
+    setExportProgress({
+      active: true,
+      current: 0,
+      total: totalSteps,
+      message: t('export.preparing') || 'Preparing export...',
+      status: 'generating'
+    });
+
     const tempCanvas = document.createElement('canvas');
     const exportFiles = [];
 
-    // alert(t('alerts.exportStart') + `\n(${allDevices.length} 个设备)`);
+    try {
+      let completedCount = 0;
 
-    // 遍历每个设备
-    // Use for..of loop to handle async await correctly
-    for (const deviceId of allDevices) {
-      const deviceConfig = DEVICE_CONFIGS[deviceId];
-      if (!deviceConfig) continue;
+      // 遍历每个设备
+      // Use for..of loop to handle async await correctly
+      for (const deviceId of allDevices) {
+        if (isExportCancelled.current) throw new Error('Cancelled');
 
-      const deviceName = deviceConfig.name;
+        const deviceConfig = DEVICE_CONFIGS[deviceId];
+        if (!deviceConfig) continue;
 
-      // 遍历每个场景
-      for (const scene of scenes) {
-        if (!scene.screenshot) continue;
+        const deviceName = deviceConfig.name;
 
-        // 获取已保存的配置，如果没有则使用默认值
-        const savedConfig = scene.settings?.deviceConfigs?.[deviceId] || {};
+        // 遍历每个场景
+        for (const scene of scenesToExport) {
+          if (isExportCancelled.current) throw new Error('Cancelled');
 
-        // 准备覆盖配置 (Prepare Override Config)
-        // These values will be passed directly to drawCanvas, bypassing state
-        const overrideConfig = {
-          mockupEnabled: true,
-          selectedDevice: deviceId,
-          deviceScale: savedConfig.scale ?? 1.0,
-          deviceX: savedConfig.x ?? 0,
-          deviceY: savedConfig.y ?? 400,
-          deviceFrameColor: savedConfig.frameColor ?? deviceConfig.defaultFrameColor ?? '#C2BCB2',
-          showLockScreenUI: savedConfig.showUI ?? false,
-          showMockupShadow: savedConfig.showShadow ?? true,
-          shadowOpacity: savedConfig.shadowOpacity ?? 0.5,
-          // Important: We must load layers manually for export since we aren't using the hook's state
-          deviceLayers: null
-        };
+          setExportProgress(prev => ({
+            ...prev,
+            current: completedCount + 1,
+            message: `${deviceName} - ${scene.name || t('scenes.unnamed')}`
+          }));
 
-        // Load layers for this device if needed
-        if (deviceConfig.useSvgLayers && deviceConfig.svgPath) {
-          try {
-            const layers = await loadDeviceSvgLayers(
-              deviceConfig.svgPath,
-              {
-                frameColor: overrideConfig.deviceFrameColor,
-                showUI: overrideConfig.showLockScreenUI,
-                showShadow: true, // Always load shadow, visibility controlled by showMockupShadow in drawCanvas
-                deviceConfig: deviceConfig,
-              }
-            );
-            overrideConfig.deviceLayers = layers;
-          } catch (e) {
-            console.warn(`Failed to export load layers for ${deviceId}:`, e);
+          // Allow UI to update
+          await new Promise(r => setTimeout(r, 0));
+
+          // 获取已保存的配置，如果没有则使用默认值
+          const savedConfig = scene.settings?.deviceConfigs?.[deviceId] || {};
+
+          // 准备覆盖配置 (Prepare Override Config)
+          // These values will be passed directly to drawCanvas, bypassing state
+          const overrideConfig = {
+            mockupEnabled: true,
+            selectedDevice: deviceId,
+            deviceScale: savedConfig.scale ?? 1.0,
+            deviceX: savedConfig.x ?? 0,
+            deviceY: savedConfig.y ?? 400,
+            deviceFrameColor: savedConfig.frameColor ?? deviceConfig.defaultFrameColor ?? '#C2BCB2',
+            showLockScreenUI: savedConfig.showUI ?? false,
+            showMockupShadow: savedConfig.showShadow ?? true,
+            shadowOpacity: savedConfig.shadowOpacity ?? 0.5,
+            // Important: We must load layers manually for export since we aren't using the hook's state
+            deviceLayers: null
+          };
+
+          // Load layers for this device if needed
+          if (deviceConfig.useSvgLayers && deviceConfig.svgPath) {
+            try {
+              const layers = await loadDeviceSvgLayers(
+                deviceConfig.svgPath,
+                {
+                  frameColor: overrideConfig.deviceFrameColor,
+                  showUI: overrideConfig.showLockScreenUI,
+                  showShadow: true, // Always load shadow, visibility controlled by showMockupShadow in drawCanvas
+                  deviceConfig: deviceConfig,
+                }
+              );
+              overrideConfig.deviceLayers = layers;
+            } catch (e) {
+              console.warn(`Failed to export load layers for ${deviceId}:`, e);
+            }
           }
-        }
 
-        // 绘制中英文版本 (Now Primary/Secondary)
-        const primaryLangInfo = LANGUAGES.find(l => l.code === globalSettings.primaryLang) || LANGUAGES.find(l => l.code === 'zh-CN');
-        const secondaryLangInfo = LANGUAGES.find(l => l.code === globalSettings.secondaryLang);
+          // 绘制中英文版本 (Now Primary/Secondary)
+          const primaryLangInfo = LANGUAGES.find(l => l.code === globalSettings.primaryLang) || LANGUAGES.find(l => l.code === 'zh-CN');
+          const secondaryLangInfo = LANGUAGES.find(l => l.code === globalSettings.secondaryLang);
 
-        const primaryFolderName = primaryLangInfo ? primaryLangInfo.name : 'Primary';
+          const primaryFolderName = primaryLangInfo ? primaryLangInfo.name : 'Primary';
 
-        // Export Primary
-        // Pass overrideConfig as the last argument
-        await drawCanvas(tempCanvas, scene, 'CN', true, overrideConfig);
-        const primaryData = tempCanvas.toDataURL('image/jpeg', 0.9);
-        exportFiles.push({
-          path: `${deviceName}/${primaryFolderName}/${scene.name}.jpg`,
-          data: primaryData
-        });
-
-        // Export Secondary if valid
-        if (secondaryLangInfo && secondaryLangInfo.code !== 'none') {
-          const secondaryFolderName = secondaryLangInfo.name;
+          // Export Primary
           // Pass overrideConfig as the last argument
-          await drawCanvas(tempCanvas, scene, 'EN', true, overrideConfig);
-          const secondaryData = tempCanvas.toDataURL('image/jpeg', 0.9);
+          await drawCanvas(tempCanvas, scene, 'CN', true, overrideConfig);
+          const primaryData = tempCanvas.toDataURL('image/jpeg', 0.9);
           exportFiles.push({
-            path: `${deviceName}/${secondaryFolderName}/${scene.name}.jpg`,
-            data: secondaryData
+            path: `${deviceName}/${primaryFolderName}/${scene.name}.jpg`,
+            data: primaryData
           });
+
+          // Export Secondary if valid
+          if (secondaryLangInfo && secondaryLangInfo.code !== 'none') {
+            const secondaryFolderName = secondaryLangInfo.name;
+            // Pass overrideConfig as the last argument
+            await drawCanvas(tempCanvas, scene, 'EN', true, overrideConfig);
+            const secondaryData = tempCanvas.toDataURL('image/jpeg', 0.9);
+            exportFiles.push({
+              path: `${deviceName}/${secondaryFolderName}/${scene.name}.jpg`,
+              data: secondaryData
+            });
+          }
+
+          completedCount++;
         }
       }
-    }
 
-    // 保存文件
-    const result = await window.electron.saveFiles({ basePath, files: exportFiles });
+      if (isExportCancelled.current) throw new Error('Cancelled');
 
-    if (result.success) {
-      alert(t('alerts.exportByDeviceSuccess')
-        .replace('{count}', exportFiles.length)
-        .replace('{deviceCount}', allDevices.length));
-    } else {
-      alert(t('alerts.exportFailed') + result.error);
+      setExportProgress(prev => ({ ...prev, message: t('export.saving') || 'Saving files...', status: 'saving' }));
+
+      // 2. Save via Electron
+      const result = await window.electron.saveFiles({ basePath, files: exportFiles });
+
+      if (result.success) {
+        setExportProgress(prev => ({ ...prev, status: 'completed', message: t('alerts.exportSuccess') }));
+      } else {
+        setExportProgress(prev => ({ ...prev, status: 'error', message: result.error }));
+      }
+
+    } catch (error) {
+      if (isExportCancelled.current) {
+        setExportProgress(prev => ({ ...prev, status: 'cancelled', message: t('export.cancelled') || 'Export Cancelled' }));
+      } else {
+        console.error('Export failed:', error);
+        setExportProgress(prev => ({ ...prev, status: 'error', message: error.message }));
+      }
     }
   };
+
+
 
   // 导出菜单下拉状态
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
@@ -2533,6 +2653,13 @@ const App = () => {
         confirmText={confirmDialog.confirmText}
         cancelText={confirmDialog.cancelText}
         type={confirmDialog.type}
+      />
+
+      <ExportProgressModal
+        isOpen={exportProgress.active}
+        progress={exportProgress}
+        onCancel={handleCancelExport}
+        onClose={closeExportModal}
       />
 
       {/* MAIN CONTENT AREA - Conditional rendering based on mode */}

@@ -9,10 +9,23 @@ contextBridge.exposeInMainWorld('electron', {
     updateMenuLanguage: (menuData) => ipcRenderer.send('update-menu-language', menuData),
     getAppLocale: () => ipcRenderer.invoke('get-app-locale'),
     on: (channel, func) => {
-        const validChannels = ['show-settings', 'show-about', 'menu-import', 'menu-export', 'menu-mode-screenshot', 'menu-mode-icon'];
+        const validChannels = [
+            'show-settings',
+            'show-about',
+            'menu-import',
+            'menu-export-language',
+            'menu-export-device',
+            'menu-mode-screenshot',
+            'menu-mode-icon'
+        ];
         if (validChannels.includes(channel)) {
             // Strip event as it includes sender
-            ipcRenderer.on(channel, (event, ...args) => func(...args));
+            const subscription = (event, ...args) => func(...args);
+            ipcRenderer.on(channel, subscription);
+            // Return cleanup function
+            return () => {
+                ipcRenderer.removeListener(channel, subscription);
+            };
         }
     }
 });
