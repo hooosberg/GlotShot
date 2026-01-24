@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { Upload, Download, RotateCcw, Move, Layers, LayoutTemplate, Palette, Image as ImageIcon, Check, AlertCircle } from 'lucide-react';
+import ExportProgressModal from '../ExportProgressModal';
 import { loadImage, canvasToBase64, drawSquirclePath, resizeImage } from '../../utils/imageProcessor';
 import { useTranslation } from '../../locales/i18n';
 
@@ -111,6 +112,15 @@ const IconFabric = () => {
     const [isDragging, setIsDragging] = useState(false);
     const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
     const [isExporting, setIsExporting] = useState(false);
+
+    // Export Progress State
+    const [showProgressModal, setShowProgressModal] = useState(false);
+    const [exportProgress, setExportProgress] = useState({
+        total: 0,
+        current: 0,
+        status: 'idle', // idle, exporting, completed, error, cancelled
+        message: ''
+    });
 
     const editorCanvasRef = useRef(null);
     const previewCanvasRef = useRef(null);
@@ -395,10 +405,30 @@ const IconFabric = () => {
         }
         const basePath = await window.electron.selectDirectory();
         if (!basePath) return; // User cancelled
+
+        // Initialize progress
         setIsExporting(true);
+        setShowProgressModal(true);
+        setExportProgress({
+            total: 100,
+            current: 0,
+            status: 'exporting',
+            message: t('export.preparing') || 'Preparing export...'
+        });
 
         try {
             const platform = PLATFORMS[activePlatform];
+
+            // Update progress: Generating
+            setExportProgress(prev => ({
+                ...prev,
+                current: 20,
+                message: t('export.generating') || 'Generating images...'
+            }));
+
+            // Allow UI to update
+            await new Promise(resolve => setTimeout(resolve, 100));
+
             const compositeCanvas = getCompositeCanvas();
             const files = [];
 
@@ -408,6 +438,9 @@ const IconFabric = () => {
                     path: 'Apple/AppIcon_1024x1024.png',
                     data: canvasToBase64(compositeCanvas)
                 });
+
+                // Update progress
+                setExportProgress(prev => ({ ...prev, current: 40 }));
 
                 // 2. DMG Icon (824px Squircle + 投影)
                 const dmgCanvas = document.createElement('canvas');
@@ -436,6 +469,10 @@ const IconFabric = () => {
                     path: 'Apple/DMG_Icon_1024x1024.png',
                     data: canvasToBase64(dmgCanvas)
                 });
+
+                // Update progress
+                setExportProgress(prev => ({ ...prev, current: 60 }));
+
             } else {
                 // 其他平台：单一导出
                 const exportCanvas = resizeImage(compositeCanvas, platform.exportSize);
@@ -443,21 +480,50 @@ const IconFabric = () => {
                     path: `${platform.name}/${platform.exportName}`,
                     data: canvasToBase64(exportCanvas)
                 });
+
+                // Update progress
+                setExportProgress(prev => ({ ...prev, current: 60 }));
             }
+
+            // Update progress: Saving
+            setExportProgress(prev => ({
+                ...prev,
+                current: 70,
+                message: t('export.saving') || 'Saving files...'
+            }));
 
             await window.electron.saveFiles({ basePath, files });
 
+            // Complete
+            let successMsg = '';
             if (activePlatform === 'apple') {
-                alert(t('alerts.appleExportSuccess'));
+                successMsg = t('alerts.appleExportSuccess') || 'Export successful!';
             } else {
-                alert(`${t('alerts.iconExportSuccess')}\n\n${platform.name}/${platform.exportName}\n${t('iconFabric.scale')}: ${platform.exportSize}×${platform.exportSize} px`);
+                successMsg = `${platform.name}/${platform.exportName} (${platform.exportSize}px)`;
             }
+
+            setExportProgress({
+                total: 100,
+                current: 100,
+                status: 'completed',
+                message: successMsg
+            });
+
         } catch (error) {
             console.error(error);
-            alert(t('alerts.exportFailed') + error.message);
+            setExportProgress({
+                total: 100,
+                current: 0,
+                status: 'error',
+                message: error.message || t('export.failed')
+            });
         } finally {
             setIsExporting(false);
         }
+    };
+
+    const handleCloseProgress = () => {
+        setShowProgressModal(false);
     };
 
     // Listen for global export trigger from App.jsx
@@ -467,7 +533,7 @@ const IconFabric = () => {
         };
         window.addEventListener('trigger-icon-export', handleTrigger);
         return () => window.removeEventListener('trigger-icon-export', handleTrigger);
-    }, [activePlatform, platformData, previewShape]); // Dependencies needed for handleExport to have current state
+    }, [activePlatform, platformData, previewShape, t]); // Dependencies needed for handleExport to have current state
 
 
     // === UI ===
@@ -698,6 +764,17 @@ const IconFabric = () => {
 
 
             </div>
+
+            <ExportProgressModal
+                isOpen={showProgressModal}
+                progress={exportProgress}
+                onClose={handleCloseProgress}
+                onCancel={() => {
+                    // Currently no way to cancel the async process in flight easily
+                    // But we can close the modal
+                    handleCloseProgress();
+                }}
+            />
         </div>
     );
 };
