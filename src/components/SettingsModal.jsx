@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { X, LayoutGrid, Monitor, Palette, Keyboard, Settings, Info, Image as ImageIcon, Layers, Github, ExternalLink, Star, Sun, Moon, Coffee } from 'lucide-react';
 import './SettingsModal.css';
 import { useTranslation, SUPPORTED_UI_LANGUAGES, detectSystemLanguage } from '../locales/i18n';
-import appLogo from '../../public/icon/DMG_Icon_1024x1024.png';
+
+const appLogo = '/icon/DMG_Icon_1024x1024.png';
 
 const SettingsModal = ({ isOpen, onClose, initialTab = 'start', appMode, setAppMode, globalSettings, setGlobalSettings, theme, setTheme, glassEffect, setGlassEffect }) => {
     const [activeTab, setActiveTab] = useState(initialTab);
@@ -276,11 +277,11 @@ const SettingsModal = ({ isOpen, onClose, initialTab = 'start', appMode, setAppM
                                         <span className="meta-value">hooosberg</span>
                                     </div>
                                     <div className="meta-row">
-                                        <span className="meta-label">Email</span>
+                                        <span className="meta-label">{t('settings.about.email')}</span>
                                         <span className="meta-value">zikedece@proton.me</span>
                                     </div>
                                     <div className="meta-row">
-                                        <span className="meta-label">GitHub</span>
+                                        <span className="meta-label">{t('settings.about.github')}</span>
                                         <span className="meta-value">
                                             <a href="#" onClick={(e) => { e.preventDefault(); window.open('https://github.com/hooosberg/GlotShot', '_blank'); }}>
                                                 github.com/hooosberg/GlotShot

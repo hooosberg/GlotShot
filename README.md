@@ -104,11 +104,19 @@ GlotShot is built with **Electron**, **React**, and **Vite**.
    cd GlotShot
    npm install
    ```
-3. Run in development mode:
+3. Run the web development server:
    ```bash
    npm run dev
    ```
-4. Build for production:
+4. Run the desktop development app:
+   ```bash
+   npm run electron:dev
+   ```
+   If the web dev server is already running and you only want to open Electron:
+   ```bash
+   npm run electron:open
+   ```
+5. Build for production:
    ```bash
    npm run build
    npm run electron:build

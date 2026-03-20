@@ -57,6 +57,59 @@ export const detectSystemLanguage = (lang) => {
 // i18n Context
 const I18nContext = createContext(null);
 
+const getTranslationValue = (languageCode, key) => {
+    const keys = key.split('.');
+    let value = translations[languageCode];
+
+    for (const k of keys) {
+        value = value?.[k];
+        if (value === undefined) break;
+    }
+
+    return value;
+};
+
+const interpolateTranslation = (value, params = {}) => {
+    if (typeof value !== 'string' || !params || typeof params !== 'object') {
+        return value;
+    }
+
+    return value.replace(/\{(\w+)\}/g, (match, paramKey) => {
+        const paramValue = params[paramKey];
+        return paramValue === undefined || paramValue === null ? match : String(paramValue);
+    });
+};
+
+const parseTranslationArgs = (optionsOrFallback, maybeFallback) => {
+    if (
+        optionsOrFallback
+        && typeof optionsOrFallback === 'object'
+        && !Array.isArray(optionsOrFallback)
+    ) {
+        return {
+            params: optionsOrFallback,
+            fallback: maybeFallback
+        };
+    }
+
+    return {
+        params: {},
+        fallback: optionsOrFallback ?? maybeFallback
+    };
+};
+
+const getFallbackLanguageOrder = (languageCode) => {
+    if (languageCode === 'zh-TW') {
+        return ['zh-CN', 'en'];
+    }
+
+    if (languageCode !== 'en') {
+        return ['en', 'zh-CN'];
+    }
+
+    return ['zh-CN'];
+};
+
 /**
  * i18n Provider 组件
  * 包裹应用以提供翻译功能
@@ -132,26 +185,23 @@ export const I18nProvider = ({ children, initialLanguage }) => {
     }, []);
 
     // 翻译函数
-    const t = useCallback((key, fallback) => {
-        const keys = key.split('.');
-        let value = translations[language] || translations['zh-CN'];
+    const t = useCallback((key, optionsOrFallback, maybeFallback) => {
+        const { params, fallback } = parseTranslationArgs(optionsOrFallback, maybeFallback);
+        let value = getTranslationValue(language, key);
 
-        for (const k of keys) {
-            value = value?.[k];
-            if (value === undefined) break;
-        }
+        if (value === undefined) {
+            const fallbackLanguages = getFallbackLanguageOrder(language);
 
-        // 如果找不到翻译，尝试使用中文作为回退
-        if (value === undefined && language !== 'zh-CN') {
-            value = translations['zh-CN'];
-            for (const k of keys) {
-                value = value?.[k];
-                if (value === undefined) break;
+            for (const fallbackLanguage of fallbackLanguages) {
+                value = getTranslationValue(fallbackLanguage, key);
+                if (value !== undefined) {
+                    break;
+                }
             }
         }
 
         // 最终回退到 fallback 或 key
-        return value ?? fallback ?? key;
+        return interpolateTranslation(value ?? fallback ?? key, params);
     }, [language]);
 
     return (
@@ -172,14 +222,10 @@ export const useTranslation = () => {
         return {
             language: 'zh-CN',
             changeLanguage: () => { },
-            t: (key, fallback) => {
-                const keys = key.split('.');
-                let value = translations['zh-CN'];
-                for (const k of keys) {
-                    value = value?.[k];
-                    if (value === undefined) break;
-                }
-                return value ?? fallback ?? key;
+            t: (key, optionsOrFallback, maybeFallback) => {
+                const { params, fallback } = parseTranslationArgs(optionsOrFallback, maybeFallback);
+                const value = getTranslationValue('zh-CN', key);
+                return interpolateTranslation(value ?? fallback ?? key, params);
             },
             supportedLanguages: SUPPORTED_UI_LANGUAGES
         };

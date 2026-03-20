@@ -1199,11 +1199,56 @@ const DeviceMockup = ({
   setDeviceX,
   deviceY,
   setDeviceY,
+  commitDeviceTransformPreview,
+  resetDeviceTransformControl,
   iPadLandscape,
   setiPadLandscape,
   t, // 翻译函数
 }) => {
   const currentDevice = DEVICE_CONFIGS[selectedDevice];
+
+  const DEVICE_NAME_MAP = {
+    'iphone-17-pro-max': 'mockup.devices.iphone-17-pro-max',
+    'ipad-pro': 'mockup.devices.ipad-pro',
+    'macbook-pro': 'mockup.devices.macbook-pro',
+    android: 'mockup.devices.android',
+    imac: 'mockup.devices.imac',
+    'apple-watch': 'mockup.devices.apple-watch',
+    'apple-family': 'mockup.devices.apple-family',
+  };
+
+  const DEVICE_COLOR_NAME_MAP = {
+    'natural-titanium': 'mockup.colorVariants.naturalTitanium',
+    'desert-titanium': 'mockup.colorVariants.desertTitanium',
+    'white-titanium': 'mockup.colorVariants.whiteTitanium',
+    'black-titanium': 'mockup.colorVariants.blackTitanium',
+    'space-black': 'mockup.colorVariants.spaceBlack',
+    silver: 'mockup.colorVariants.silver',
+    'space-gray': 'mockup.colorVariants.spaceGray',
+    midnight: 'mockup.colorVariants.midnight',
+    starlight: 'mockup.colorVariants.starlight',
+    black: 'mockup.colorVariants.black',
+    white: 'mockup.colorVariants.white',
+    green: 'mockup.colorVariants.green',
+    purple: 'mockup.colorVariants.purple',
+    blue: 'mockup.colorVariants.blue',
+    pink: 'mockup.colorVariants.pink',
+    orange: 'mockup.colorVariants.orange',
+    yellow: 'mockup.colorVariants.yellow',
+    'jet-black': 'mockup.colorVariants.jetBlack',
+    'rose-gold': 'mockup.colorVariants.roseGold',
+    gold: 'mockup.colorVariants.gold',
+  };
+
+  const getDeviceDisplayName = (deviceId, fallback) => {
+    const translationKey = DEVICE_NAME_MAP[deviceId];
+    return translationKey ? t?.(translationKey) || fallback : fallback;
+  };
+
+  const getFrameColorName = (colorId, fallback) => {
+    const translationKey = DEVICE_COLOR_NAME_MAP[colorId];
+    return translationKey ? t?.(translationKey) || fallback : fallback;
+  };
 
   // Force iPad to Landscape since we removed the toggle
   React.useEffect(() => {
@@ -1216,7 +1261,7 @@ const DeviceMockup = ({
 
   return (
     <div className="bg-[var(--app-card-bg)] rounded-lg p-3 border border-[var(--app-border)] mb-4">
-      <h3 className="text-xs uppercase text-[var(--app-text-secondary)] font-bold mb-4 flex items-center gap-2">
+      <h3 className="text-xs text-[var(--app-text-secondary)] font-bold tracking-[0.02em] mb-4 flex items-center gap-2">
         <Smartphone className="w-3 h-3" />
         {t?.('mockup.title') || '设备模拟'}
       </h3>
@@ -1247,7 +1292,7 @@ const DeviceMockup = ({
               >
                 {Object.entries(DEVICE_CONFIGS).map(([id, config]) => (
                   <option key={id} value={id}>
-                    {config.name}
+                    {getDeviceDisplayName(id, config.name)}
                   </option>
                 ))}
               </select>
@@ -1275,12 +1320,14 @@ const DeviceMockup = ({
                 step="0.05"
                 value={deviceScale}
                 onChange={(e) => setDeviceScale(parseFloat(e.target.value))}
+                onPointerUp={commitDeviceTransformPreview}
+                onBlur={commitDeviceTransformPreview}
                 className="flex-1 h-1 bg-[var(--app-control-track)] rounded-lg appearance-none cursor-pointer accent-[var(--app-accent)]"
               />
               <button
-                onClick={() => setDeviceScale(1.0)}
+                onClick={() => resetDeviceTransformControl?.('deviceScale', 1.0)}
                 className="text-[var(--app-text-secondary)] hover:text-[var(--app-accent)] opacity-0 group-hover/scale:opacity-100 transition"
-                title="重置"
+                title={t?.('common.reset') || 'Reset'}
               >
                 <RotateCcw className="w-3.5 h-3.5" />
               </button>
@@ -1301,12 +1348,14 @@ const DeviceMockup = ({
                 step="10"
                 value={deviceY}
                 onChange={(e) => setDeviceY(parseInt(e.target.value))}
+                onPointerUp={commitDeviceTransformPreview}
+                onBlur={commitDeviceTransformPreview}
                 className="flex-1 h-1 bg-[var(--app-control-track)] rounded-lg appearance-none cursor-pointer accent-[var(--app-accent)]"
               />
               <button
-                onClick={() => setDeviceY(400)}
+                onClick={() => resetDeviceTransformControl?.('deviceY', 400)}
                 className="text-[var(--app-text-secondary)] hover:text-[var(--app-accent)] opacity-0 group-hover/y:opacity-100 transition"
-                title="重置"
+                title={t?.('common.reset') || 'Reset'}
               >
                 <RotateCcw className="w-3.5 h-3.5" />
               </button>
@@ -1327,12 +1376,14 @@ const DeviceMockup = ({
                 step="10"
                 value={deviceX}
                 onChange={(e) => setDeviceX(parseInt(e.target.value))}
+                onPointerUp={commitDeviceTransformPreview}
+                onBlur={commitDeviceTransformPreview}
                 className="flex-1 h-1 bg-[var(--app-control-track)] rounded-lg appearance-none cursor-pointer accent-[var(--app-accent)]"
               />
               <button
-                onClick={() => setDeviceX(0)}
+                onClick={() => resetDeviceTransformControl?.('deviceX', 0)}
                 className="text-[var(--app-text-secondary)] hover:text-[var(--app-accent)] opacity-0 group-hover/x:opacity-100 transition"
-                title="重置"
+                title={t?.('common.reset') || 'Reset'}
               >
                 <RotateCcw className="w-3.5 h-3.5" />
               </button>
@@ -1354,7 +1405,7 @@ const DeviceMockup = ({
                     : 'border-[var(--app-border-strong)] hover:border-[var(--app-border-hover)]'
                     }`}
                   style={{ backgroundColor: color.value }}
-                  title={color.name}
+                  title={getFrameColorName(color.id, color.name)}
                 />
               ))}
             </div>
@@ -1404,7 +1455,7 @@ const DeviceMockup = ({
                 <button
                   onClick={() => setShadowOpacity && setShadowOpacity(0.5)}
                   className="text-[var(--app-text-secondary)] hover:text-[var(--app-accent)] opacity-0 group-hover/shadow:opacity-100 transition"
-                  title="重置"
+                  title={t?.('common.reset') || 'Reset'}
                 >
                   <RotateCcw className="w-3.5 h-3.5" />
                 </button>
@@ -1423,7 +1474,7 @@ const DeviceMockup = ({
                   </div>
                   <div className="flex justify-between">
                     <span>{t('mockup.includedDevices')}:</span>
-                    <span>{currentDevice?.devices?.length || 0} 个</span>
+                    <span>{t('mockup.deviceCount', { n: currentDevice?.devices?.length || 0 })}</span>
                   </div>
                 </>
               ) : (

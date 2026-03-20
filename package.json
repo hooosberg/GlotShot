@@ -1,11 +1,14 @@
 {
-  "name": "electron_app",
+  "name": "glotshot",
   "private": true,
   "version": "0.0.7",
   "main": "electron/main.cjs",
   "type": "module",
   "scripts": {
-    "dev": "concurrently \"vite\" \"wait-on http-get://localhost:5173/app.html && cross-env NODE_ENV=development electron .\"",
+    "dev": "vite",
+    "electron:open": "wait-on http-get://127.0.0.1:5187/app.html && cross-env NODE_ENV=development ELECTRON_RUN_AS_NODE= ELECTRON_RENDERER_URL=http://127.0.0.1:5187/app.html electron .",
+    "electron:dev": "concurrently -k \"vite\" \"wait-on http-get://127.0.0.1:5187/app.html && cross-env NODE_ENV=development ELECTRON_RUN_AS_NODE= ELECTRON_RENDERER_URL=http://127.0.0.1:5187/app.html electron .\"",
+    "dev:desktop": "npm run electron:dev",
     "build": "vite build",
     "electron:build": "vite build && electron-builder",
     "build:mas": "vite build && electron-builder --mac mas",

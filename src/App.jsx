@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Upload, Download, Image as ImageIcon, Type, FolderInput, Plus, Trash2, Globe, Settings, Copy, RefreshCw, Cpu, Monitor, RotateCcw, Save, Archive, ChevronDown, ChevronRight, ChevronUp, AlignLeft, AlignCenter, AlignRight, Palette, Smartphone, Layers, CheckSquare } from 'lucide-react';
+import { Upload, Download, Image as ImageIcon, Type, FolderInput, Plus, Trash2, Globe, Settings, Copy, RefreshCw, Cpu, Monitor, RotateCcw, Save, Archive, ChevronDown, ChevronUp, AlignLeft, AlignCenter, AlignRight, Palette, Smartphone, Layers, CheckSquare, X, ArrowRight } from 'lucide-react';
 import './App.css';
 import useClickOutside from './hooks/useClickOutside';
 import IconFabric from './components/IconFabric/IconFabric';
@@ -23,6 +23,22 @@ import DeviceMockup, {
 // Default constants
 const DEFAULT_WIDTH = 2880;
 const DEFAULT_HEIGHT = 1800;
+const DEFAULT_TRANSLATION_LANGUAGE = 'en';
+const TRANSLATION_TIMEOUT_MS = 10000;
+const OLLAMA_CONNECT_TIMEOUT_MS = 3000;
+const CENTER_SNAP_THRESHOLD = 18;
+const INITIAL_IMPORT_PROGRESS = {
+  active: false,
+  phase: 'idle',
+  status: 'idle',
+  current: 0,
+  total: 0,
+  message: '',
+  detail: '',
+  successCount: 0,
+  failedCount: 0,
+  skippedCount: 0
+};
 
 // Built-in backgrounds - 渐变配色
 const PRESETS = [
@@ -308,18 +324,46 @@ const LANGUAGES = [
 
 
 const DEFAULT_SCENE_SETTINGS = {
-  screenshotScale: 0.8,
-  screenshotY: 400,
+  screenshotScale: 0.85,
+  screenshotY: 500,
   screenshotX: 0,
   screenshotShadow: true, // 截图阴影开关
   // 中文文字设置
-  textYCN: 150,
-  textSizeCN: 120,
+  textXCN: 0,
+  textYCN: 180,
+  textSizeCN: 110,
   // 英文文字设置
-  textYEN: 150,
-  textSizeEN: 100,
+  textXEN: 0,
+  textYEN: 180,
+  textSizeEN: 90,
   // 按设备存储的配置 { [deviceId]: { scale, x, y, frameColor, showUI, showShadow, shadowOpacity } }
   deviceConfigs: {},
+};
+
+const CJK_LANGUAGE_CODES = ['zh-CN', 'zh-TW', 'ja', 'ko'];
+
+const getLanguageInfo = (langCode) => LANGUAGES.find(lang => lang.code === langCode);
+
+const isCjkLanguage = (langCode) => CJK_LANGUAGE_CODES.includes(langCode);
+
+const getFontOptionsForLanguage = (langCode) => (
+  isCjkLanguage(langCode) ? FONTS_CN : FONTS_EN
+);
+
+const getDefaultFontForLanguage = (langCode) => getFontOptionsForLanguage(langCode)[0].value;
+
+const normalizeSecondaryLangs = (primaryLang, secondaryLangs, legacySecondaryLang = 'none') => {
+  const rawLangs = Array.isArray(secondaryLangs)
+    ? secondaryLangs
+    : (secondaryLangs ? [secondaryLangs] : []);
+
+  const mergedLangs = rawLangs.length > 0
+    ? rawLangs
+    : (legacySecondaryLang && legacySecondaryLang !== 'none' ? [legacySecondaryLang] : []);
+
+  return [...new Set(
+    mergedLangs.filter(lang => lang && lang !== 'none' && lang !== primaryLang)
+  )];
 };
 
 const App = () => {
@@ -328,13 +372,74 @@ const App = () => {
 
   // Translation mapping for preset names
   const PRESET_NAME_MAP = {
+    'iphone-6.9': 'presets.iphone69ProMax',
+    'iphone-6.7': 'presets.iphone67',
+    'iphone-6.5': 'presets.iphone65',
+    'iphone-5.5': 'presets.iphone55',
+    'ipad-13': 'presets.ipad13M4',
+    'ipad-12.9': 'presets.ipad129',
+    'ipad-11': 'presets.ipad11',
+    mac: 'presets.macAppStore',
     'android-phone': 'presets.phoneScreenshot',
     'android-tablet': 'presets.tabletScreenshot',
-    'windows-hd': 'presets.desktop',
-    'windows-min': 'presets.desktop',
-    'windows-4k': 'presets.desktop',
+    'android-feature': 'presets.featureGraphic',
+    'windows-hd': 'presets.desktop1920',
+    'windows-min': 'presets.desktop1366',
+    'windows-4k': 'presets.desktop4k',
     'steam': 'presets.steamScreenshot',
     'steam-capsule': 'presets.steamCapsule',
+  };
+
+  const PLATFORM_CATEGORY_MAP = {
+    Apple: 'categories.apple',
+    'Google Play': 'categories.googlePlay',
+    Windows: 'categories.windows',
+    Steam: 'categories.steam',
+  };
+
+  const BACKGROUND_PRESET_NAME_MAP = {
+    'titanium-white': 'catalog.backgroundPresets.titanium-white',
+    starlight: 'catalog.backgroundPresets.starlight',
+    'natural-titanium': 'catalog.backgroundPresets.natural-titanium',
+    silver: 'catalog.backgroundPresets.silver',
+    'space-gray': 'catalog.backgroundPresets.space-gray',
+    midnight: 'catalog.backgroundPresets.midnight',
+    'blue-titanium': 'catalog.backgroundPresets.blue-titanium',
+    'pacific-blue': 'catalog.backgroundPresets.pacific-blue',
+    'alpine-green': 'catalog.backgroundPresets.alpine-green',
+    'deep-purple': 'catalog.backgroundPresets.deep-purple',
+    'rose-gold': 'catalog.backgroundPresets.rose-gold',
+    sunrise: 'catalog.backgroundPresets.sunrise',
+  };
+
+  const BUILTIN_BACKGROUND_NAME_MAP = {
+    builtin1: 'catalog.builtinBackgrounds.builtin1',
+    builtin2: 'catalog.builtinBackgrounds.builtin2',
+    builtin3: 'catalog.builtinBackgrounds.builtin3',
+    builtin4: 'catalog.builtinBackgrounds.builtin4',
+    builtin5: 'catalog.builtinBackgrounds.builtin5',
+  };
+
+  const TEXT_COLOR_NAME_MAP = {
+    white: 'catalog.textColors.white',
+    'neon-pink': 'catalog.textColors.neon-pink',
+    'apple-blue': 'catalog.textColors.apple-blue',
+    'mint-green': 'catalog.textColors.mint-green',
+    'rose-gold': 'catalog.textColors.rose-gold',
+    'sunset-orange': 'catalog.textColors.sunset-orange',
+    'gradient-blue': 'catalog.textColors.gradient-blue',
+    'gradient-purple': 'catalog.textColors.gradient-purple',
+    'gradient-gold': 'catalog.textColors.gradient-gold',
+    'classic-black': 'catalog.textColors.classic-black',
+    'deep-gray': 'catalog.textColors.deep-gray',
+  };
+
+  const STROKE_COLOR_NAME_MAP = {
+    black: 'catalog.strokeColors.black',
+    'dark-gray': 'catalog.strokeColors.dark-gray',
+    white: 'catalog.strokeColors.white',
+    blue: 'catalog.strokeColors.blue',
+    purple: 'catalog.strokeColors.purple',
   };
 
   // Translation mapping for font names
@@ -352,7 +457,22 @@ const App = () => {
     if (translationKey) {
       return t(translationKey);
     }
-    return originalName; // iPad, iPhone, Mac App Store etc. keep original names
+    return originalName;
+  };
+
+  const getPlatformCategoryName = (category) => {
+    const translationKey = PLATFORM_CATEGORY_MAP[category];
+    return translationKey ? t(translationKey) : category;
+  };
+
+  const getBackgroundPresetName = (presetId, originalName) => {
+    const translationKey = BACKGROUND_PRESET_NAME_MAP[presetId];
+    return translationKey ? t(translationKey) : originalName;
+  };
+
+  const getBuiltinBackgroundName = (backgroundId, originalName) => {
+    const translationKey = BUILTIN_BACKGROUND_NAME_MAP[backgroundId];
+    return translationKey ? t(translationKey) : originalName;
   };
 
   // Get translated font name
@@ -362,6 +482,16 @@ const App = () => {
       return t(translationKey);
     }
     return originalName;
+  };
+
+  const getTextColorName = (colorId, originalName) => {
+    const translationKey = TEXT_COLOR_NAME_MAP[colorId];
+    return translationKey ? t(translationKey) : originalName;
+  };
+
+  const getStrokeColorName = (colorId, originalName) => {
+    const translationKey = STROKE_COLOR_NAME_MAP[colorId];
+    return translationKey ? t(translationKey) : originalName;
   };
 
   // Design tips translation mapping
@@ -434,7 +564,7 @@ const App = () => {
     try {
       const saved = localStorage.getItem('appstore_builder_global');
       if (saved) {
-        return {
+        const baseSettings = {
           ...{
             width: DEFAULT_WIDTH,
             height: DEFAULT_HEIGHT,
@@ -467,7 +597,10 @@ const App = () => {
                 return match ? match.code : 'zh-CN';
               } catch { return 'zh-CN'; }
             })(),
+            secondaryLangs: [DEFAULT_TRANSLATION_LANGUAGE],
             secondaryLang: 'en',
+            ollamaHost: 'http://localhost:11434',
+            autoTranslate: true,
             uiLanguage: (() => {
               try {
                 const sys = navigator.language;
@@ -475,6 +608,18 @@ const App = () => {
               } catch { return 'zh-CN'; }
             })(),
           }, ...JSON.parse(saved)
+        };
+
+        const secondaryLangs = normalizeSecondaryLangs(
+          baseSettings.primaryLang,
+          baseSettings.secondaryLangs,
+          baseSettings.secondaryLang
+        );
+
+        return {
+          ...baseSettings,
+          secondaryLangs,
+          secondaryLang: secondaryLangs[0] || 'none'
         };
       }
     } catch { }
@@ -505,7 +650,10 @@ const App = () => {
       textUppercase: false,
       // Multi-language settings
       primaryLang: 'zh-CN',
+      secondaryLangs: [DEFAULT_TRANSLATION_LANGUAGE],
       secondaryLang: 'en',
+      ollamaHost: 'http://localhost:11434',
+      autoTranslate: true,
       uiLanguage: 'zh-CN',
     };
   });
@@ -542,7 +690,8 @@ const App = () => {
   // UI state for collapsible sections
   const [bgExpanded, setBgExpanded] = useState(true);
   const [platformDropdownOpen, setPlatformDropdownOpen] = useState(false);
-  const [langSettingsOpen, setLangSettingsOpen] = useState(false);
+  const [primaryLanguageMenuOpen, setPrimaryLanguageMenuOpen] = useState(false);
+  const [translationLanguageMenuOpen, setTranslationLanguageMenuOpen] = useState(false);
 
   // Export Progress State
   const [exportProgress, setExportProgress] = useState({ active: false, current: 0, total: 0, message: '', status: 'generating' }); // status: generating, saving, completed, cancelled, error
@@ -550,7 +699,7 @@ const App = () => {
 
   const handleCancelExport = () => {
     isExportCancelled.current = true;
-    setExportProgress(prev => ({ ...prev, status: 'cancelled', message: t('export.cancelling') || 'Cancelling...' }));
+    setExportProgress(prev => ({ ...prev, status: 'cancelled', message: t('export.cancelling') }));
   };
 
   const closeExportModal = () => {
@@ -747,13 +896,14 @@ const App = () => {
   }, []); // eslint-disable-line
   // Refs for click outside
   const platformDropdownRef = useRef(null);
-  const langSettingsRef = useRef(null);
+  const primaryLanguageMenuRef = useRef(null);
+  const translationLanguageMenuRef = useRef(null);
   const savePresetModalRef = useRef(null);
 
   useClickOutside(platformDropdownRef, () => setPlatformDropdownOpen(false));
-  useClickOutside(langSettingsRef, () => setLangSettingsOpen(false));
+  useClickOutside(primaryLanguageMenuRef, () => setPrimaryLanguageMenuOpen(false));
+  useClickOutside(translationLanguageMenuRef, () => setTranslationLanguageMenuOpen(false));
   useClickOutside(savePresetModalRef, () => setShowSavePresetModal(false));
-
 
   // Sync Menu Language
   useEffect(() => {
@@ -824,16 +974,157 @@ const App = () => {
     localStorage.setItem('appstore_builder_custom_sizes', JSON.stringify(updated));
   };
 
+  const closeTopbarOverlays = useCallback(() => {
+    setPlatformDropdownOpen(false);
+    setPrimaryLanguageMenuOpen(false);
+    setTranslationLanguageMenuOpen(false);
+    setShowSavePresetModal(false);
+    setExportMenuOpen(false);
+  }, []);
+
+  const handleTopbarBlankInteraction = useCallback((event, onClose = closeTopbarOverlays) => {
+    if (event.target === event.currentTarget) {
+      onClose();
+    }
+  }, [closeTopbarOverlays]);
+
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        closeTopbarOverlays();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [closeTopbarOverlays]);
+
 
   // Ollama Settings
   const [ollamaConfig, setOllamaConfig] = useState({
-    host: 'http://localhost:11434',
+    host: globalSettings.ollamaHost || 'http://localhost:11434',
     model: '',
     availableModels: [],
     isConnected: false,
-    autoTranslate: true
+    autoTranslate: globalSettings.autoTranslate ?? true
   });
   const [showOllamaGuide, setShowOllamaGuide] = useState(false);
+  const [isRetranslating, setIsRetranslating] = useState(false);
+  const [isBatchRetranslating, setIsBatchRetranslating] = useState(false);
+  const selectedSecondaryLangs = normalizeSecondaryLangs(
+    globalSettings.primaryLang,
+    globalSettings.secondaryLangs,
+    globalSettings.secondaryLang
+  );
+  const selectedSecondaryLangsKey = selectedSecondaryLangs.join('|');
+  const allConfiguredLanguageCodes = [globalSettings.primaryLang, ...selectedSecondaryLangs];
+
+  const resolveCanvasLanguageCode = (languageCode) => {
+    if (!languageCode || languageCode === 'primary' || languageCode === 'CN') {
+      return globalSettings.primaryLang;
+    }
+    if (languageCode === 'secondary' || languageCode === 'EN') {
+      return selectedSecondaryLangs[0] || globalSettings.primaryLang;
+    }
+    return languageCode;
+  };
+
+  const getSceneTitleByLanguage = (scene, languageCode) => {
+    if (!scene || !languageCode) return '';
+
+    const titles = scene.titles || {};
+    if (Object.prototype.hasOwnProperty.call(titles, languageCode)) {
+      return titles[languageCode] || '';
+    }
+
+    if (languageCode === globalSettings.primaryLang) {
+      return scene.titleCN || '';
+    }
+
+    const firstSecondaryLang = selectedSecondaryLangs[0];
+    if (firstSecondaryLang && languageCode === firstSecondaryLang) {
+      return scene.titleEN || '';
+    }
+
+    return '';
+  };
+
+  const buildSceneTitleUpdate = (scene, languageCode, value) => {
+    const nextTitles = {
+      ...(scene?.titles || {}),
+      [languageCode]: value
+    };
+    const updates = { titles: nextTitles };
+
+    if (languageCode === globalSettings.primaryLang) {
+      updates.titleCN = value;
+    }
+
+    if (selectedSecondaryLangs[0] && languageCode === selectedSecondaryLangs[0]) {
+      updates.titleEN = value;
+    }
+
+    return updates;
+  };
+
+  const getSceneLanguageStyle = (scene, languageCode) => {
+    const resolvedLanguageCode = resolveCanvasLanguageCode(languageCode);
+    const style = scene?.settings?.languageStyles?.[resolvedLanguageCode] || {};
+    const isPrimaryLanguage = resolvedLanguageCode === globalSettings.primaryLang;
+
+    return {
+      textX: style.textX ?? (isPrimaryLanguage
+        ? (scene?.settings?.textXCN ?? DEFAULT_SCENE_SETTINGS.textXCN)
+        : (scene?.settings?.textXEN ?? DEFAULT_SCENE_SETTINGS.textXEN)),
+      textY: style.textY ?? (isPrimaryLanguage
+        ? (scene?.settings?.textYCN ?? DEFAULT_SCENE_SETTINGS.textYCN)
+        : (scene?.settings?.textYEN ?? DEFAULT_SCENE_SETTINGS.textYEN)),
+      textSize: style.textSize ?? (isPrimaryLanguage
+        ? (scene?.settings?.textSizeCN ?? DEFAULT_SCENE_SETTINGS.textSizeCN)
+        : (scene?.settings?.textSizeEN ?? DEFAULT_SCENE_SETTINGS.textSizeEN))
+    };
+  };
+
+  const getGlobalLanguageStyle = (languageCode) => {
+    const resolvedLanguageCode = resolveCanvasLanguageCode(languageCode);
+    const style = globalSettings.languageTextStyles?.[resolvedLanguageCode] || {};
+    const isPrimaryLanguage = resolvedLanguageCode === globalSettings.primaryLang;
+
+    return {
+      font: style.font ?? (isPrimaryLanguage
+        ? (globalSettings.fontCN || getDefaultFontForLanguage(resolvedLanguageCode))
+        : (globalSettings.fontEN || getDefaultFontForLanguage(resolvedLanguageCode))),
+      textColor: style.textColor ?? (isPrimaryLanguage
+        ? (globalSettings.textColorCN || TEXT_COLORS[0].id)
+        : (globalSettings.textColorEN || TEXT_COLORS[0].id)),
+      uppercase: style.uppercase ?? (!isPrimaryLanguage && Boolean(globalSettings.textUppercase))
+    };
+  };
+
+  const createSceneTitles = (baseText = '', existingScene = null) => {
+    const nextTitles = {
+      ...(existingScene?.titles || {}),
+      [globalSettings.primaryLang]: getSceneTitleByLanguage(existingScene, globalSettings.primaryLang) || baseText
+    };
+
+    selectedSecondaryLangs.forEach(languageCode => {
+      nextTitles[languageCode] = getSceneTitleByLanguage(existingScene, languageCode) || baseText;
+    });
+
+    return nextTitles;
+  };
+
+  const getDefaultSceneName = (id = 1) => `${t('scenes.scene')} ${id}`;
+
+  const createBlankScene = (id = 1, name = getDefaultSceneName(id)) => ({
+    id,
+    screenshot: null,
+    name,
+    titleCN: '',
+    titleEN: '',
+    titles: createSceneTitles(''),
+    settings: { ...DEFAULT_SCENE_SETTINGS }
+  });
 
   // Scenes Management - stored in localStorage with base64 screenshots
   const [scenes, setScenes] = useState(() => {
@@ -845,26 +1136,45 @@ const App = () => {
     } catch { }
     return [{
       id: 1,
-      name: '首页展示',
+      name: t('scenes.homeShowcase'),
       screenshot: null,
-      titleCN: '智能续写，激发无限灵感',
-      titleEN: 'Smart Continue, Infinite Inspiration',
+      titleCN: t('scenes.defaultTitle'),
+      titleEN: t('scenes.defaultTitleEN'),
+      titles: {
+        [globalSettings.primaryLang]: t('scenes.defaultTitle'),
+        ...(selectedSecondaryLangs[0] ? { [selectedSecondaryLangs[0]]: t('scenes.defaultTitleEN') } : {})
+      },
       settings: { ...DEFAULT_SCENE_SETTINGS }
     }];
   });
 
   const [activeSceneId, setActiveSceneId] = useState(1);
-  const [previewLanguage, setPreviewLanguage] = useState('primary'); // 'primary' or 'secondary'
+  const [previewLanguage, setPreviewLanguage] = useState(() => globalSettings.primaryLang);
   const [selectedSceneIds, setSelectedSceneIds] = useState(new Set()); // 多选状态
-  const [importProgress, setImportProgress] = useState({ active: false, current: 0, total: 0, message: '' }); // 导入进度
+  const [selectedElement, setSelectedElement] = useState('text');
+  const [dragPreview, setDragPreview] = useState(null);
+  const [alignmentGuides, setAlignmentGuides] = useState({ vertical: false, horizontal: false });
+  const [importProgress, setImportProgress] = useState(INITIAL_IMPORT_PROGRESS); // 导入/翻译进度
+  const [, forceImageBoundsRefresh] = useState(0);
   const canvasRef = useRef(null);
+  const dragPreviewRef = useRef(null);
+  const pointerDragRef = useRef(null);
+  const suppressCanvasClickUntilRef = useRef(0);
+  const imageCacheRef = useRef(new Map());
+  const textMeasureCanvasRef = useRef(null);
+  const importProgressHideTimerRef = useRef(null);
+  const importProgressJobIdRef = useRef(0);
+  const translationQueueRef = useRef(Promise.resolve());
+  const progressAbortControllerRef = useRef(null);
+  const previousMockupEnabledRef = useRef(mockupEnabled);
   // 确保 activeScene 始终有效，并有默认 settings
   const activeScene = scenes.find(s => s.id === activeSceneId) || scenes[0] || {
     id: 1,
-    name: '场景 1',
+    name: getDefaultSceneName(1),
     screenshot: null,
     titleCN: '',
     titleEN: '',
+    titles: createSceneTitles(''),
     settings: { ...DEFAULT_SCENE_SETTINGS }
   };
 
@@ -898,6 +1208,134 @@ const App = () => {
 
   // State for Selection Mode
   const [isSelectionMode, setIsSelectionMode] = useState(false);
+
+  const clearImportProgressHideTimer = () => {
+    if (importProgressHideTimerRef.current) {
+      clearTimeout(importProgressHideTimerRef.current);
+      importProgressHideTimerRef.current = null;
+    }
+  };
+
+  const isImportProgressJobActive = (jobId) => !jobId || jobId === importProgressJobIdRef.current;
+
+  const startImportProgressJob = () => {
+    clearImportProgressHideTimer();
+    importProgressJobIdRef.current += 1;
+    const jobId = importProgressJobIdRef.current;
+    setImportProgress({ ...INITIAL_IMPORT_PROGRESS, active: true });
+    return jobId;
+  };
+
+  const updateImportProgressState = (jobId, updates) => {
+    if (jobId !== importProgressJobIdRef.current) return;
+    clearImportProgressHideTimer();
+    setImportProgress(prev => ({
+      ...prev,
+      active: true,
+      ...updates
+    }));
+  };
+
+  const finishImportProgressState = (jobId, updates, autoHideMs = 3000) => {
+    if (jobId !== importProgressJobIdRef.current) return;
+    clearImportProgressHideTimer();
+    setImportProgress(prev => ({
+      ...prev,
+      active: true,
+      ...updates
+    }));
+
+    if (autoHideMs > 0) {
+      importProgressHideTimerRef.current = setTimeout(() => {
+        if (jobId === importProgressJobIdRef.current) {
+          setImportProgress(INITIAL_IMPORT_PROGRESS);
+        }
+      }, autoHideMs);
+    }
+  };
+
+  useEffect(() => {
+    const nextHost = globalSettings.ollamaHost || 'http://localhost:11434';
+    const nextAutoTranslate = globalSettings.autoTranslate ?? true;
+
+    setOllamaConfig(prev => {
+      if (prev.host === nextHost && prev.autoTranslate === nextAutoTranslate) {
+        return prev;
+      }
+      return {
+        ...prev,
+        host: nextHost,
+        autoTranslate: nextAutoTranslate
+      };
+    });
+  }, [globalSettings.ollamaHost, globalSettings.autoTranslate]);
+
+  useEffect(() => {
+    const nextHost = ollamaConfig.host || 'http://localhost:11434';
+    const nextAutoTranslate = ollamaConfig.autoTranslate ?? true;
+
+    setGlobalSettings(prev => {
+      if (prev.ollamaHost === nextHost && prev.autoTranslate === nextAutoTranslate) {
+        return prev;
+      }
+      return {
+        ...prev,
+        ollamaHost: nextHost,
+        autoTranslate: nextAutoTranslate
+      };
+    });
+  }, [ollamaConfig.host, ollamaConfig.autoTranslate]);
+
+  useEffect(() => {
+    const normalizedSecondaryLangs = normalizeSecondaryLangs(
+      globalSettings.primaryLang,
+      globalSettings.secondaryLangs,
+      globalSettings.secondaryLang
+    );
+    const legacySecondaryLang = normalizedSecondaryLangs[0] || 'none';
+
+    const sameLength = normalizedSecondaryLangs.length === (globalSettings.secondaryLangs || []).length;
+    const sameValues = sameLength && normalizedSecondaryLangs.every((lang, index) => lang === globalSettings.secondaryLangs[index]);
+
+    if (!sameValues || globalSettings.secondaryLang !== legacySecondaryLang) {
+      setGlobalSettings(prev => ({
+        ...prev,
+        secondaryLangs: normalizedSecondaryLangs,
+        secondaryLang: legacySecondaryLang
+      }));
+    }
+  }, [globalSettings.primaryLang, globalSettings.secondaryLangs, globalSettings.secondaryLang]);
+
+  useEffect(() => {
+    if (!allConfiguredLanguageCodes.includes(previewLanguage)) {
+      setPreviewLanguage(selectedSecondaryLangs[0] || globalSettings.primaryLang);
+    }
+  }, [globalSettings.primaryLang, previewLanguage, selectedSecondaryLangs, selectedSecondaryLangsKey]);
+
+  useEffect(() => () => {
+    clearImportProgressHideTimer();
+    const controller = progressAbortControllerRef.current;
+    progressAbortControllerRef.current = null;
+    if (controller) {
+      controller.abort();
+    }
+  }, []);
+
+  const handleCloseImportProgress = () => {
+    if (!importProgress.active) return;
+
+    clearImportProgressHideTimer();
+    importProgressJobIdRef.current += 1;
+
+    const controller = progressAbortControllerRef.current;
+    progressAbortControllerRef.current = null;
+    if (controller) {
+      controller.abort();
+    }
+
+    setIsRetranslating(false);
+    setImportProgress(INITIAL_IMPORT_PROGRESS);
+  };
 
   // 切换设备或场景时加载已保存的配置
   useEffect(() => {
@@ -939,24 +1377,68 @@ const App = () => {
 
   // --- OLLAMA INTEGRATION ---
 
-  const checkOllamaConnection = async () => {
+  const activeOllamaModel = ollamaConfig.model || ollamaConfig.availableModels[0] || '';
+  const canTranslateWithAi = ollamaConfig.isConnected && Boolean(activeOllamaModel) && selectedSecondaryLangs.length > 0;
+
+  const checkOllamaConnection = async ({ jobId } = {}) => {
+    const controller = new AbortController();
+    const trackProgressAbort = Boolean(jobId) && isImportProgressJobActive(jobId);
+    let didTimeout = false;
+
+    if (trackProgressAbort) {
+      progressAbortControllerRef.current = controller;
+    }
+
+    const timeoutId = setTimeout(() => {
+      didTimeout = true;
+      controller.abort();
+    }, OLLAMA_CONNECT_TIMEOUT_MS);
+
     try {
-      const response = await fetch(`${ollamaConfig.host}/api/tags`);
-      if (response.ok) {
-        const data = await response.json();
-        const models = data.models.map(m => m.name);
+      const response = await fetch(`${ollamaConfig.host}/api/tags`, { signal: controller.signal });
+      if (!response.ok) {
+        throw new Error(`Failed to connect: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const models = (data.models || []).map(m => m.name).filter(Boolean);
+      const hasModels = models.length > 0;
+
+      setOllamaConfig(prev => ({
+        ...prev,
+        isConnected: true,
+        availableModels: models,
+        model: models.includes(prev.model) ? prev.model : (models[0] || '')
+      }));
+
+      return {
+        ok: hasModels,
+        reason: hasModels ? null : 'no-models',
+        models
+      };
+    } catch (error) {
+      const wasCancelled = error?.name === 'AbortError' && !didTimeout;
+      if (!wasCancelled) {
+        console.error("Ollama connection failed:", error);
         setOllamaConfig(prev => ({
           ...prev,
-          isConnected: true,
-          availableModels: models,
-          model: prev.model || models[0] || ''
+          isConnected: false,
+          availableModels: [],
+          model: ''
         }));
-      } else {
-        throw new Error('Failed to connect');
       }
-    } catch (error) {
-      console.error("Ollama connection failed:", error);
-      setOllamaConfig(prev => ({ ...prev, isConnected: false }));
+
+      return {
+        ok: false,
+        reason: error?.name === 'AbortError'
+          ? (didTimeout ? 'timeout' : 'cancelled')
+          : 'offline'
+      };
+    } finally {
+      clearTimeout(timeoutId);
+      if (trackProgressAbort && progressAbortControllerRef.current === controller) {
+        progressAbortControllerRef.current = null;
+      }
     }
   };
 
@@ -964,44 +1446,117 @@ const App = () => {
     checkOllamaConnection();
   }, []);
 
-  const translateText = async (text, targetLangCode = 'en') => {
-    if (!ollamaConfig.isConnected || !ollamaConfig.model) return text;
+  const requestTranslation = async (text, targetLangCode = 'en', { jobId } = {}) => {
+    const sourceText = (text || '').trim();
+    if (!sourceText) return { ok: false, reason: 'empty', text: '' };
+    if (targetLangCode === 'none') return { ok: false, reason: 'disabled', text: sourceText };
+    if (!ollamaConfig.isConnected || !activeOllamaModel) return { ok: false, reason: 'not-ready', text: '' };
+
+    const controller = new AbortController();
+    const trackProgressAbort = Boolean(jobId) && isImportProgressJobActive(jobId);
+    let didTimeout = false;
+
+    if (trackProgressAbort) {
+      progressAbortControllerRef.current = controller;
+    }
+
+    const timeoutId = setTimeout(() => {
+      didTimeout = true;
+      controller.abort();
+    }, TRANSLATION_TIMEOUT_MS);
 
     try {
       // Find language name
       const targetLang = LANGUAGES.find(l => l.code === targetLangCode);
       const targetLangName = targetLang ? targetLang.name : 'English';
 
-      const prompt = `Translate the following mobile app feature title into ${targetLangName}. Keep it concise, marketing style. Only output the ${targetLangName} text, no explanations. Text: "${text}"`;
+      const prompt = `Translate the following mobile app feature title into ${targetLangName}. Keep it concise, marketing style. Only output the ${targetLangName} text, no explanations. Text: "${sourceText}"`;
 
       const response = await fetch(`${ollamaConfig.host}/api/generate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
         body: JSON.stringify({
-          model: ollamaConfig.model,
+          model: activeOllamaModel,
           prompt: prompt,
           stream: false
         })
       });
 
+      if (!response.ok) {
+        throw new Error(`Translation request failed: ${response.status}`);
+      }
+
       const data = await response.json();
-      return data.response.trim().replace(/^"|"$/g, '');
+      const translatedText = (data.response || '').trim().replace(/^"|"$/g, '');
+
+      if (!translatedText) {
+        return { ok: false, reason: 'empty-response', text: '' };
+      }
+
+      return { ok: true, reason: null, text: translatedText };
     } catch (e) {
-      console.error("Translation error:", e);
-      return "";
+      const wasCancelled = e?.name === 'AbortError' && !didTimeout;
+      if (!wasCancelled) {
+        console.error("Translation error:", e);
+      }
+      return {
+        ok: false,
+        reason: e?.name === 'AbortError'
+          ? (didTimeout ? 'timeout' : 'cancelled')
+          : 'error',
+        text: ''
+      };
+    } finally {
+      clearTimeout(timeoutId);
+      if (trackProgressAbort && progressAbortControllerRef.current === controller) {
+        progressAbortControllerRef.current = null;
+      }
     }
   };
 
   // --- CANVAS LOGIC ---
 
-  const loadImage = (src) => {
-    return new Promise((resolve, reject) => {
+  const loadImage = useCallback((src) => {
+    if (!src) {
+      return Promise.reject(new Error('Missing image source'));
+    }
+
+    const cachedEntry = imageCacheRef.current.get(src);
+    if (cachedEntry) {
+      return typeof cachedEntry.then === 'function'
+        ? cachedEntry
+        : Promise.resolve(cachedEntry);
+    }
+
+    const imagePromise = new Promise((resolve, reject) => {
       const img = new Image();
       img.crossOrigin = "Anonymous";
-      img.onload = () => resolve(img);
-      img.onerror = reject;
+      img.onload = () => {
+        imageCacheRef.current.set(src, img);
+        resolve(img);
+      };
+      img.onerror = (error) => {
+        imageCacheRef.current.delete(src);
+        reject(error);
+      };
       img.src = src;
     });
+
+    imageCacheRef.current.set(src, imagePromise);
+    return imagePromise;
+  }, []);
+
+  const getCachedImageDimensions = (src) => {
+    const cachedImage = imageCacheRef.current.get(src);
+    if (!cachedImage || typeof cachedImage.then === 'function') {
+      return null;
+    }
+
+    return {
+      width: cachedImage.naturalWidth || cachedImage.width,
+      height: cachedImage.naturalHeight || cachedImage.height
+    };
   };
 
   // 用于跟踪渲染版本，避免异步渲染竞态条件导致拖影
@@ -1015,6 +1570,7 @@ const App = () => {
 
     const ctx = canvas.getContext('2d');
     const { width, height, backgroundType, backgroundValue, backgroundUpload } = globalSettings;
+    const sceneSettings = { ...DEFAULT_SCENE_SETTINGS, ...(scene.settings || {}) };
 
     canvas.width = width;
     canvas.height = height;
@@ -1115,26 +1671,22 @@ const App = () => {
 
     // 2. Draw Text (Helper Function) - 支持多语言系统
     const renderTextLayer = () => {
-      // 确定当前显示的语言类型 (primary 或 secondary)
-      const isPrimaryLang = language === 'primary' || language === 'CN';
-      let text = isPrimaryLang ? scene.titleCN : scene.titleEN;
+      const resolvedLanguageCode = resolveCanvasLanguageCode(language);
+      const isPrimaryLang = resolvedLanguageCode === globalSettings.primaryLang;
+      const sceneLanguageStyle = getSceneLanguageStyle(scene, resolvedLanguageCode);
+      const globalLanguageStyle = getGlobalLanguageStyle(resolvedLanguageCode);
+      let text = getSceneTitleByLanguage(scene, resolvedLanguageCode);
 
       // 如果是翻译语言且开启大写，应用大写转换
-      if (!isPrimaryLang && globalSettings.textUppercase && text) {
+      if (!isPrimaryLang && globalLanguageStyle.uppercase && text) {
         text = text.toUpperCase();
       }
 
       if (text) {
-        // 根据语言选择对应的字体设置
-        const fontSize = isPrimaryLang
-          ? (scene.settings.textSizeCN || 120)
-          : (scene.settings.textSizeEN || 100);
-        const textY = isPrimaryLang
-          ? (scene.settings.textYCN || 150)
-          : (scene.settings.textYEN || 150);
-
-        // Get font from globalSettings
-        const fontFamily = isPrimaryLang ? globalSettings.fontCN : globalSettings.fontEN;
+        const fontSize = sceneLanguageStyle.textSize;
+        const textOffsetX = sceneLanguageStyle.textX || 0;
+        const textY = sceneLanguageStyle.textY;
+        const fontFamily = globalLanguageStyle.font;
         ctx.font = `bold ${fontSize}px ${fontFamily}`;
 
         // Get text alignment
@@ -1142,18 +1694,11 @@ const App = () => {
         ctx.textAlign = textAlign;
         ctx.textBaseline = 'top';
 
-        // Calculate X position based on alignment
-        let textX;
-        if (textAlign === 'left') {
-          textX = width * 0.1; // 10% padding from left
-        } else if (textAlign === 'right') {
-          textX = width * 0.9; // 10% padding from right
-        } else {
-          textX = width / 2;
-        }
+        // Calculate X position based on alignment + scene offset
+        const textX = getTextAnchorX(width, textAlign, textOffsetX);
 
         // Get color settings
-        const colorId = isPrimaryLang ? globalSettings.textColorCN : globalSettings.textColorEN;
+        const colorId = globalLanguageStyle.textColor;
         const colorPreset = TEXT_COLORS.find(c => c.id === colorId) || TEXT_COLORS[0];
 
         // Apply text shadow if enabled
@@ -1244,7 +1789,7 @@ const App = () => {
         // 检查渲染版本是否仍然有效
         if (!isRenderValid()) return;
 
-        const baseScale = scene.settings.screenshotScale || 0.8;
+        const baseScale = sceneSettings.screenshotScale ?? DEFAULT_SCENE_SETTINGS.screenshotScale;
 
         // Check if device mockup is enabled use effective value
         if (effectiveMockupEnabled && DEVICE_CONFIGS[effectiveSelectedDevice]) {
@@ -1353,7 +1898,7 @@ const App = () => {
 
                     // 绘制截图
                     // Get screenshot scale from scene settings (default 1.0 for device mode)
-                    const ssScale = scene.settings.screenshotScale || 1.0;
+                    const ssScale = sceneSettings.screenshotScale ?? 1.0;
 
                     const ssAspect = ssImg.width / ssImg.height;
                     const screenAspect = scaledScreenWidth / scaledScreenHeight;
@@ -1374,8 +1919,8 @@ const App = () => {
                     const drawHeight = baseDrawHeight * ssScale;
 
                     // Calculate position with offset from scene settings
-                    const ssOffsetX = scene.settings.screenshotX || 0;
-                    const ssOffsetY = scene.settings.screenshotY || 0;
+                    const ssOffsetX = sceneSettings.screenshotX || 0;
+                    const ssOffsetY = sceneSettings.screenshotY || 0;
                     const drawX = frameX + scaledScreenX + (scaledScreenWidth - drawWidth) / 2 + ssOffsetX * deviceScaleRatio;
                     const drawY = frameY + scaledScreenY + (scaledScreenHeight - drawHeight) / 2 + ssOffsetY * deviceScaleRatio;
 
@@ -1539,7 +2084,7 @@ const App = () => {
             const screenAspect = scaledScreenWidth / scaledScreenHeight;
 
             // Get screenshot scale from scene settings (default 1.0 for device mode)
-            const ssScale = scene.settings.screenshotScale || 1.0;
+            const ssScale = sceneSettings.screenshotScale ?? 1.0;
 
             // Base size calculation (cover fit)
             let baseDrawWidth, baseDrawHeight;
@@ -1558,8 +2103,8 @@ const App = () => {
             const drawHeight = baseDrawHeight * ssScale;
 
             // Calculate position with offset from scene settings
-            const ssOffsetX = scene.settings.screenshotX || 0;
-            const ssOffsetY = scene.settings.screenshotY || 0;
+            const ssOffsetX = sceneSettings.screenshotX || 0;
+            const ssOffsetY = sceneSettings.screenshotY || 0;
             const drawX = frameX + scaledScreenX + (scaledScreenWidth - drawWidth) / 2 + ssOffsetX * scaleRatio;
             const drawY = frameY + scaledScreenY + (scaledScreenHeight - drawHeight) / 2 + ssOffsetY * scaleRatio;
 
@@ -1661,11 +2206,11 @@ const App = () => {
           const ratio = targetWidth / ssImg.width;
           const targetHeight = ssImg.height * ratio;
 
-          const x = (width - targetWidth) / 2 + (scene.settings.screenshotX || 0);
-          const y = (scene.settings.screenshotY || 400);
+          const x = (width - targetWidth) / 2 + (sceneSettings.screenshotX || 0);
+          const y = sceneSettings.screenshotY ?? DEFAULT_SCENE_SETTINGS.screenshotY;
 
           // Shadow - controlled by screenshotShadow setting
-          if (scene.settings.screenshotShadow !== false) {
+          if (sceneSettings.screenshotShadow !== false) {
             ctx.shadowColor = "rgba(0, 0, 0, 0.4)";
             ctx.shadowBlur = 50;
             ctx.shadowOffsetY = 30;
@@ -1688,7 +2233,7 @@ const App = () => {
       renderTextLayer();
     }
 
-  }, [globalSettings, mockupEnabled, selectedDevice, deviceFrameColor, showLockScreenUI, showMockupShadow, shadowOpacity, deviceLayers, deviceScale, deviceX, deviceY, iPadLandscape]);
+  }, [globalSettings, mockupEnabled, selectedDevice, deviceFrameColor, showLockScreenUI, showMockupShadow, shadowOpacity, deviceLayers, deviceScale, deviceX, deviceY, iPadLandscape, loadImage]);
 
   // 使用 requestAnimationFrame 防抖，优化拖拽时的渲染性能
   const rafIdRef = useRef(null);
@@ -1713,38 +2258,83 @@ const App = () => {
     };
   }, [activeScene, globalSettings, previewLanguage, drawCanvas, mockupEnabled, selectedDevice, deviceFrameColor, showLockScreenUI, showMockupShadow, deviceScale, deviceX, deviceY, iPadLandscape, appMode]);
 
+  useEffect(() => {
+    if (!activeScene?.screenshot) {
+      return undefined;
+    }
+
+    let cancelled = false;
+    loadImage(activeScene.screenshot)
+      .then(() => {
+        if (!cancelled) {
+          forceImageBoundsRefresh(version => version + 1);
+        }
+      })
+      .catch(() => undefined);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeScene?.screenshot, loadImage]);
+
+  useEffect(() => {
+    if (!globalSettings.backgroundUpload || !['upload', 'builtin'].includes(globalSettings.backgroundType)) {
+      return undefined;
+    }
+
+    let cancelled = false;
+    loadImage(globalSettings.backgroundUpload)
+      .then(() => {
+        if (!cancelled) {
+          forceImageBoundsRefresh(version => version + 1);
+        }
+      })
+      .catch(() => undefined);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [globalSettings.backgroundType, globalSettings.backgroundUpload, loadImage]);
+
 
   // --- HANDLERS ---
 
   // 处理截图导入 - 支持 Electron 两步选择或普通文件上传
   const handleBatchUpload = async (e) => {
     let imagesToImport = [];
+    const inputEl = e?.target;
 
-    // 判断是来自 Electron 还是普通文件上传
-    if (e && e.target && e.target.files) {
-      // 普通文件上传模式
-      const files = Array.from(e.target.files);
-      if (files.length === 0) return;
+    try {
+      // 判断是来自 Electron 还是普通文件上传
+      if (e && e.target && e.target.files) {
+        // 普通文件上传模式
+        const files = Array.from(e.target.files);
+        if (files.length === 0) return;
 
-      const imageFiles = files.filter(file => file.type.startsWith('image/'));
-      if (imageFiles.length === 0) return;
+        const imageFiles = files.filter(file => file.type.startsWith('image/'));
+        if (imageFiles.length === 0) return;
 
-      for (const file of imageFiles) {
-        const reader = new FileReader();
-        const dataUrl = await new Promise(resolve => {
-          reader.onload = (evt) => resolve(evt.target.result);
-          reader.readAsDataURL(file);
-        });
-        imagesToImport.push({
-          name: file.name.replace(/\.[^/.]+$/, ""),
-          data: dataUrl
-        });
+        for (const file of imageFiles) {
+          const reader = new FileReader();
+          const dataUrl = await new Promise(resolve => {
+            reader.onload = (evt) => resolve(evt.target.result);
+            reader.readAsDataURL(file);
+          });
+          imagesToImport.push({
+            name: file.name.replace(/\.[^/.]+$/, ""),
+            data: dataUrl
+          });
+        }
+      } else {
+        return;
       }
-    } else {
-      return;
-    }
 
-    await importScreenshots(imagesToImport);
+      await importScreenshots(imagesToImport);
+    } finally {
+      if (inputEl) {
+        inputEl.value = '';
+      }
+    }
   };
 
   // Electron 直接选择图片文件（支持多选）
@@ -1776,91 +2366,173 @@ const App = () => {
   // 导入截图的核心逻辑 - 支持重名确认和进度显示
   const importScreenshots = async (imagesToImport) => {
     if (imagesToImport.length === 0) return;
+    const jobId = startImportProgressJob();
 
-    // 检查重名文件
-    const existingNames = new Set(scenes.filter(s => s.screenshot).map(s => s.name));
-    const duplicates = imagesToImport.filter(img => existingNames.has(img.name));
+    try {
+      // 检查重名文件
+      const existingNames = new Set(scenes.filter(s => s.screenshot).map(s => s.name));
+      const duplicates = imagesToImport.filter(img => existingNames.has(img.name));
 
-    let imagesToProcess = imagesToImport;
+      let imagesToProcess = imagesToImport;
 
-    // 如果有重名文件，询问用户
-    if (duplicates.length > 0) {
-      const duplicateNames = duplicates.map(d => d.name).slice(0, 5).join('\n• ');
-      const moreCount = duplicates.length > 5 ? `\n... (+${duplicates.length - 5})` : '';
-      const confirmMsg = t('alerts.duplicateScreenshots', { n: duplicates.length, names: duplicateNames, more: moreCount });
+      // 如果有重名文件，询问用户
+      if (duplicates.length > 0) {
+        const duplicateNames = duplicates.map(d => d.name).slice(0, 5).join('\n• ');
+        const moreCount = duplicates.length > 5 ? `\n... (+${duplicates.length - 5})` : '';
+        const confirmMsg = t('alerts.duplicateScreenshots', { n: duplicates.length, names: duplicateNames, more: moreCount });
 
-      if (!window.confirm(confirmMsg)) {
-        // 用户选择跳过重复的
-        imagesToProcess = imagesToImport.filter(img => !existingNames.has(img.name));
-        if (imagesToProcess.length === 0) {
-          alert(t('alerts.noNewScreenshots'));
-          return;
+        if (!window.confirm(confirmMsg)) {
+          // 用户选择跳过重复的
+          imagesToProcess = imagesToImport.filter(img => !existingNames.has(img.name));
+          if (imagesToProcess.length === 0) {
+            finishImportProgressState(jobId, {
+              phase: 'import',
+              status: 'warning',
+              current: 0,
+              total: 0,
+              message: t('alerts.noNewScreenshots', '没有新的截图需要导入'),
+              detail: t('alerts.noNewScreenshotsDetail', '所选文件都已存在，未创建新场景'),
+              successCount: 0,
+              failedCount: 0,
+              skippedCount: imagesToImport.length
+            }, 3000);
+            alert(t('alerts.noNewScreenshots'));
+            return;
+          }
         }
       }
-    }
 
-    // 开始导入，显示进度条
-    setImportProgress({ active: true, current: 0, total: imagesToProcess.length, message: '准备导入...' });
-
-    // 检查是否是默认空场景
-    const isDefaultState = scenes.length === 1 && !scenes[0].screenshot;
-
-    // 处理重名覆盖
-    let updatedScenes = isDefaultState ? [] : [...scenes];
-    let startId = isDefaultState ? 1 : (Math.max(...scenes.map(s => s.id), 0) + 1);
-
-    for (let i = 0; i < imagesToProcess.length; i++) {
-      const img = imagesToProcess[i];
-      const nameWithoutExt = img.name;
-
-      // 更新进度
-      setImportProgress({
-        active: true,
-        current: i + 1,
+      // 开始导入，显示进度条
+      updateImportProgressState(jobId, {
+        phase: 'import',
+        status: 'running',
+        current: 0,
         total: imagesToProcess.length,
-        message: `正在导入: ${nameWithoutExt}`
+        message: t('alerts.importPreparing', '准备导入...'),
+        detail: t('alerts.importReadingFiles', '正在读取并创建截图场景')
       });
 
-      // Auto translate if enabled
-      let enTitle = "";
-      if (ollamaConfig.isConnected && ollamaConfig.autoTranslate) {
-        enTitle = await translateText(nameWithoutExt, globalSettings.secondaryLang);
+      // 检查是否是默认空场景
+      const isDefaultState = scenes.length === 1 && !scenes[0].screenshot;
+
+      // 处理重名覆盖
+      let updatedScenes = isDefaultState ? [] : [...scenes];
+      let startId = isDefaultState ? 1 : (Math.max(...scenes.map(s => s.id), 0) + 1);
+      const scenesNeedingTranslation = [];
+
+      for (let i = 0; i < imagesToProcess.length; i++) {
+        const img = imagesToProcess[i];
+        const nameWithoutExt = img.name;
+
+        // 更新进度
+        updateImportProgressState(jobId, {
+          phase: 'import',
+          status: 'running',
+          current: i + 1,
+          total: imagesToProcess.length,
+          message: `正在导入: ${nameWithoutExt}`
+        });
+
+        // 检查是否存在同名场景
+        const existingIndex = updatedScenes.findIndex(s => s.name === nameWithoutExt);
+        const sceneId = existingIndex >= 0 ? updatedScenes[existingIndex].id : startId++;
+
+        const newScene = {
+          id: sceneId,
+          name: nameWithoutExt,
+          screenshot: img.data,
+          titleCN: nameWithoutExt,
+          titleEN: nameWithoutExt,
+          titles: createSceneTitles(nameWithoutExt, existingIndex >= 0 ? updatedScenes[existingIndex] : null),
+          settings: existingIndex >= 0 ? updatedScenes[existingIndex].settings : { ...scenes[0]?.settings || DEFAULT_SCENE_SETTINGS }
+        };
+
+        if (existingIndex >= 0) {
+          // 覆盖已存在的场景
+          updatedScenes[existingIndex] = newScene;
+        } else {
+          updatedScenes.push(newScene);
+        }
+
+        scenesNeedingTranslation.push({ id: sceneId, title: nameWithoutExt });
       }
 
-      // 检查是否存在同名场景
-      const existingIndex = updatedScenes.findIndex(s => s.name === nameWithoutExt);
+      setScenes(updatedScenes);
 
-      const newScene = {
-        id: existingIndex >= 0 ? updatedScenes[existingIndex].id : startId++,
-        name: nameWithoutExt,
-        screenshot: img.data,
-        titleCN: nameWithoutExt,
-        titleEN: enTitle || nameWithoutExt,
-        settings: existingIndex >= 0 ? updatedScenes[existingIndex].settings : { ...scenes[0]?.settings || DEFAULT_SCENE_SETTINGS }
-      };
-
-      if (existingIndex >= 0) {
-        // 覆盖已存在的场景
-        updatedScenes[existingIndex] = newScene;
-      } else {
-        updatedScenes.push(newScene);
+      // Switch to first new scene
+      if (imagesToProcess.length > 0) {
+        const firstImported = updatedScenes.find(s => s.name === imagesToProcess[0].name);
+        if (firstImported) {
+          setActiveSceneId(firstImported.id);
+        }
       }
+
+      if (!ollamaConfig.autoTranslate) {
+        finishImportProgressState(jobId, {
+          phase: 'import',
+          status: 'success',
+          current: imagesToProcess.length,
+          total: imagesToProcess.length,
+          message: t('alerts.importComplete', '导入完成'),
+          detail: t('alerts.autoTranslateDisabledDetail', '自动翻译已关闭，您仍可稍后手动翻译'),
+          successCount: imagesToProcess.length,
+          failedCount: 0,
+          skippedCount: 0
+        }, 3000);
+        return;
+      }
+
+      if (selectedSecondaryLangs.length === 0) {
+        finishImportProgressState(jobId, {
+          phase: 'translate',
+          status: 'warning',
+          current: imagesToProcess.length,
+          total: imagesToProcess.length,
+          message: t('alerts.autoTranslateMissingTarget', '未设置翻译语言，已跳过自动翻译'),
+          detail: t('alerts.translationSetSecondaryLang', '请先在语言设置中选择翻译语言'),
+          successCount: 0,
+          failedCount: 0,
+          skippedCount: imagesToProcess.length
+        }, 4000);
+        return;
+      }
+
+      updateImportProgressState(jobId, {
+        phase: 'translate',
+        status: 'queued',
+        current: 0,
+        total: scenesNeedingTranslation.length * selectedSecondaryLangs.length,
+        message: t('alerts.translationQueued', '导入完成，正在准备翻译队列'),
+        detail: t('alerts.translationQueuedDetail', '截图已导入，翻译将在后台按顺序执行'),
+        successCount: 0,
+        failedCount: 0,
+        skippedCount: 0
+      });
+
+      void enqueueTranslationSequence(
+        scenesNeedingTranslation.flatMap(scene => (
+          selectedSecondaryLangs.map(targetLangCode => ({
+            id: scene.id,
+            sourceText: scene.title,
+            targetLangCode
+          }))
+        )),
+        { jobId, mode: 'auto' }
+      );
+    } catch (error) {
+      console.error('Import screenshots failed:', error);
+      finishImportProgressState(jobId, {
+        phase: 'import',
+        status: 'error',
+        current: 0,
+        total: imagesToImport.length,
+        message: t('alerts.importFailed', '导入失败'),
+        detail: error?.message || t('alerts.importFailedDetail', '请检查图片文件后重试'),
+        successCount: 0,
+        failedCount: imagesToImport.length,
+        skippedCount: 0
+      }, 6000);
     }
-
-    setScenes(updatedScenes);
-
-    // Switch to first new scene
-    if (imagesToProcess.length > 0) {
-      const firstImported = updatedScenes.find(s => s.name === imagesToProcess[0].name);
-      if (firstImported) {
-        setActiveSceneId(firstImported.id);
-      }
-    }
-
-    // 隐藏进度条
-    setTimeout(() => {
-      setImportProgress({ active: false, current: 0, total: 0, message: '' });
-    }, 500);
   };
 
   const handleBgUpload = (e) => {
@@ -1966,16 +2638,492 @@ const App = () => {
     setScenes(prev => prev.map(s => s.id === id ? { ...s, ...updates } : s));
   };
 
-  const updateSceneSettings = (key, value) => {
-    setScenes(prev => prev.map(s => s.id === activeScene.id ? {
-      ...s,
-      settings: { ...s.settings, [key]: value }
-    } : s));
+  const processTranslationSequence = async (items, { jobId, mode = 'auto' } = {}) => {
+    if (!items.length) return { ok: true, translated: 0, failed: 0, skipped: 0 };
+    if (!isImportProgressJobActive(jobId)) {
+      return { ok: false, translated: 0, failed: 0, skipped: items.length, cancelled: true };
+    }
+
+    const isManualMode = mode === 'manual';
+    const isBatchMode = mode === 'batch';
+
+    if (selectedSecondaryLangs.length === 0) {
+      finishImportProgressState(jobId, {
+        phase: 'translate',
+        status: 'warning',
+        current: items.length,
+        total: items.length,
+        message: isManualMode
+          ? t('alerts.manualTranslateMissingTarget', '未设置翻译语言，无法执行手动翻译')
+          : isBatchMode
+            ? t('alerts.batchTranslateMissingTarget', '未设置翻译语言，无法执行批量翻译')
+          : t('alerts.autoTranslateMissingTarget', '未设置翻译语言，已跳过自动翻译'),
+        detail: t('alerts.translationSetSecondaryLang', '请先在语言设置中选择翻译语言'),
+        successCount: 0,
+        failedCount: 0,
+        skippedCount: items.length
+      }, 5000);
+      return { ok: false, translated: 0, failed: 0, skipped: items.length };
+    }
+
+    const connection = await checkOllamaConnection({ jobId });
+    if (!isImportProgressJobActive(jobId) || connection.reason === 'cancelled') {
+      return { ok: false, translated: 0, failed: 0, skipped: items.length, cancelled: true };
+    }
+
+    if (!connection.ok) {
+      setShowOllamaGuide(true);
+
+      const missingOllamaMessage = connection.reason === 'no-models'
+        ? t('alerts.ollamaNoModels', '已检测到 Ollama，但没有可用模型，已跳过翻译')
+        : t('alerts.ollamaUnavailable', '未检测到可用的 Ollama 服务，已跳过翻译');
+      const missingOllamaDetail = connection.reason === 'no-models'
+        ? t('alerts.ollamaNoModelsDetail', '请先执行 ollama run qwen2.5:7b 或其他模型')
+        : t('alerts.ollamaUnavailableDetail', '请安装并启动 Ollama，然后再试一次翻译');
+
+      finishImportProgressState(jobId, {
+        phase: 'translate',
+        status: 'warning',
+        current: items.length,
+        total: items.length,
+        message: isManualMode
+          ? t('alerts.manualTranslateUnavailable', '手动翻译不可用')
+          : isBatchMode
+            ? t('alerts.batchTranslateUnavailable', '批量翻译不可用')
+          : missingOllamaMessage,
+        detail: missingOllamaDetail,
+        successCount: 0,
+        failedCount: 0,
+        skippedCount: items.length
+      }, 6000);
+      return { ok: false, translated: 0, failed: 0, skipped: items.length };
+    }
+
+    let translated = 0;
+    let failed = 0;
+    let skipped = 0;
+    let timeoutCount = 0;
+
+    for (let i = 0; i < items.length; i++) {
+      if (!isImportProgressJobActive(jobId)) {
+        return { ok: false, translated, failed, skipped, cancelled: true };
+      }
+
+      const item = items[i];
+      const targetLanguageInfo = getLanguageInfo(item.targetLangCode);
+
+      updateImportProgressState(jobId, {
+        phase: 'translate',
+        status: 'running',
+        current: i + 1,
+        total: items.length,
+        message: isManualMode
+          ? `${t('text.reTranslate')} ${i + 1}/${items.length}`
+          : isBatchMode
+            ? `${t('ollama.batchTranslateAll', '批量翻译')} ${i + 1}/${items.length}`
+          : `${t('alerts.translating', '正在翻译')} ${i + 1}/${items.length}`,
+        detail: `${targetLanguageInfo?.nativeName || item.targetLangCode} · ${item.sourceText}`,
+        successCount: translated,
+        failedCount: failed,
+        skippedCount: skipped
+      });
+
+      const result = await requestTranslation(item.sourceText, item.targetLangCode, { jobId });
+      if (!isImportProgressJobActive(jobId) || result.reason === 'cancelled') {
+        return { ok: false, translated, failed, skipped, cancelled: true };
+      }
+
+      if (result.ok) {
+        setScenes(prev => prev.map(scene => {
+          if (scene.id !== item.id) return scene;
+          return {
+            ...scene,
+            ...buildSceneTitleUpdate(scene, item.targetLangCode, result.text)
+          };
+        }));
+        translated += 1;
+      } else {
+        failed += 1;
+        if (result.reason === 'timeout') {
+          timeoutCount += 1;
+          if (i === 0) {
+            const remainingCount = Math.max(0, items.length - 1);
+            skipped += remainingCount;
+
+            finishImportProgressState(jobId, {
+              phase: 'translate',
+              status: 'warning',
+              current: items.length,
+              total: items.length,
+              message: isManualMode
+                ? t('alerts.manualTranslateStoppedAfterTimeout', '首张翻译超时，已停止本次重新翻译')
+                : isBatchMode
+                  ? t('alerts.batchTranslateStoppedAfterTimeout', '首张翻译超时，已停止本次批量翻译')
+                : t('alerts.autoTranslateStoppedAfterTimeout', '首张翻译超时，已停止后续自动翻译'),
+              detail: remainingCount > 0
+                ? `首张截图在 ${Math.round(TRANSLATION_TIMEOUT_MS / 1000)} 秒内未返回，已停止剩余 ${remainingCount} 张`
+                : `翻译在 ${Math.round(TRANSLATION_TIMEOUT_MS / 1000)} 秒内未返回，请稍后重试`,
+              successCount: translated,
+              failedCount: failed,
+              skippedCount: skipped
+            }, 7000);
+
+            return { ok: false, translated, failed, skipped };
+          }
+        }
+      }
+    }
+
+    const summaryDetail = `${t('alerts.translationSummary', '成功')} ${translated} · ${t('alerts.translationFailed', '失败')} ${failed}${timeoutCount > 0 ? ` · ${t('alerts.translationTimeout', '超时')} ${timeoutCount}` : ''}`;
+
+    finishImportProgressState(jobId, {
+      phase: 'translate',
+      status: failed > 0 ? 'warning' : 'success',
+      current: items.length,
+      total: items.length,
+      message: isManualMode
+        ? (failed > 0 ? t('alerts.manualTranslatePartial', '手动翻译已完成，部分失败') : t('alerts.manualTranslateSuccess', '手动翻译已完成'))
+        : isBatchMode
+          ? (failed > 0 ? t('alerts.batchTranslatePartial', '批量翻译已完成，部分失败') : t('alerts.batchTranslateSuccess', '批量翻译已完成'))
+        : (failed > 0 ? t('alerts.autoTranslatePartial', '自动翻译已完成，部分失败') : t('alerts.autoTranslateSuccess', '自动翻译已完成')),
+      detail: summaryDetail,
+      successCount: translated,
+      failedCount: failed,
+      skippedCount: skipped
+    }, failed > 0 ? 6000 : 3000);
+
+    return { ok: translated > 0, translated, failed, skipped };
+  };
+
+  const enqueueTranslationSequence = (items, options = {}) => {
+    translationQueueRef.current = translationQueueRef.current
+      .catch(() => undefined)
+      .then(() => processTranslationSequence(items, options));
+
+    return translationQueueRef.current;
+  };
+
+  const handleRetranslateSceneLanguage = async (targetLangCode) => {
+    const sourceText = getSceneTitleByLanguage(activeScene, globalSettings.primaryLang).trim();
+    if (!activeScene || isRetranslating || !sourceText || !targetLangCode) return;
+
+    const jobId = startImportProgressJob();
+    const targetLanguageInfo = getLanguageInfo(targetLangCode);
+    updateImportProgressState(jobId, {
+      phase: 'translate',
+      status: 'queued',
+      current: 0,
+      total: 1,
+      message: t('alerts.manualTranslateQueued', '已加入重新翻译队列'),
+      detail: `${targetLanguageInfo?.nativeName || targetLangCode} · ${sourceText}`
+    });
+    setIsRetranslating(true);
+    try {
+      await enqueueTranslationSequence([
+        {
+          id: activeScene.id,
+          sourceText,
+          targetLangCode
+        }
+      ], { jobId, mode: 'manual' });
+    } finally {
+      setIsRetranslating(false);
+    }
+  };
+
+  const handleBatchRetranslate = async () => {
+    if (isBatchRetranslating) return;
+
+    if (selectedSecondaryLangs.length === 0) {
+      const jobId = startImportProgressJob();
+      finishImportProgressState(jobId, {
+        phase: 'translate',
+        status: 'warning',
+        current: 0,
+        total: 0,
+        message: t('alerts.batchTranslateMissingTarget', '未设置翻译语言，无法执行批量翻译'),
+        detail: t('alerts.translationSetSecondaryLang', '请先在语言设置中选择翻译语言'),
+        successCount: 0,
+        failedCount: 0,
+        skippedCount: 0
+      }, 4000);
+      return;
+    }
+
+    const translationTargets = scenes
+      .filter(scene => scene.screenshot && getSceneTitleByLanguage(scene, globalSettings.primaryLang).trim())
+      .flatMap(scene => {
+        const sourceText = getSceneTitleByLanguage(scene, globalSettings.primaryLang).trim();
+        return selectedSecondaryLangs.map(targetLangCode => ({
+          id: scene.id,
+          sourceText,
+          targetLangCode
+        }));
+      });
+
+    if (translationTargets.length === 0) {
+      const jobId = startImportProgressJob();
+      finishImportProgressState(jobId, {
+        phase: 'translate',
+        status: 'warning',
+        current: 0,
+        total: 0,
+        message: t('alerts.batchTranslateNoScenes', '没有可批量翻译的截图'),
+        detail: t('alerts.batchTranslateNoScenesDetail', '请先导入截图，或确认截图标题不为空'),
+        successCount: 0,
+        failedCount: 0,
+        skippedCount: 0
+      }, 4000);
+      return;
+    }
+
+    const jobId = startImportProgressJob();
+    updateImportProgressState(jobId, {
+      phase: 'translate',
+      status: 'queued',
+      current: 0,
+      total: translationTargets.length,
+      message: t('alerts.batchTranslateQueued', '已加入批量翻译队列'),
+      detail: `共 ${translationTargets.length} 个翻译任务等待执行`
+    });
+
+    setIsBatchRetranslating(true);
+    try {
+      await enqueueTranslationSequence(translationTargets, { jobId, mode: 'batch' });
+    } finally {
+      setIsBatchRetranslating(false);
+    }
+  };
+
+  const applySceneSettingsPatch = useCallback((sceneId, updates) => {
+    setScenes(prev => prev.map(scene => (
+      scene.id === sceneId
+        ? {
+          ...scene,
+          settings: { ...scene.settings, ...updates }
+        }
+        : scene
+    )));
+  }, []);
+
+  const applyDeviceTransformPatch = useCallback((updates) => {
+    if (updates.deviceScale !== undefined) {
+      setDeviceScale(updates.deviceScale);
+    }
+    if (updates.deviceX !== undefined) {
+      setDeviceX(updates.deviceX);
+    }
+    if (updates.deviceY !== undefined) {
+      setDeviceY(updates.deviceY);
+    }
+  }, []);
+
+  const updateSceneSettings = useCallback((key, value) => {
+    applySceneSettingsPatch(activeScene.id, { [key]: value });
+  }, [activeScene.id, applySceneSettingsPatch]);
+
+  const updateSceneLanguageStyle = useCallback((sceneId, languageCode, updates) => {
+    setScenes(prev => prev.map(scene => {
+      if (scene.id !== sceneId) return scene;
+
+      const nextSettings = {
+        ...scene.settings,
+        languageStyles: {
+          ...(scene.settings?.languageStyles || {}),
+          [languageCode]: {
+            ...(scene.settings?.languageStyles?.[languageCode] || {}),
+            ...updates
+          }
+        }
+      };
+
+      if (languageCode === globalSettings.primaryLang) {
+        if (updates.textX !== undefined) nextSettings.textXCN = updates.textX;
+        if (updates.textSize !== undefined) nextSettings.textSizeCN = updates.textSize;
+        if (updates.textY !== undefined) nextSettings.textYCN = updates.textY;
+      }
+
+      if (selectedSecondaryLangs[0] && languageCode === selectedSecondaryLangs[0]) {
+        if (updates.textX !== undefined) nextSettings.textXEN = updates.textX;
+        if (updates.textSize !== undefined) nextSettings.textSizeEN = updates.textSize;
+        if (updates.textY !== undefined) nextSettings.textYEN = updates.textY;
+      }
+
+      return {
+        ...scene,
+        settings: nextSettings
+      };
+    }));
+  }, [globalSettings.primaryLang, selectedSecondaryLangs]);
+
+  const resetSceneLanguageStyle = (sceneId, languageCode, key) => {
+    const isPrimaryLanguage = languageCode === globalSettings.primaryLang;
+    const fallbackValue = key === 'textSize'
+      ? (isPrimaryLanguage ? DEFAULT_SCENE_SETTINGS.textSizeCN : DEFAULT_SCENE_SETTINGS.textSizeEN)
+      : key === 'textX'
+        ? (isPrimaryLanguage ? DEFAULT_SCENE_SETTINGS.textXCN : DEFAULT_SCENE_SETTINGS.textXEN)
+        : (isPrimaryLanguage ? DEFAULT_SCENE_SETTINGS.textYCN : DEFAULT_SCENE_SETTINGS.textYEN);
+
+    updateSceneLanguageStyle(sceneId, languageCode, { [key]: fallbackValue });
+  };
+
+  const updateGlobalLanguageStyle = (languageCode, updates) => {
+    setGlobalSettings(prev => {
+      const nextLanguageStyles = {
+        ...(prev.languageTextStyles || {}),
+        [languageCode]: {
+          ...(prev.languageTextStyles?.[languageCode] || {}),
+          ...updates
+        }
+      };
+
+      const nextSettings = {
+        ...prev,
+        languageTextStyles: nextLanguageStyles
+      };
+
+      const normalizedSecondary = normalizeSecondaryLangs(prev.primaryLang, prev.secondaryLangs, prev.secondaryLang);
+      const firstSecondaryLang = normalizedSecondary[0];
+
+      if (languageCode === prev.primaryLang) {
+        if (updates.font !== undefined) nextSettings.fontCN = updates.font;
+        if (updates.textColor !== undefined) nextSettings.textColorCN = updates.textColor;
+      }
+
+      if (firstSecondaryLang && languageCode === firstSecondaryLang) {
+        if (updates.font !== undefined) nextSettings.fontEN = updates.font;
+        if (updates.textColor !== undefined) nextSettings.textColorEN = updates.textColor;
+        if (updates.uppercase !== undefined) nextSettings.textUppercase = updates.uppercase;
+      }
+
+      return nextSettings;
+    });
+  };
+
+  const applyPrimaryLanguage = (nextPrimaryLang) => {
+    const nextSecondaryLangs = normalizeSecondaryLangs(
+      nextPrimaryLang,
+      globalSettings.secondaryLangs,
+      globalSettings.secondaryLang
+    );
+    const nextConfiguredLanguages = [nextPrimaryLang, ...nextSecondaryLangs];
+
+    setGlobalSettings(prev => ({
+      ...prev,
+      primaryLang: nextPrimaryLang,
+      secondaryLangs: nextSecondaryLangs,
+      secondaryLang: nextSecondaryLangs[0] || 'none'
+    }));
+
+    if (previewLanguage === globalSettings.primaryLang || !nextConfiguredLanguages.includes(previewLanguage)) {
+      setPreviewLanguage(nextPrimaryLang);
+    }
+
+    setPrimaryLanguageMenuOpen(false);
+    setTranslationLanguageMenuOpen(false);
+  };
+
+  const applySystemLanguage = () => {
+    const systemLanguageCode = navigator.language;
+    const matchedLanguage = LANGUAGES.find(
+      lang => lang.code === systemLanguageCode || (systemLanguageCode.startsWith(lang.code) && lang.code !== 'none')
+    )?.code || 'en';
+
+    applyPrimaryLanguage(matchedLanguage);
+  };
+
+  const toggleSecondaryLanguage = (languageCode) => {
+    setGlobalSettings(prev => {
+      const nextSecondaryLangs = normalizeSecondaryLangs(prev.primaryLang, prev.secondaryLangs, prev.secondaryLang);
+      const exists = nextSecondaryLangs.includes(languageCode);
+      const updatedSecondaryLangs = exists
+        ? nextSecondaryLangs.filter(lang => lang !== languageCode)
+        : [...nextSecondaryLangs, languageCode];
+
+      return {
+        ...prev,
+        secondaryLangs: updatedSecondaryLangs,
+        secondaryLang: updatedSecondaryLangs[0] || 'none'
+      };
+    });
   };
 
   const resetSceneSetting = (key) => {
     updateSceneSettings(key, DEFAULT_SCENE_SETTINGS[key]);
   }
+
+  const resetAlignmentGuides = useCallback(() => {
+    setAlignmentGuides({ vertical: false, horizontal: false });
+  }, []);
+
+  const releasePointerDrag = useCallback(() => {
+    if (pointerDragRef.current?.cleanup) {
+      pointerDragRef.current.cleanup();
+    }
+    pointerDragRef.current = null;
+  }, []);
+
+  const suppressCanvasClickAfterOverlayInteraction = useCallback(() => {
+    suppressCanvasClickUntilRef.current = Date.now() + 250;
+  }, []);
+
+  const queueDragPreview = useCallback((target, values) => {
+    setDragPreview(prev => ({
+      target,
+      values: prev?.target === target
+        ? { ...prev.values, ...values }
+        : values
+    }));
+  }, []);
+
+  const clearDragPreview = useCallback(() => {
+    releasePointerDrag();
+    resetAlignmentGuides();
+    setDragPreview(null);
+  }, [releasePointerDrag, resetAlignmentGuides]);
+
+  const commitDragPreview = useCallback((expectedTarget = null) => {
+    const preview = dragPreviewRef.current;
+    if (!preview || (expectedTarget && preview.target !== expectedTarget)) {
+      return;
+    }
+
+    if (preview.target === 'screenshot') {
+      applySceneSettingsPatch(activeScene.id, preview.values);
+    } else if (preview.target === 'device') {
+      applyDeviceTransformPatch(preview.values);
+    } else if (preview.target === 'text') {
+      updateSceneLanguageStyle(activeScene.id, previewLanguage, preview.values);
+    }
+
+    releasePointerDrag();
+    resetAlignmentGuides();
+    setDragPreview(null);
+  }, [activeScene.id, previewLanguage, releasePointerDrag, resetAlignmentGuides, applyDeviceTransformPatch, applySceneSettingsPatch, updateSceneLanguageStyle]);
+
+  useEffect(() => {
+    dragPreviewRef.current = dragPreview;
+  }, [dragPreview]);
+
+  useEffect(() => {
+    clearDragPreview();
+  }, [activeSceneId, previewLanguage, selectedElement, clearDragPreview]);
+
+  useEffect(() => () => {
+    releasePointerDrag();
+  }, [releasePointerDrag]);
+
+  useEffect(() => {
+    const wasMockupEnabled = previousMockupEnabledRef.current;
+
+    if (mockupEnabled && !wasMockupEnabled) {
+      setSelectedElement('device');
+    } else if (!mockupEnabled && selectedElement === 'device') {
+      setSelectedElement('screenshot');
+    }
+
+    previousMockupEnabledRef.current = mockupEnabled;
+  }, [mockupEnabled, selectedElement]);
 
   // Apply current scene settings to ALL scenes
   const applySettingsToAll = () => {
@@ -1990,14 +3138,7 @@ const App = () => {
   const deleteScene = (id) => {
     if (scenes.length === 1) {
       // Don't delete last one, just clear it - 确保有完整的 settings
-      setScenes([{
-        id: scenes[0].id,
-        screenshot: null,
-        name: '场景 1',
-        titleCN: '',
-        titleEN: '',
-        settings: { ...DEFAULT_SCENE_SETTINGS }
-      }]);
+      setScenes([createBlankScene(scenes[0].id, getDefaultSceneName(scenes[0].id))]);
       return;
     }
     setScenes(prev => prev.filter(s => s.id !== id));
@@ -2016,14 +3157,7 @@ const App = () => {
 
     // 如果全部选中，保留一个空场景 - 确保有完整的 settings
     if (selectedSceneIds.size >= scenes.filter(s => s.screenshot).length) {
-      setScenes([{
-        id: 1,
-        screenshot: null,
-        name: '场景 1',
-        titleCN: '',
-        titleEN: '',
-        settings: { ...DEFAULT_SCENE_SETTINGS }
-      }]);
+      setScenes([createBlankScene(1, getDefaultSceneName(1))]);
       setActiveSceneId(1);
     } else {
       const remaining = scenes.filter(s => !selectedSceneIds.has(s.id));
@@ -2101,13 +3235,14 @@ const App = () => {
 
     // Initialize Progress
     const scenesToExport = scenes.filter(s => s.screenshot);
-    const totalSteps = scenesToExport.length;
+    const exportLanguageCodes = allConfiguredLanguageCodes;
+    const totalSteps = scenesToExport.length * exportLanguageCodes.length;
     isExportCancelled.current = false;
     setExportProgress({
       active: true,
       current: 0,
       total: totalSteps,
-      message: t('export.preparing') || 'Preparing export...',
+      message: t('export.preparing'),
       status: 'generating'
     });
 
@@ -2124,40 +3259,30 @@ const App = () => {
       let completedCount = 0;
 
       for (const scene of scenesToExport) {
-        // Check Cancellation
-        if (isExportCancelled.current) {
-          throw new Error('Cancelled by user');
-        }
-
-        const sceneName = scene.name || t('scenes.unnamed');
-        setExportProgress(prev => ({
-          ...prev,
-          current: completedCount + 1,
-          message: `${t('export.exporting') || 'Exporting'} ${sceneName}...`
-        }));
-
-        // Allow UI to update
-        await new Promise(r => setTimeout(r, 0));
-
-        // Get language names dynamically
-        const primaryLangInfo = LANGUAGES.find(l => l.code === globalSettings.primaryLang) || LANGUAGES.find(l => l.code === 'zh-CN');
-        const secondaryLangInfo = LANGUAGES.find(l => l.code === globalSettings.secondaryLang);
-
-        const primaryFolderName = primaryLangInfo ? primaryLangInfo.name : 'Primary'; // Fallback
-
         const safeSceneName = scene.name ? scene.name.replace(/[\\/:*?"<>|]/g, '_').trim() : 'Screenshot';
 
-        const cnData = await getCanvasData(scene, 'CN');
-        exportFiles.push({ path: `${primaryFolderName}/${safeSceneName}.jpg`, data: cnData });
+        for (const languageCode of exportLanguageCodes) {
+          if (isExportCancelled.current) {
+            throw new Error('Cancelled by user');
+          }
 
-        // Only export secondary if it's not 'none' and exists
-        if (secondaryLangInfo && secondaryLangInfo.code !== 'none') {
-          const secondaryFolderName = secondaryLangInfo.name;
-          const enData = await getCanvasData(scene, 'EN');
-          exportFiles.push({ path: `${secondaryFolderName}/${safeSceneName}.jpg`, data: enData });
+          const sceneName = scene.name || t('scenes.unnamed');
+          const languageInfo = getLanguageInfo(languageCode);
+
+          setExportProgress(prev => ({
+            ...prev,
+            current: completedCount + 1,
+            message: `${t('export.exporting')} ${sceneName} · ${languageInfo?.nativeName || languageCode}`
+          }));
+
+          await new Promise(r => setTimeout(r, 0));
+
+          const imageData = await getCanvasData(scene, languageCode);
+          const folderName = languageInfo?.name || languageCode;
+          exportFiles.push({ path: `${folderName}/${safeSceneName}.jpg`, data: imageData });
+
+          completedCount++;
         }
-
-        completedCount++;
       }
 
       // Check Cancellation before saving
@@ -2165,19 +3290,19 @@ const App = () => {
         throw new Error('Cancelled by user');
       }
 
-      setExportProgress(prev => ({ ...prev, message: t('export.saving') || 'Saving files...', status: 'saving' }));
+      setExportProgress(prev => ({ ...prev, message: t('export.saving'), status: 'saving' }));
 
       // 2. Save via Electron
       const result = await window.electron.saveFiles({ basePath, files: exportFiles });
 
       if (result.success) {
-        setExportProgress(prev => ({ ...prev, status: 'completed', message: t('alerts.exportSuccess') }));
+        setExportProgress(prev => ({ ...prev, status: 'completed', message: t('export.completed') }));
       } else {
         setExportProgress(prev => ({ ...prev, status: 'error', message: result.error }));
       }
     } catch (error) {
       if (isExportCancelled.current) {
-        setExportProgress(prev => ({ ...prev, status: 'cancelled', message: t('export.cancelled') || 'Export Cancelled' }));
+        setExportProgress(prev => ({ ...prev, status: 'cancelled', message: t('export.cancelled') }));
       } else {
         console.error('Export failed:', error);
         setExportProgress(prev => ({ ...prev, status: 'error', message: error.message }));
@@ -2202,14 +3327,15 @@ const App = () => {
 
     // Initialize Progress
     const scenesToExport = scenes.filter(s => s.screenshot);
-    const totalSteps = allDevices.length * scenesToExport.length;
+    const exportLanguageCodes = allConfiguredLanguageCodes;
+    const totalSteps = allDevices.length * scenesToExport.length * exportLanguageCodes.length;
 
     isExportCancelled.current = false;
     setExportProgress({
       active: true,
       current: 0,
       total: totalSteps,
-      message: t('export.preparing') || 'Preparing export...',
+      message: t('export.preparing'),
       status: 'generating'
     });
 
@@ -2232,15 +3358,6 @@ const App = () => {
         // 遍历每个场景
         for (const scene of scenesToExport) {
           if (isExportCancelled.current) throw new Error('Cancelled');
-
-          setExportProgress(prev => ({
-            ...prev,
-            current: completedCount + 1,
-            message: `${deviceName} - ${scene.name || t('scenes.unnamed')}`
-          }));
-
-          // Allow UI to update
-          await new Promise(r => setTimeout(r, 0));
 
           // 获取已保存的配置，如果没有则使用默认值
           const savedConfig = scene.settings?.deviceConfigs?.[deviceId] || {};
@@ -2279,56 +3396,50 @@ const App = () => {
             }
           }
 
-          // 绘制中英文版本 (Now Primary/Secondary)
-          const primaryLangInfo = LANGUAGES.find(l => l.code === globalSettings.primaryLang) || LANGUAGES.find(l => l.code === 'zh-CN');
-          const secondaryLangInfo = LANGUAGES.find(l => l.code === globalSettings.secondaryLang);
-
-          const primaryFolderName = primaryLangInfo ? primaryLangInfo.name : 'Primary';
-
-          // Export Primary
-          // Pass overrideConfig as the last argument
-          await drawCanvas(tempCanvas, scene, 'CN', true, overrideConfig);
-          const primaryData = tempCanvas.toDataURL('image/jpeg', 0.9);
-
           const safeSceneName = scene.name ? scene.name.replace(/[\\/:*?"<>|]/g, '_').trim() : 'Screenshot';
 
-          exportFiles.push({
-            path: `${deviceName}/${primaryFolderName}/${safeSceneName}.jpg`,
-            data: primaryData
-          });
+          for (const languageCode of exportLanguageCodes) {
+            if (isExportCancelled.current) throw new Error('Cancelled');
 
-          // Export Secondary if valid
-          if (secondaryLangInfo && secondaryLangInfo.code !== 'none') {
-            const secondaryFolderName = secondaryLangInfo.name;
-            // Pass overrideConfig as the last argument
-            await drawCanvas(tempCanvas, scene, 'EN', true, overrideConfig);
-            const secondaryData = tempCanvas.toDataURL('image/jpeg', 0.9);
+            const languageInfo = getLanguageInfo(languageCode);
+            setExportProgress(prev => ({
+              ...prev,
+              current: completedCount + 1,
+              message: `${deviceName} · ${scene.name || t('scenes.unnamed')} · ${languageInfo?.nativeName || languageCode}`
+            }));
+
+            await new Promise(r => setTimeout(r, 0));
+
+            await drawCanvas(tempCanvas, scene, languageCode, true, overrideConfig);
+            const imageData = tempCanvas.toDataURL('image/jpeg', 0.9);
+            const folderName = languageInfo?.name || languageCode;
+
             exportFiles.push({
-              path: `${deviceName}/${secondaryFolderName}/${safeSceneName}.jpg`,
-              data: secondaryData
+              path: `${deviceName}/${folderName}/${safeSceneName}.jpg`,
+              data: imageData
             });
-          }
 
-          completedCount++;
+            completedCount++;
+          }
         }
       }
 
       if (isExportCancelled.current) throw new Error('Cancelled');
 
-      setExportProgress(prev => ({ ...prev, message: t('export.saving') || 'Saving files...', status: 'saving' }));
+      setExportProgress(prev => ({ ...prev, message: t('export.saving'), status: 'saving' }));
 
       // 2. Save via Electron
       const result = await window.electron.saveFiles({ basePath, files: exportFiles });
 
       if (result.success) {
-        setExportProgress(prev => ({ ...prev, status: 'completed', message: t('alerts.exportSuccess') }));
+        setExportProgress(prev => ({ ...prev, status: 'completed', message: t('export.completed') }));
       } else {
         setExportProgress(prev => ({ ...prev, status: 'error', message: result.error }));
       }
 
     } catch (error) {
       if (isExportCancelled.current) {
-        setExportProgress(prev => ({ ...prev, status: 'cancelled', message: t('export.cancelled') || 'Export Cancelled' }));
+        setExportProgress(prev => ({ ...prev, status: 'cancelled', message: t('export.cancelled') }));
       } else {
         console.error('Export failed:', error);
         setExportProgress(prev => ({ ...prev, status: 'error', message: error.message }));
@@ -2360,49 +3471,1272 @@ const App = () => {
     return preset ? getPresetName(preset.id, preset.name) : t('categories.custom');
   };
 
+  const batchTranslationTargetCount = scenes.filter(
+    scene => scene.screenshot && getSceneTitleByLanguage(scene, globalSettings.primaryLang).trim()
+  ).length;
+  const batchTranslationJobCount = batchTranslationTargetCount * selectedSecondaryLangs.length;
+  const hasTranslationLanguages = selectedSecondaryLangs.length > 0;
+  const getTextAnchorX = (canvasWidth, textAlign, textOffsetX = 0) => {
+    let baseX = canvasWidth / 2;
+    if (textAlign === 'left') {
+      baseX = canvasWidth * 0.1;
+    } else if (textAlign === 'right') {
+      baseX = canvasWidth * 0.9;
+    }
+    return baseX + textOffsetX;
+  };
+  const primaryLanguageInfo = getLanguageInfo(globalSettings.primaryLang);
+  const previewLanguageOptions = [globalSettings.primaryLang, ...selectedSecondaryLangs];
+  const previewLanguageInfo = getLanguageInfo(previewLanguage);
+  const translationLanguageSummaryCode = selectedSecondaryLangs[0] || '';
+  const translationLanguageSummaryInfo = getLanguageInfo(translationLanguageSummaryCode);
+  const previewLanguageIsPrimary = previewLanguage === globalSettings.primaryLang;
+  const previewLanguageRoleLabel = previewLanguageIsPrimary
+    ? t('scenes.primaryLanguage')
+    : t('scenes.translationLanguage');
+  const previewLanguageTitle = getSceneTitleByLanguage(activeScene, previewLanguage);
+  const previewTranslationLanguage = selectedSecondaryLangs.includes(previewLanguage)
+    ? previewLanguage
+    : null;
+  const previewLanguageTextStyle = getGlobalLanguageStyle(previewLanguage);
+  const previewSceneLanguageStyle = getSceneLanguageStyle(activeScene, previewLanguage);
+  const sceneListPreviewLanguage = previewLanguage;
+  const primarySceneTitle = getSceneTitleByLanguage(activeScene, globalSettings.primaryLang);
+  const previewTranslationSourceText = primarySceneTitle.trim();
+  const activeSceneSettings = { ...DEFAULT_SCENE_SETTINGS, ...(activeScene.settings || {}) };
+  const previewedSceneSettings = dragPreview?.target === 'screenshot'
+    ? { ...activeSceneSettings, ...dragPreview.values }
+    : activeSceneSettings;
+  const previewedTextStyle = dragPreview?.target === 'text'
+    ? { ...previewSceneLanguageStyle, ...dragPreview.values }
+    : previewSceneLanguageStyle;
+  const previewedDeviceState = dragPreview?.target === 'device'
+    ? {
+      deviceScale: dragPreview.values.deviceScale ?? deviceScale,
+      deviceX: dragPreview.values.deviceX ?? deviceX,
+      deviceY: dragPreview.values.deviceY ?? deviceY,
+    }
+    : { deviceScale, deviceX, deviceY };
+
+  const clampValue = (value, min, max) => Math.max(min, Math.min(max, value));
+  const snapToStep = (value, step = 10) => Math.round(value / step) * step;
+
+  const measureTextBounds = (scene, languageCode, textStyle) => {
+    const resolvedLanguageCode = resolveCanvasLanguageCode(languageCode);
+    const globalLanguageStyle = getGlobalLanguageStyle(resolvedLanguageCode);
+    const isPrimaryLanguage = resolvedLanguageCode === globalSettings.primaryLang;
+    let text = getSceneTitleByLanguage(scene, resolvedLanguageCode);
+
+    if (!isPrimaryLanguage && globalLanguageStyle.uppercase && text) {
+      text = text.toUpperCase();
+    }
+
+    if (!text) {
+      return null;
+    }
+
+    if (!textMeasureCanvasRef.current) {
+      textMeasureCanvasRef.current = document.createElement('canvas');
+    }
+
+    const measureCtx = textMeasureCanvasRef.current.getContext('2d');
+    if (!measureCtx) {
+      return null;
+    }
+
+    const { width } = globalSettings;
+    const fontSize = textStyle.textSize;
+    const fontFamily = globalLanguageStyle.font;
+    const textOffsetX = textStyle.textX || 0;
+    const lines = text.split('\n');
+    const lineHeight = fontSize * 1.2;
+    const textAlign = globalSettings.textAlign || 'center';
+
+    measureCtx.font = `bold ${fontSize}px ${fontFamily}`;
+
+    const widestLine = lines.reduce((maxWidth, line) => {
+      const lineWidth = measureCtx.measureText(line || ' ').width;
+      return Math.max(maxWidth, lineWidth);
+    }, 0);
+
+    const textX = getTextAnchorX(width, textAlign, textOffsetX);
+    let x = textX;
+    if (textAlign === 'center') {
+      x -= widestLine / 2;
+    } else if (textAlign === 'right') {
+      x -= widestLine;
+    }
+
+    const textHeight = fontSize + Math.max(0, lines.length - 1) * lineHeight;
+    const strokePadding = globalSettings.textStroke
+      ? fontSize * ((globalSettings.strokeWidth || 4) / 100)
+      : 0;
+    const shadowBlur = globalSettings.textShadow ? fontSize * 0.15 : 0;
+    const shadowOffsetY = globalSettings.textShadow ? fontSize * 0.05 : 0;
+    const paddingX = Math.max(12, strokePadding + shadowBlur * 0.8);
+    const paddingTop = Math.max(10, strokePadding + shadowBlur * 0.4);
+    const paddingBottom = Math.max(14, strokePadding + shadowBlur + shadowOffsetY);
+
+    return {
+      x: x - paddingX,
+      y: textStyle.textY - paddingTop,
+      width: widestLine + paddingX * 2,
+      height: textHeight + paddingTop + paddingBottom
+    };
+  };
+
+  const computeElementBounds = (scene, previewState = null) => {
+    if (!scene) return {};
+
+    const { width, height } = globalSettings;
+    const backgroundSettings = previewState?.target === 'background'
+      ? { ...globalSettings, ...previewState.values }
+      : globalSettings;
+    const effectiveDeviceScale = previewState?.target === 'device'
+      ? (previewState.values.deviceScale ?? deviceScale)
+      : deviceScale;
+    const effectiveDeviceX = previewState?.target === 'device'
+      ? (previewState.values.deviceX ?? deviceX)
+      : deviceX;
+    const effectiveDeviceY = previewState?.target === 'device'
+      ? (previewState.values.deviceY ?? deviceY)
+      : deviceY;
+    const sceneSettings = previewState?.target === 'screenshot'
+      ? { ...DEFAULT_SCENE_SETTINGS, ...(scene.settings || {}), ...previewState.values }
+      : { ...DEFAULT_SCENE_SETTINGS, ...(scene.settings || {}) };
+    const textStyle = previewState?.target === 'text'
+      ? { ...getSceneLanguageStyle(scene, previewLanguage), ...previewState.values }
+      : getSceneLanguageStyle(scene, previewLanguage);
+
+    const bounds = {
+      background: { x: 0, y: 0, width, height }
+    };
+
+    if ((backgroundSettings.backgroundType === 'upload' || backgroundSettings.backgroundType === 'builtin') && backgroundSettings.backgroundUpload) {
+      const backgroundDimensions = getCachedImageDimensions(backgroundSettings.backgroundUpload);
+      if (backgroundDimensions) {
+        const ratio = Math.max(width / backgroundDimensions.width, height / backgroundDimensions.height);
+        const scale = ratio * (backgroundSettings.backgroundScale || 1.0);
+        const bgWidth = backgroundDimensions.width * scale;
+        const bgHeight = backgroundDimensions.height * scale;
+
+        bounds.background = {
+          x: (width - bgWidth) / 2 + (backgroundSettings.backgroundX || 0),
+          y: (height - bgHeight) / 2 + (backgroundSettings.backgroundY || 0),
+          width: bgWidth,
+          height: bgHeight
+        };
+      }
+    }
+
+    const measuredTextBounds = measureTextBounds(scene, previewLanguage, textStyle);
+    if (measuredTextBounds) {
+      bounds.text = measuredTextBounds;
+    }
+
+    if (!scene.screenshot) {
+      return bounds;
+    }
+
+    const screenshotDimensions = getCachedImageDimensions(scene.screenshot);
+    const screenshotAspect = screenshotDimensions
+      ? screenshotDimensions.width / screenshotDimensions.height
+      : (16 / 9);
+
+    if (mockupEnabled && DEVICE_CONFIGS[selectedDevice]) {
+      const deviceConfig = DEVICE_CONFIGS[selectedDevice];
+      const ssScale = sceneSettings.screenshotScale ?? 1.0;
+
+      if (deviceConfig.isComposite && deviceConfig.devices && deviceConfig.layout) {
+        const REF_WIDTH = 2880;
+        const REF_HEIGHT = 1800;
+        const baseRatio = width / REF_WIDTH;
+        const groupScale = effectiveDeviceScale || 1.0;
+        const groupOffsetX = effectiveDeviceX || 0;
+        const groupOffsetY = effectiveDeviceY || 0;
+        let union = null;
+        let deviceUnion = null;
+
+        deviceConfig.devices.forEach(deviceId => {
+          const config = DEVICE_CONFIGS[deviceId];
+          const layoutConfig = deviceConfig.layout[deviceId];
+          if (!config || !layoutConfig) return;
+
+          const screen = { ...config.screen };
+          const frameSize = { ...config.frameSize };
+          const refDeviceWidth = REF_WIDTH * layoutConfig.scale;
+          const deviceScaleRatio = (refDeviceWidth * baseRatio * groupScale) / frameSize.width;
+          const scaledFrameWidth = frameSize.width * deviceScaleRatio;
+          const scaledFrameHeight = frameSize.height * deviceScaleRatio;
+          const scaledScreenWidth = screen.width * deviceScaleRatio;
+          const scaledScreenHeight = screen.height * deviceScaleRatio;
+          const scaledScreenX = screen.x * deviceScaleRatio;
+          const scaledScreenY = screen.y * deviceScaleRatio;
+
+          const refCenterX = REF_WIDTH * layoutConfig.x;
+          const refCenterY = REF_HEIGHT * layoutConfig.y;
+          const refOffsetX = refCenterX - REF_WIDTH * 0.5;
+          const refOffsetY = refCenterY - REF_HEIGHT * 0.5;
+          const finalCenterX = width * 0.5 + (refOffsetX * baseRatio * groupScale) + groupOffsetX;
+          const finalCenterY = height * 0.5 + (refOffsetY * baseRatio * groupScale) + groupOffsetY;
+          const frameX = finalCenterX - scaledFrameWidth / 2;
+          const frameY = finalCenterY - scaledFrameHeight / 2;
+          const frameBox = {
+            x: frameX,
+            y: frameY,
+            width: scaledFrameWidth,
+            height: scaledFrameHeight
+          };
+
+          if (!deviceUnion) {
+            deviceUnion = frameBox;
+          } else {
+            const maxFrameX = Math.max(deviceUnion.x + deviceUnion.width, frameBox.x + frameBox.width);
+            const maxFrameY = Math.max(deviceUnion.y + deviceUnion.height, frameBox.y + frameBox.height);
+            deviceUnion = {
+              x: Math.min(deviceUnion.x, frameBox.x),
+              y: Math.min(deviceUnion.y, frameBox.y),
+              width: maxFrameX - Math.min(deviceUnion.x, frameBox.x),
+              height: maxFrameY - Math.min(deviceUnion.y, frameBox.y)
+            };
+          }
+
+          const screenAspect = scaledScreenWidth / scaledScreenHeight;
+          let baseDrawWidth;
+          let baseDrawHeight;
+
+          if (screenshotAspect > screenAspect) {
+            baseDrawHeight = scaledScreenHeight;
+            baseDrawWidth = baseDrawHeight * screenshotAspect;
+          } else {
+            baseDrawWidth = scaledScreenWidth;
+            baseDrawHeight = baseDrawWidth / screenshotAspect;
+          }
+
+          const drawWidth = baseDrawWidth * ssScale;
+          const drawHeight = baseDrawHeight * ssScale;
+          const drawX = frameX + scaledScreenX + (scaledScreenWidth - drawWidth) / 2 + (sceneSettings.screenshotX || 0) * deviceScaleRatio;
+          const drawY = frameY + scaledScreenY + (scaledScreenHeight - drawHeight) / 2 + (sceneSettings.screenshotY || 0) * deviceScaleRatio;
+
+          const nextBox = { x: drawX, y: drawY, width: drawWidth, height: drawHeight };
+          if (!union) {
+            union = nextBox;
+            return;
+          }
+
+          const maxX = Math.max(union.x + union.width, nextBox.x + nextBox.width);
+          const maxY = Math.max(union.y + union.height, nextBox.y + nextBox.height);
+          union = {
+            x: Math.min(union.x, nextBox.x),
+            y: Math.min(union.y, nextBox.y),
+            width: maxX - Math.min(union.x, nextBox.x),
+            height: maxY - Math.min(union.y, nextBox.y)
+          };
+        });
+
+        if (union) {
+          bounds.screenshot = union;
+        }
+        if (deviceUnion) {
+          bounds.device = deviceUnion;
+        }
+
+        return bounds;
+      }
+
+      let screen = { ...deviceConfig.screen };
+      let frameSize = { ...deviceConfig.frameSize };
+
+      if (selectedDevice === 'ipad-pro' && !iPadLandscape) {
+        screen = {
+          x: deviceConfig.screen.y,
+          y: deviceConfig.screen.x,
+          width: deviceConfig.screen.height,
+          height: deviceConfig.screen.width,
+        };
+        frameSize = {
+          width: deviceConfig.frameSize.height,
+          height: deviceConfig.frameSize.width,
+        };
+      }
+
+      const baseDeviceWidth = width * 0.35;
+      const baseDeviceHeight = height * 0.6;
+      const scaleRatio = Math.min(
+        baseDeviceWidth / frameSize.width,
+        baseDeviceHeight / frameSize.height
+      ) * (effectiveDeviceScale || 1.0);
+
+      const scaledScreenWidth = screen.width * scaleRatio;
+      const scaledScreenHeight = screen.height * scaleRatio;
+      const scaledScreenX = screen.x * scaleRatio;
+      const scaledScreenY = screen.y * scaleRatio;
+      const scaledFrameWidth = frameSize.width * scaleRatio;
+      const scaledFrameHeight = frameSize.height * scaleRatio;
+      const screenAspect = scaledScreenWidth / scaledScreenHeight;
+      let baseDrawWidth;
+      let baseDrawHeight;
+
+      if (screenshotAspect > screenAspect) {
+        baseDrawHeight = scaledScreenHeight;
+        baseDrawWidth = baseDrawHeight * screenshotAspect;
+      } else {
+        baseDrawWidth = scaledScreenWidth;
+        baseDrawHeight = baseDrawWidth / screenshotAspect;
+      }
+
+      const drawWidth = baseDrawWidth * ssScale;
+      const drawHeight = baseDrawHeight * ssScale;
+      const frameX = (width - scaledFrameWidth) / 2 + effectiveDeviceX;
+      const frameY = effectiveDeviceY;
+
+      bounds.device = {
+        x: frameX,
+        y: frameY,
+        width: scaledFrameWidth,
+        height: scaledFrameHeight
+      };
+
+      bounds.screenshot = {
+        x: frameX + scaledScreenX + (scaledScreenWidth - drawWidth) / 2 + (sceneSettings.screenshotX || 0) * scaleRatio,
+        y: frameY + scaledScreenY + (scaledScreenHeight - drawHeight) / 2 + (sceneSettings.screenshotY || 0) * scaleRatio,
+        width: drawWidth,
+        height: drawHeight
+      };
+
+      return bounds;
+    }
+
+    const targetWidth = width * 0.6 * (sceneSettings.screenshotScale ?? DEFAULT_SCENE_SETTINGS.screenshotScale);
+    const targetHeight = targetWidth / screenshotAspect;
+    bounds.screenshot = {
+      x: (width - targetWidth) / 2 + (sceneSettings.screenshotX || 0),
+      y: sceneSettings.screenshotY ?? DEFAULT_SCENE_SETTINGS.screenshotY,
+      width: targetWidth,
+      height: targetHeight
+    };
+
+    return bounds;
+  };
+
+  const elementBounds = computeElementBounds(activeScene);
+  const previewBounds = dragPreview ? computeElementBounds(activeScene, dragPreview) : null;
+  const previewOverlayKey = dragPreview?.target;
+  const activeElementTab = selectedElement === 'device' ? 'screenshot' : selectedElement;
+  const selectedOverlayBounds = selectedElement
+    ? (selectedElement === 'background'
+      ? { x: 0, y: 0, width: globalSettings.width, height: globalSettings.height }
+      : (previewBounds?.[selectedElement] || elementBounds[selectedElement]))
+    : null;
+  const floatingPreviewBounds = previewOverlayKey && previewOverlayKey !== selectedElement
+    ? previewBounds?.[previewOverlayKey]
+    : null;
+
+  const getOverlayStyle = (box) => {
+    if (!box) return null;
+
+    return {
+      left: `${(box.x / globalSettings.width) * 100}%`,
+      top: `${(box.y / globalSettings.height) * 100}%`,
+      width: `${(box.width / globalSettings.width) * 100}%`,
+      height: `${(box.height / globalSettings.height) * 100}%`,
+    };
+  };
+
+  const getTargetPreviewState = (target) => {
+    if (target === 'text') {
+      return {
+        textX: previewedTextStyle.textX || 0,
+        textY: previewedTextStyle.textY,
+        textSize: previewedTextStyle.textSize
+      };
+    }
+
+    if (target === 'screenshot') {
+      return {
+        screenshotX: previewedSceneSettings.screenshotX || 0,
+        screenshotY: previewedSceneSettings.screenshotY ?? DEFAULT_SCENE_SETTINGS.screenshotY,
+        screenshotScale: previewedSceneSettings.screenshotScale
+      };
+    }
+
+    if (target === 'device') {
+      return {
+        deviceX: previewedDeviceState.deviceX,
+        deviceY: previewedDeviceState.deviceY,
+        deviceScale: previewedDeviceState.deviceScale
+      };
+    }
+
+    return {};
+  };
+
+  const normalizeTargetValue = (target, key, value) => {
+    if (key === 'textSize') {
+      return clampValue(snapToStep(value, 5), 40, 300);
+    }
+
+    if (key === 'screenshotScale') {
+      return clampValue(Number(value.toFixed(2)), 0.3, 3.0);
+    }
+
+    if (key === 'deviceScale') {
+      return clampValue(Number(value.toFixed(2)), 0.3, 4.0);
+    }
+
+    if (key === 'backgroundX' || key === 'backgroundY') {
+      return clampValue(snapToStep(value), -1500, 1500);
+    }
+
+    if (key === 'textX') {
+      return clampValue(snapToStep(value), -1200, 1200);
+    }
+
+    if (key === 'textY') {
+      return clampValue(snapToStep(value), 50, 1000);
+    }
+
+    if (key === 'screenshotX' || key === 'screenshotY' || key === 'deviceX' || key === 'deviceY') {
+      return clampValue(snapToStep(value), -1000, 1000);
+    }
+
+    return value;
+  };
+
+  const pickTargetPreviewState = (target, values) => {
+    if (target === 'text') {
+      return {
+        textX: values.textX,
+        textY: values.textY,
+        textSize: values.textSize
+      };
+    }
+
+    if (target === 'screenshot') {
+      return {
+        screenshotX: values.screenshotX,
+        screenshotY: values.screenshotY,
+        screenshotScale: values.screenshotScale
+      };
+    }
+
+    if (target === 'device') {
+      return {
+        deviceX: values.deviceX,
+        deviceY: values.deviceY,
+        deviceScale: values.deviceScale
+      };
+    }
+
+    return values;
+  };
+
+  const applyCenterSnap = (target, draftValues) => {
+    const nextValues = { ...getTargetPreviewState(target), ...draftValues };
+    const nextGuides = { vertical: false, horizontal: false };
+    const axisMap = {
+      text: { x: 'textX', y: 'textY' },
+      screenshot: { x: 'screenshotX', y: 'screenshotY' },
+      device: { x: 'deviceX', y: 'deviceY' }
+    };
+    const targetAxisMap = axisMap[target];
+
+    if (!targetAxisMap) {
+      return { values: draftValues, guides: nextGuides };
+    }
+
+    const applyAxisSnap = (axis, guideKey) => {
+      const key = targetAxisMap[axis];
+      let currentBox = computeElementBounds(activeScene, { target, values: nextValues })[target];
+      if (!currentBox || nextValues[key] === undefined) {
+        return;
+      }
+
+      const currentCenter = axis === 'x'
+        ? currentBox.x + currentBox.width / 2
+        : currentBox.y + currentBox.height / 2;
+      const canvasCenter = axis === 'x'
+        ? globalSettings.width / 2
+        : globalSettings.height / 2;
+      const diff = currentCenter - canvasCenter;
+
+      if (Math.abs(diff) > CENTER_SNAP_THRESHOLD) {
+        return;
+      }
+
+      const epsilonValues = {
+        ...nextValues,
+        [key]: nextValues[key] + 1
+      };
+      const epsilonBox = computeElementBounds(activeScene, { target, values: epsilonValues })[target];
+      if (!epsilonBox) {
+        return;
+      }
+
+      const epsilonCenter = axis === 'x'
+        ? epsilonBox.x + epsilonBox.width / 2
+        : epsilonBox.y + epsilonBox.height / 2;
+      const pixelsPerUnit = epsilonCenter - currentCenter;
+
+      if (Math.abs(pixelsPerUnit) < 0.001) {
+        return;
+      }
+
+      nextValues[key] = normalizeTargetValue(target, key, nextValues[key] - (diff / pixelsPerUnit));
+      nextGuides[guideKey] = true;
+    };
+
+    applyAxisSnap('x', 'vertical');
+    applyAxisSnap('y', 'horizontal');
+
+    return {
+      values: pickTargetPreviewState(target, nextValues),
+      guides: nextGuides
+    };
+  };
+
+  const applyResizeFromCenter = (target, draftValues, anchorCenter) => {
+    const axisMap = {
+      text: { x: 'textX', y: 'textY' },
+      screenshot: { x: 'screenshotX', y: 'screenshotY' },
+      device: { x: 'deviceX', y: 'deviceY' }
+    };
+    const targetAxisMap = axisMap[target];
+    const adjustedValues = { ...getTargetPreviewState(target), ...draftValues };
+
+    if (!targetAxisMap) {
+      return pickTargetPreviewState(target, adjustedValues);
+    }
+
+    const adjustAxisToAnchor = (axis) => {
+      const key = targetAxisMap[axis];
+
+      if (adjustedValues[key] === undefined) {
+        return;
+      }
+
+      const currentBox = computeElementBounds(activeScene, { target, values: adjustedValues })[target];
+      if (!currentBox) {
+        return;
+      }
+
+      const currentCenter = axis === 'x'
+        ? currentBox.x + currentBox.width / 2
+        : currentBox.y + currentBox.height / 2;
+      const desiredCenter = axis === 'x' ? anchorCenter.x : anchorCenter.y;
+      const diff = currentCenter - desiredCenter;
+
+      if (Math.abs(diff) < 0.1) {
+        return;
+      }
+
+      const epsilonValues = {
+        ...adjustedValues,
+        [key]: adjustedValues[key] + 1
+      };
+      const epsilonBox = computeElementBounds(activeScene, { target, values: epsilonValues })[target];
+      if (!epsilonBox) {
+        return;
+      }
+
+      const epsilonCenter = axis === 'x'
+        ? epsilonBox.x + epsilonBox.width / 2
+        : epsilonBox.y + epsilonBox.height / 2;
+      const pixelsPerUnit = epsilonCenter - currentCenter;
+
+      if (Math.abs(pixelsPerUnit) < 0.001) {
+        return;
+      }
+
+      adjustedValues[key] = normalizeTargetValue(
+        target,
+        key,
+        adjustedValues[key] - (diff / pixelsPerUnit)
+      );
+    };
+
+    adjustAxisToAnchor('x');
+    adjustAxisToAnchor('y');
+
+    return pickTargetPreviewState(target, adjustedValues);
+  };
+
+  const handleCanvasClick = (event) => {
+    if (Date.now() <= suppressCanvasClickUntilRef.current) {
+      suppressCanvasClickUntilRef.current = 0;
+      return;
+    }
+
+    if (!canvasRef.current || !activeScene) return;
+
+    const rect = canvasRef.current.getBoundingClientRect();
+    const scaleX = globalSettings.width / rect.width;
+    const scaleY = globalSettings.height / rect.height;
+    const canvasX = (event.clientX - rect.left) * scaleX;
+    const canvasY = (event.clientY - rect.top) * scaleY;
+    const hitTest = (box, padding = 0) => box
+      && canvasX >= box.x - padding
+      && canvasX <= box.x + box.width + padding
+      && canvasY >= box.y - padding
+      && canvasY <= box.y + box.height + padding;
+    const textHit = hitTest(elementBounds.text, 8);
+    const deviceHit = mockupEnabled && hitTest(elementBounds.device, 6);
+    const screenshotHit = mockupEnabled
+      ? deviceHit && hitTest(elementBounds.screenshot, 0)
+      : hitTest(elementBounds.screenshot, 0);
+
+    const selectMediaTarget = () => {
+      if (mockupEnabled && (deviceHit || screenshotHit)) {
+        if (selectedElement === 'screenshot' && screenshotHit) {
+          setSelectedElement('screenshot');
+        } else if (deviceHit) {
+          setSelectedElement('device');
+        } else if (screenshotHit) {
+          setSelectedElement('screenshot');
+        }
+        return true;
+      }
+
+      if (screenshotHit) {
+        setSelectedElement('screenshot');
+        return true;
+      }
+
+      return false;
+    };
+
+    if (globalSettings.textOnTop) {
+      if (textHit) {
+        setSelectedElement('text');
+        return;
+      }
+      if (selectMediaTarget()) {
+        return;
+      }
+    } else {
+      if (selectMediaTarget()) {
+        return;
+      }
+      if (textHit) {
+        setSelectedElement('text');
+        return;
+      }
+    }
+
+    setSelectedElement('background');
+  };
+
+  const handleCanvasPointerDown = (event) => {
+    if (!canvasRef.current || !activeScene || selectedElement !== 'background') {
+      return;
+    }
+
+    if (event.button !== undefined && event.button !== 0) {
+      return;
+    }
+
+    const rect = canvasRef.current.getBoundingClientRect();
+    const scaleX = globalSettings.width / rect.width;
+    const scaleY = globalSettings.height / rect.height;
+    const canvasX = (event.clientX - rect.left) * scaleX;
+    const canvasY = (event.clientY - rect.top) * scaleY;
+    const hitTest = (box, padding = 0) => box
+      && canvasX >= box.x - padding
+      && canvasX <= box.x + box.width + padding
+      && canvasY >= box.y - padding
+      && canvasY <= box.y + box.height + padding;
+    const textHit = hitTest(elementBounds.text, 8);
+    const deviceHit = mockupEnabled && hitTest(elementBounds.device, 6);
+    const screenshotHit = mockupEnabled
+      ? deviceHit && hitTest(elementBounds.screenshot, 0)
+      : hitTest(elementBounds.screenshot, 0);
+
+    if (textHit || deviceHit || screenshotHit) {
+      return;
+    }
+
+    event.preventDefault();
+    releasePointerDrag();
+
+    const startX = event.clientX;
+    const startY = event.clientY;
+    const startBackgroundX = globalSettings.backgroundX || 0;
+    const startBackgroundY = globalSettings.backgroundY || 0;
+
+    const onMove = (moveEvent) => {
+      const deltaX = (moveEvent.clientX - startX) * scaleX;
+      const deltaY = (moveEvent.clientY - startY) * scaleY;
+      const nextBackgroundX = normalizeTargetValue('background', 'backgroundX', startBackgroundX + deltaX);
+      const nextBackgroundY = normalizeTargetValue('background', 'backgroundY', startBackgroundY + deltaY);
+      const shouldSnapX = Math.abs(nextBackgroundX) <= CENTER_SNAP_THRESHOLD;
+      const shouldSnapY = Math.abs(nextBackgroundY) <= CENTER_SNAP_THRESHOLD;
+
+      setAlignmentGuides({ vertical: shouldSnapX, horizontal: shouldSnapY });
+      setGlobalSettings(settings => ({
+        ...settings,
+        backgroundX: shouldSnapX ? 0 : nextBackgroundX,
+        backgroundY: shouldSnapY ? 0 : nextBackgroundY
+      }));
+    };
+
+    const onUp = () => {
+      resetAlignmentGuides();
+      releasePointerDrag();
+    };
+
+    const cleanup = () => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+    };
+
+    pointerDragRef.current = { cleanup };
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp, { once: true });
+  };
+
+  const handleSelectionOverlayPointerDown = (event) => {
+    if (!canvasRef.current || !activeScene || !['background', 'text', 'screenshot', 'device'].includes(selectedElement)) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    releasePointerDrag();
+
+    const dragTarget = selectedElement;
+    const rect = canvasRef.current.getBoundingClientRect();
+    const scaleX = globalSettings.width / rect.width;
+    const scaleY = globalSettings.height / rect.height;
+    const startX = event.clientX;
+    const startY = event.clientY;
+    const startBackgroundX = globalSettings.backgroundX || 0;
+    const startBackgroundY = globalSettings.backgroundY || 0;
+    const startTextX = previewedTextStyle.textX || 0;
+    const startTextY = previewedTextStyle.textY;
+    const startScreenshotX = previewedSceneSettings.screenshotX || 0;
+    const startScreenshotY = previewedSceneSettings.screenshotY ?? DEFAULT_SCENE_SETTINGS.screenshotY;
+    const startDeviceX = previewedDeviceState.deviceX;
+    const startDeviceY = previewedDeviceState.deviceY;
+
+    const onMove = (moveEvent) => {
+      const deltaX = (moveEvent.clientX - startX) * scaleX;
+      const deltaY = (moveEvent.clientY - startY) * scaleY;
+
+      if (dragTarget === 'background') {
+        const nextBackgroundX = normalizeTargetValue('background', 'backgroundX', startBackgroundX + deltaX);
+        const nextBackgroundY = normalizeTargetValue('background', 'backgroundY', startBackgroundY + deltaY);
+        const shouldSnapX = Math.abs(nextBackgroundX) <= CENTER_SNAP_THRESHOLD;
+        const shouldSnapY = Math.abs(nextBackgroundY) <= CENTER_SNAP_THRESHOLD;
+
+        setAlignmentGuides({ vertical: shouldSnapX, horizontal: shouldSnapY });
+        setGlobalSettings(settings => ({
+          ...settings,
+          backgroundX: shouldSnapX ? 0 : nextBackgroundX,
+          backgroundY: shouldSnapY ? 0 : nextBackgroundY
+        }));
+        return;
+      }
+
+      if (dragTarget === 'text') {
+        const snappedPreview = applyCenterSnap('text', {
+          textX: clampValue(snapToStep(startTextX + deltaX), -1200, 1200),
+          textY: clampValue(snapToStep(startTextY + deltaY), 50, 1000)
+        });
+        setAlignmentGuides(snappedPreview.guides);
+        queueDragPreview('text', snappedPreview.values);
+        return;
+      }
+
+      if (dragTarget === 'device') {
+        const snappedPreview = applyCenterSnap('device', {
+          deviceX: clampValue(snapToStep(startDeviceX + deltaX), -1000, 1000),
+          deviceY: clampValue(snapToStep(startDeviceY + deltaY), -1000, 1000)
+        });
+        setAlignmentGuides(snappedPreview.guides);
+        queueDragPreview('device', snappedPreview.values);
+        return;
+      }
+
+      const snappedPreview = applyCenterSnap('screenshot', {
+        screenshotX: clampValue(snapToStep(startScreenshotX + deltaX), -1000, 1000),
+        screenshotY: clampValue(snapToStep(startScreenshotY + deltaY), -1000, 1000)
+      });
+      setAlignmentGuides(snappedPreview.guides);
+      queueDragPreview('screenshot', snappedPreview.values);
+    };
+
+    const onUp = () => {
+      suppressCanvasClickAfterOverlayInteraction();
+
+      if (dragTarget === 'background') {
+        resetAlignmentGuides();
+        releasePointerDrag();
+        return;
+      }
+
+      commitDragPreview(dragTarget);
+    };
+
+    const cleanup = () => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+    };
+
+    pointerDragRef.current = { cleanup };
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp, { once: true });
+  };
+
+  const handleSelectionResizePointerDown = (event) => {
+    if (!canvasRef.current || !activeScene || !['text', 'screenshot', 'device'].includes(selectedElement)) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    releasePointerDrag();
+
+    const resizeTarget = selectedElement;
+    const rect = canvasRef.current.getBoundingClientRect();
+    const scaleX = globalSettings.width / rect.width;
+    const scaleY = globalSettings.height / rect.height;
+    const activeBox = previewBounds?.[resizeTarget] || elementBounds[resizeTarget];
+
+    if (!activeBox) {
+      return;
+    }
+
+    const centerX = activeBox.x + activeBox.width / 2;
+    const centerY = activeBox.y + activeBox.height / 2;
+    const startPointX = (event.clientX - rect.left) * scaleX;
+    const startPointY = (event.clientY - rect.top) * scaleY;
+    const startDistance = Math.max(40, Math.hypot(startPointX - centerX, startPointY - centerY));
+    const startTextSize = previewedTextStyle.textSize;
+    const startScreenshotScale = previewedSceneSettings.screenshotScale;
+    const startDeviceScale = previewedDeviceState.deviceScale;
+
+    const onMove = (moveEvent) => {
+      const pointX = (moveEvent.clientX - rect.left) * scaleX;
+      const pointY = (moveEvent.clientY - rect.top) * scaleY;
+      const nextDistance = Math.max(40, Math.hypot(pointX - centerX, pointY - centerY));
+      const scaleRatio = nextDistance / startDistance;
+
+      if (resizeTarget === 'text') {
+        queueDragPreview('text', applyResizeFromCenter('text', {
+          textSize: clampValue(snapToStep(startTextSize * scaleRatio, 5), 40, 300)
+        }, { x: centerX, y: centerY }));
+        return;
+      }
+
+      if (resizeTarget === 'device') {
+        queueDragPreview('device', applyResizeFromCenter('device', {
+          deviceScale: clampValue(Number((startDeviceScale * scaleRatio).toFixed(2)), 0.3, 4.0)
+        }, { x: centerX, y: centerY }));
+        return;
+      }
+
+      queueDragPreview('screenshot', applyResizeFromCenter('screenshot', {
+        screenshotScale: clampValue(Number((startScreenshotScale * scaleRatio).toFixed(2)), 0.3, 3.0)
+      }, { x: centerX, y: centerY }));
+    };
+
+    const onUp = () => {
+      suppressCanvasClickAfterOverlayInteraction();
+      commitDragPreview(resizeTarget);
+    };
+
+    const cleanup = () => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+    };
+
+    pointerDragRef.current = { cleanup };
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp, { once: true });
+  };
+
+  const handleElementTabSelect = (tabId) => {
+    if (tabId !== 'screenshot') {
+      setSelectedElement(tabId);
+      return;
+    }
+
+    setSelectedElement(current => (current === 'device' ? 'device' : 'screenshot'));
+  };
+
+  const elementTabs = [
+    { id: 'background', icon: ImageIcon, label: t('rightPanel.elementBackground') },
+    { id: 'text', icon: Type, label: t('rightPanel.elementText') },
+    { id: 'screenshot', icon: Monitor, label: t('rightPanel.elementScreenshot') },
+  ];
+
+  const renderBackgroundSettingsPanel = () => (
+    <div className="p-5 border-b border-[var(--app-border)] element-panel">
+      <div className="bg-[var(--app-card-bg)] rounded-lg p-3 border border-[var(--app-border)]">
+        <button
+          onClick={() => setBgExpanded(!bgExpanded)}
+          className="w-full text-xs text-[var(--app-text-secondary)] font-semibold tracking-[0.02em] mb-2 flex items-center gap-2 hover:text-[var(--app-text-primary)] transition"
+        >
+          <ChevronDown className={`w-3 h-3 transition-transform ${bgExpanded ? '' : '-rotate-90'}`} />
+          <ImageIcon className="w-4 h-4" /> {t('sidebar.globalBackground')}
+          {uploadedBackgrounds.length > 0 && (
+            <span className="ml-auto text-[10px] text-[var(--app-text-muted)] font-normal">
+              {t('sidebar.imageCount').replace('{n}', uploadedBackgrounds.length)}
+            </span>
+          )}
+        </button>
+
+        {bgExpanded && (
+          <>
+            <div className="grid grid-cols-6 gap-2 mb-3">
+              {PRESETS.map(p => (
+                <button key={p.id} onClick={() => setGlobalSettings(s => ({ ...s, backgroundType: 'preset', backgroundValue: p.value }))}
+                  className={`w-full h-8 rounded-md transition-all ${globalSettings.backgroundValue === p.value && globalSettings.backgroundType === 'preset' ? 'ring-2 ring-blue-500 scale-110 z-10' : 'opacity-70 hover:opacity-100'}`}
+                  style={{ background: p.value }}
+                  title={getBackgroundPresetName(p.id, p.name)}
+                />
+              ))}
+              <button
+                onClick={() => {
+                  setGlobalSettings(s => {
+                    let initialGradient = s.customGradient || { color1: '#FFFFFF', color2: '#9CA3AF', angle: 180, stop1: 0, stop2: 100 };
+
+                    if (s.backgroundType === 'preset' && s.backgroundValue) {
+                      const val = s.backgroundValue;
+                      if (val.startsWith('#')) {
+                        initialGradient = { color1: val, color2: val, angle: 180, stop1: 0, stop2: 100 };
+                      } else if (val.includes('linear-gradient')) {
+                        const angleMatch = val.match(/(\d+)deg/);
+                        const angle = angleMatch ? parseInt(angleMatch[1]) : 180;
+                        const colors = val.match(/#[a-fA-F0-9]{6}/g);
+                        if (colors && colors.length >= 2) {
+                          initialGradient = {
+                            color1: colors[0],
+                            color2: colors[colors.length - 1],
+                            angle,
+                            stop1: 0,
+                            stop2: 100
+                          };
+                        }
+                      }
+                    }
+
+                    return {
+                      ...s,
+                      backgroundType: 'custom-gradient',
+                      customGradient: initialGradient
+                    };
+                  });
+                }}
+                className={`w-full h-8 rounded-md transition-all flex items-center justify-center bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 overflow-hidden ${globalSettings.backgroundType === 'custom-gradient' ? 'ring-2 ring-blue-500 scale-110 z-10' : 'opacity-70 hover:opacity-100'}`}
+                title={t('sidebar.customGradient')}
+              >
+                <Palette className="w-4 h-4 text-white drop-shadow-sm" />
+              </button>
+            </div>
+
+            {globalSettings.backgroundType === 'custom-gradient' && (
+              <div className="mb-3 p-3 bg-[var(--app-card-bg-solid)] rounded-lg border border-[var(--app-border)] space-y-3 element-subpanel">
+                <div className="flex gap-2">
+                  <div className="flex-1">
+                    <label className="text-[10px] text-[var(--app-text-secondary)] block mb-1">{t('sidebar.gradientStartColor')}</label>
+                    <div className="flex items-center gap-2 bg-black/20 p-1 rounded border border-white/5">
+                      <div className="relative w-6 h-6 rounded overflow-hidden flex-shrink-0">
+                        <input type="color"
+                          value={globalSettings.customGradient?.color1 || '#FFFFFF'}
+                          onChange={(e) => setGlobalSettings(s => ({ ...s, customGradient: { ...(s.customGradient || { color1: '#FFFFFF', color2: '#9CA3AF', angle: 180 }), color1: e.target.value } }))}
+                          className="absolute -top-1 -left-1 w-8 h-8 p-0 cursor-pointer border-0"
+                        />
+                      </div>
+                      <span className="text-[10px] font-mono text-[var(--app-text-muted)] uppercase flex-1 text-center">{globalSettings.customGradient?.color1 || '#FFFFFF'}</span>
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <label className="text-[10px] text-[var(--app-text-secondary)] block mb-1">{t('sidebar.gradientEndColor')}</label>
+                    <div className="flex items-center gap-2 bg-black/20 p-1 rounded border border-white/5">
+                      <div className="relative w-6 h-6 rounded overflow-hidden flex-shrink-0">
+                        <input type="color"
+                          value={globalSettings.customGradient?.color2 || '#9CA3AF'}
+                          onChange={(e) => setGlobalSettings(s => ({ ...s, customGradient: { ...(s.customGradient || { color1: '#FFFFFF', color2: '#9CA3AF', angle: 180 }), color2: e.target.value } }))}
+                          className="absolute -top-1 -left-1 w-8 h-8 p-0 cursor-pointer border-0"
+                        />
+                      </div>
+                      <span className="text-[10px] font-mono text-[var(--app-text-muted)] uppercase flex-1 text-center">{globalSettings.customGradient?.color2 || '#9CA3AF'}</span>
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <div className="flex justify-between mb-1">
+                    <label className="text-[10px] text-[var(--app-text-secondary)]">{t('sidebar.gradientAngle')}</label>
+                    <span className="text-[10px] text-[var(--app-text-muted)]">{globalSettings.customGradient?.angle ?? 180}°</span>
+                  </div>
+                  <input
+                    type="range" min="0" max="360" step="45"
+                    value={globalSettings.customGradient?.angle ?? 180}
+                    onChange={(e) => setGlobalSettings(s => ({ ...s, customGradient: { ...(s.customGradient || { color1: '#FFFFFF', color2: '#9CA3AF', angle: 180 }), angle: parseInt(e.target.value) } }))}
+                    className="w-full h-1 bg-[var(--app-control-track)] rounded-lg appearance-none cursor-pointer accent-[var(--app-accent)]"
+                  />
+                  <div className="flex justify-between text-[8px] text-[var(--app-text-muted)] mt-1 px-1">
+                    <span>0°</span>
+                    <span>90°</span>
+                    <span>180°</span>
+                    <span>270°</span>
+                  </div>
+                </div>
+
+                <div className="flex gap-2 pt-2 border-t border-white/5">
+                  <div className="flex-1">
+                    <div className="flex justify-between mb-1">
+                      <label className="text-[10px] text-[var(--app-text-secondary)]">{t('sidebar.gradientStartPos')}</label>
+                      <span className="text-[10px] text-[var(--app-text-muted)]">{globalSettings.customGradient?.stop1 ?? 0}%</span>
+                    </div>
+                    <input
+                      type="range" min="0" max="100" step="1"
+                      value={globalSettings.customGradient?.stop1 ?? 0}
+                      onChange={(e) => setGlobalSettings(s => ({ ...s, customGradient: { ...(s.customGradient || { color1: '#FFFFFF', color2: '#9CA3AF', angle: 180, stop1: 0, stop2: 100 }), stop1: parseInt(e.target.value) } }))}
+                      className="w-full h-1 bg-[var(--app-control-track)] rounded-lg appearance-none cursor-pointer accent-[var(--app-accent)]"
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex justify-between mb-1">
+                      <label className="text-[10px] text-[var(--app-text-secondary)]">{t('sidebar.gradientEndPos')}</label>
+                      <span className="text-[10px] text-[var(--app-text-muted)]">{globalSettings.customGradient?.stop2 ?? 100}%</span>
+                    </div>
+                    <input
+                      type="range" min="0" max="100" step="1"
+                      value={globalSettings.customGradient?.stop2 ?? 100}
+                      onChange={(e) => setGlobalSettings(s => ({ ...s, customGradient: { ...(s.customGradient || { color1: '#FFFFFF', color2: '#9CA3AF', angle: 180, stop1: 0, stop2: 100 }), stop2: parseInt(e.target.value) } }))}
+                      className="w-full h-1 bg-[var(--app-control-track)] rounded-lg appearance-none cursor-pointer accent-[var(--app-accent)]"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="mb-3">
+              <p className="text-[10px] text-[var(--app-text-secondary)] mb-2">{t('sidebar.builtinBackgrounds')}</p>
+              <div className="grid grid-cols-3 gap-2">
+                {BUILTIN_BACKGROUNDS.map(bg => (
+                  <button
+                    key={bg.id}
+                    onClick={() => setGlobalSettings(s => ({ ...s, backgroundType: 'builtin', backgroundUpload: bg.src }))}
+                    className={`w-full h-12 rounded-md transition-all overflow-hidden ${globalSettings.backgroundUpload === bg.src && globalSettings.backgroundType === 'builtin' ? 'ring-2 ring-blue-500 scale-105' : 'opacity-70 hover:opacity-100'}`}
+                    title={getBuiltinBackgroundName(bg.id, bg.name)}
+                  >
+                    <img src={bg.src} alt={getBuiltinBackgroundName(bg.id, bg.name)} className="w-full h-full object-cover" />
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {uploadedBackgrounds.length > 0 && (
+              <div className="mb-3">
+                <p className="text-[10px] text-[var(--app-text-secondary)] mb-2">{t('sidebar.linkedBackgrounds')}</p>
+                <div className="grid grid-cols-5 gap-2">
+                  {uploadedBackgrounds.slice(0, 10).map((bg, idx) => (
+                    <div key={idx} className="relative group w-full h-8 rounded-md overflow-hidden">
+                      <button
+                        onClick={() => setGlobalSettings(s => ({ ...s, backgroundType: 'upload', backgroundUpload: bg.data }))}
+                        className={`w-full h-full transition-all ${globalSettings.backgroundUpload === bg.data && globalSettings.backgroundType === 'upload' ? 'ring-2 ring-blue-500 scale-110 z-10' : 'opacity-70 group-hover:opacity-100'}`}
+                        title={bg.name}
+                      >
+                        <img src={bg.data} alt={bg.name} className="w-full h-full object-cover" />
+                      </button>
+                      {isDeleteMode && (
+                        <div
+                          onClick={(e) => deleteUploadedBackground(idx, e)}
+                          className="absolute inset-0 bg-red-500/20 flex items-center justify-center cursor-pointer z-20"
+                          title={t('common.delete')}
+                        >
+                          <Trash2 className="w-4 h-4 text-white" />
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                  {uploadedBackgrounds.length > 10 && (
+                    <div className="w-full h-8 rounded-md bg-[var(--app-card-bg)] flex items-center justify-center text-[10px] text-[var(--app-text-secondary)]">
+                      +{uploadedBackgrounds.length - 10}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            <div className="flex gap-2">
+              <button
+                onClick={handleDirectoryBgUpload}
+                className={`flex-1 flex items-center justify-center p-2 text-xs bg-[var(--app-input-bg)] rounded cursor-pointer hover:bg-[var(--app-border-hover)] border border-[var(--app-border)] transition ${globalSettings.backgroundType === 'upload' ? 'border-[var(--app-accent)] text-[var(--app-accent)] bg-[var(--app-accent-light)]' : 'text-[var(--app-text-secondary)]'}`}
+              >
+                <FolderInput className="w-3 h-3 mr-2" /> {t('sidebar.linkBackgroundFolder')}
+              </button>
+              {uploadedBackgrounds.length > 0 && (
+                <button
+                  onClick={() => setIsDeleteMode(!isDeleteMode)}
+                  className={`flex items-center justify-center w-8 p-2 text-xs rounded cursor-pointer border transition ${isDeleteMode ? 'bg-red-500/20 border-red-500 text-red-500 hover:bg-red-500/30' : 'bg-[var(--app-input-bg)] border-[var(--app-border)] text-[var(--app-text-secondary)] hover:text-red-400 hover:border-red-500/50'}`}
+                  title={isDeleteMode ? t('common.done') : t('common.delete')}
+                >
+                  <Trash2 className="w-3 h-3" />
+                </button>
+              )}
+            </div>
+            {backgroundFolderPath && (
+              <p className="text-[9px] text-[var(--app-text-muted)] mt-1 text-center font-mono truncate" title={backgroundFolderPath}>
+                {backgroundFolderPath.split('/').slice(-2).join('/')}
+              </p>
+            )}
+          </>
+        )}
+
+        {bgExpanded && (globalSettings.backgroundType === 'upload' || globalSettings.backgroundType === 'builtin') && (
+          <div className="mt-3 pt-3 border-t border-[var(--app-border)] space-y-3 element-subpanel">
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-xs text-[var(--app-text-secondary)] font-bold tracking-[0.02em]">{t('sidebar.bgTransform')}</span>
+            </div>
+
+            <div className="space-y-3 p-3 bg-[var(--app-card-bg-solid)] rounded-lg border border-[var(--app-border)]">
+              <div className="group">
+                <div className="flex justify-between items-center mb-1">
+                  <label className="text-[10px] text-[var(--app-text-secondary)]">{t('layout.scale')}</label>
+                  <span className="text-[10px] text-[var(--app-text-muted)] font-mono">{(globalSettings.backgroundScale || 1).toFixed(2)}x</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="range" min="0.5" max="3" step="0.05"
+                    value={globalSettings.backgroundScale || 1}
+                    onChange={(e) => setGlobalSettings(s => ({ ...s, backgroundScale: parseFloat(e.target.value) }))}
+                    className="flex-1 app-slider"
+                  />
+                  <button onClick={() => setGlobalSettings(s => ({ ...s, backgroundScale: 1.0 }))} className="p-1 text-[var(--app-text-muted)] hover:text-[var(--app-text-primary)] opacity-0 group-hover:opacity-100 transition" title={t('common.reset')}>
+                    <RotateCcw className="w-3 h-3" />
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <div className="flex justify-between items-center mb-1 group">
+                  <label className="text-[10px] text-[var(--app-text-secondary)]">{t('layout.horizontalPosition')}</label>
+                  <input
+                    type="number"
+                    value={globalSettings.backgroundX || 0}
+                    onChange={(e) => setGlobalSettings(s => ({ ...s, backgroundX: parseInt(e.target.value) || 0 }))}
+                    className="hidden"
+                  />
+                  <span className="text-[10px] text-[var(--app-text-muted)] font-mono">{globalSettings.backgroundX || 0}</span>
+                </div>
+                <div className="flex items-center gap-2 group">
+                  <input
+                    type="range" min="-1500" max="1500" step="10"
+                    value={globalSettings.backgroundX || 0}
+                    onChange={(e) => setGlobalSettings(s => ({ ...s, backgroundX: parseInt(e.target.value) || 0 }))}
+                    className="flex-1 app-slider"
+                  />
+                  <button onClick={() => setGlobalSettings(s => ({ ...s, backgroundX: 0 }))} className="p-1 text-[var(--app-text-muted)] hover:text-[var(--app-text-primary)] opacity-0 group-hover:opacity-100 transition" title={t('common.reset')}>
+                    <RotateCcw className="w-3 h-3" />
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <div className="flex justify-between items-center mb-1 group">
+                  <label className="text-[10px] text-[var(--app-text-secondary)]">{t('layout.verticalPosition')}</label>
+                  <input
+                    type="number"
+                    value={globalSettings.backgroundY || 0}
+                    onChange={(e) => setGlobalSettings(s => ({ ...s, backgroundY: parseInt(e.target.value) || 0 }))}
+                    className="hidden"
+                  />
+                  <span className="text-[10px] text-[var(--app-text-muted)] font-mono">{globalSettings.backgroundY || 0}</span>
+                </div>
+                <div className="flex items-center gap-2 group">
+                  <input
+                    type="range" min="-1500" max="1500" step="10"
+                    value={globalSettings.backgroundY || 0}
+                    onChange={(e) => setGlobalSettings(s => ({ ...s, backgroundY: parseInt(e.target.value) || 0 }))}
+                    className="flex-1 app-slider"
+                  />
+                  <button onClick={() => setGlobalSettings(s => ({ ...s, backgroundY: 0 }))} className="p-1 text-[var(--app-text-muted)] hover:text-[var(--app-text-primary)] opacity-0 group-hover:opacity-100 transition" title={t('common.reset')}>
+                    <RotateCcw className="w-3 h-3" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  const importProgressPercent = importProgress.total > 0
+    ? (importProgress.status === 'queued'
+      ? 10
+      : importProgress.status === 'running'
+        ? Math.min(100, Math.round((importProgress.current / importProgress.total) * 100))
+        : Math.min(100, Math.round(((importProgress.current || importProgress.total) / importProgress.total) * 100)))
+    : (importProgress.status === 'running' || importProgress.status === 'queued' ? 10 : 100);
+
+  const importProgressBarClass = importProgress.status === 'error'
+    ? 'bg-red-500'
+    : importProgress.status === 'warning'
+      ? 'bg-amber-500'
+      : importProgress.status === 'success'
+        ? 'bg-green-500'
+        : 'bg-[var(--app-accent)]';
+
   return (
     <div className="flex flex-col h-screen font-sans overflow-hidden no-scrollbar app-container">
 
       {/* GLOBAL TOP TITLE BAR */}
-      <div className="global-titlebar h-12 flex items-center justify-between px-4 shrink-0 drag-region bg-[var(--titlebar-bg)] border-b border-[var(--app-border)]">
+      <div
+        className="global-titlebar h-14 flex items-center justify-between px-5 shrink-0 drag-region bg-[var(--titlebar-bg)] border-b border-[var(--app-border)]"
+        onMouseDown={(event) => handleTopbarBlankInteraction(event)}
+      >
         {/* Left section with mode switcher and platform dropdown */}
-        <div className="flex items-center gap-3 no-drag" style={{ marginLeft: '70px' }}>
+        <div
+          className="topbar-group no-drag"
+          style={{ marginLeft: '70px' }}
+          onMouseDown={(event) => handleTopbarBlankInteraction(event)}
+        >
 
           {/* Platform Preset Dropdown - only show in screenshot mode */}
           {appMode === 'screenshot' && (
             <div className="relative" ref={platformDropdownRef}>
               <button
                 onClick={() => setPlatformDropdownOpen(!platformDropdownOpen)}
-                className="flex items-center gap-2 h-8 px-3 bg-[var(--app-accent-light)] hover:bg-[var(--app-accent)]/20 rounded-md text-xs font-medium transition border border-[var(--app-accent)]/30 cursor-pointer"
+                className="topbar-pill topbar-pill-wide cursor-pointer"
                 title={t('rightPanel.sizePreset')}
               >
                 <Monitor className="w-4 h-4 text-[var(--app-accent)]" />
-                <span className="text-[var(--app-accent)]">{getCurrentPlatformName()}</span>
-                {platformDropdownOpen ? <ChevronUp className="w-3 h-3 text-[var(--app-accent)]" /> : <ChevronDown className="w-3 h-3 text-[var(--app-accent)]" />}
+                <span className="truncate flex-1 text-left">{getCurrentPlatformName()}</span>
+                {platformDropdownOpen ? <ChevronUp className="w-3.5 h-3.5 text-[var(--app-text-muted)]" /> : <ChevronDown className="w-3.5 h-3.5 text-[var(--app-text-muted)]" />}
               </button>
 
               {platformDropdownOpen && (
-                <div className="absolute top-full left-0 mt-1 w-64 bg-[var(--app-card-bg-solid)] backdrop-blur-xl rounded-lg border border-[var(--app-border)] shadow-2xl z-50 py-1 overflow-hidden max-h-80 overflow-y-auto slim-scrollbar">
+                <div
+                  className="topbar-panel absolute top-full left-0 mt-2 w-72 z-50 p-2 overflow-hidden max-h-80 overflow-y-auto slim-scrollbar"
+                  onMouseDown={(event) => handleTopbarBlankInteraction(event, () => setPlatformDropdownOpen(false))}
+                >
                   {['Apple', 'Google Play', 'Windows', 'Steam'].map(category => (
                     <div key={category}>
-                      <div className="px-3 py-1.5 text-[10px] uppercase text-[var(--app-text-muted)] font-semibold bg-white/5">{category}</div>
+                      <div className="topbar-menu-category">{getPlatformCategoryName(category)}</div>
                       {PLATFORM_PRESETS.filter(p => p.category === category).map(preset => {
                         const isRequired = ['iphone-6.9', 'iphone-5.5', 'ipad-13'].includes(preset.id);
                         return (
                           <button
                             key={preset.id}
                             onClick={() => handlePlatformChange(preset)}
-                            className={`w-full flex items-center justify-between px-3 py-2 text-xs hover:bg-white/5 transition cursor-pointer ${selectedPlatform === preset.id ? 'text-[var(--app-accent)] bg-[var(--app-accent-light)]' : 'text-[var(--app-text-secondary)]'}`}
+                            className={`topbar-menu-item cursor-pointer ${selectedPlatform === preset.id ? 'is-active' : ''}`}
                           >
-                            <div className="flex items-center gap-2">
+                            <div className="topbar-menu-item-left">
                               <span>{getPresetName(preset.id, preset.name)}</span>
                               {isRequired && (
-                                <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-[var(--app-accent-light)] text-[var(--app-accent)] border border-[var(--app-accent)]/30 transform scale-90 origin-left">
+                                <span className="topbar-badge topbar-badge-accent">
                                   {t('common.required')}
                                 </span>
                               )}
                             </div>
-                            <span className="text-[10px] text-[var(--app-text-muted)] font-mono">{preset.width}×{preset.height}</span>
+                            <span className="topbar-menu-item-meta font-mono">{preset.width}×{preset.height}</span>
                           </button>
                         );
                       })}
@@ -2410,19 +4744,19 @@ const App = () => {
                   ))}
                   {customSizePresets.length > 0 && (
                     <div>
-                      <div className="px-3 py-1.5 text-[10px] uppercase text-[var(--app-text-muted)] font-semibold bg-white/5">{t('categories.custom')}</div>
+                      <div className="topbar-menu-category">{t('categories.custom')}</div>
                       {customSizePresets.map(preset => (
                         <div key={preset.id} className="flex items-center group">
                           <button
                             onClick={() => handlePlatformChange(preset)}
-                            className={`flex-1 flex items-center justify-between px-3 py-2 text-xs hover:bg-white/5 transition cursor-pointer ${selectedPlatform === preset.id ? 'text-[var(--app-accent)] bg-[var(--app-accent-light)]' : 'text-[var(--app-text-secondary)]'}`}
+                            className={`topbar-menu-item flex-1 cursor-pointer ${selectedPlatform === preset.id ? 'is-active' : ''}`}
                           >
                             <span>{preset.name}</span>
-                            <span className="text-[10px] text-[var(--app-text-muted)] font-mono">{preset.width}×{preset.height}</span>
+                            <span className="topbar-menu-item-meta font-mono">{preset.width}×{preset.height}</span>
                           </button>
                           <button
                             onClick={() => deleteCustomSizePreset(preset.id)}
-                            className="p-1 text-red-400 opacity-0 group-hover:opacity-100 hover:bg-red-500/20 rounded mr-1 transition"
+                            className="topbar-danger-icon opacity-0 group-hover:opacity-100 mr-1"
                           >
                             <Trash2 className="w-3 h-3" />
                           </button>
@@ -2437,50 +4771,54 @@ const App = () => {
 
           {/* Canvas Size Display with Save Button - only show in screenshot mode */}
           {appMode === 'screenshot' && (
-            <div className="relative flex items-center gap-2 text-xs h-8 px-3 bg-[var(--app-input-bg)] rounded-md border border-[var(--app-border)]">
-              <span className="text-[var(--app-text-secondary)] font-mono">W:</span>
-              <input type="number" className="bg-transparent w-10 text-[var(--app-text-primary)] focus:outline-none text-center font-mono"
+            <div className="relative topbar-pill topbar-size-shell text-xs">
+              <span className="text-[var(--app-text-secondary)] font-mono">{t('common.widthShort')}</span>
+              <input type="number" className="topbar-inline-input"
                 value={globalSettings.width} onChange={(e) => setGlobalSettings(s => ({ ...s, width: parseInt(e.target.value) || 100 }))}
               />
               <span className="text-[var(--app-text-muted)]">×</span>
-              <span className="text-[var(--app-text-secondary)] font-mono">H:</span>
-              <input type="number" className="bg-transparent w-10 text-[var(--app-text-primary)] focus:outline-none text-center font-mono"
+              <span className="text-[var(--app-text-secondary)] font-mono">{t('common.heightShort')}</span>
+              <input type="number" className="topbar-inline-input"
                 value={globalSettings.height} onChange={(e) => setGlobalSettings(s => ({ ...s, height: parseInt(e.target.value) || 100 }))}
               />
-              <div className="w-px h-4 bg-white/10 mx-1"></div>
+              <div className="topbar-divider"></div>
               <button
                 onClick={() => setShowSavePresetModal(!showSavePresetModal)}
-                className="p-1 text-[var(--app-text-secondary)] hover:text-[var(--app-accent)] hover:bg-white/10 rounded transition"
-                title="保存为预设"
+                className="topbar-mini-icon"
+                title={t('common.saveAsPreset')}
               >
                 <Save className="w-3.5 h-3.5" />
               </button>
 
               {/* Save Preset Dropdown */}
               {showSavePresetModal && (
-                <div className="absolute top-full left-0 mt-1 bg-[var(--app-card-bg-solid)] rounded-lg p-3 w-56 border border-[var(--app-border)] shadow-xl z-50" ref={savePresetModalRef}>
+                <div
+                  className="topbar-panel absolute top-full left-0 mt-2 p-3 w-60 z-50"
+                  ref={savePresetModalRef}
+                  onMouseDown={(event) => handleTopbarBlankInteraction(event, () => setShowSavePresetModal(false))}
+                >
                   <div className="text-xs text-[var(--app-text-muted)] mb-2">{globalSettings.width}×{globalSettings.height}</div>
                   <input
                     type="text"
                     value={newPresetName}
                     onChange={(e) => setNewPresetName(e.target.value)}
-                    placeholder="输入预设名称..."
-                    className="w-full bg-[var(--app-input-bg)] border border-[var(--app-border)] rounded px-2 py-1.5 text-xs text-[var(--app-text-primary)] mb-2"
+                    placeholder={t('rightPanel.newPresetName')}
+                    className="topbar-text-input mb-2"
                     autoFocus
                     onKeyDown={(e) => e.key === 'Enter' && saveCustomSizePreset()}
                   />
-                  <div className="flex gap-2">
+                  <div className="topbar-action-row">
                     <button
                       onClick={() => setShowSavePresetModal(false)}
-                      className="flex-1 px-2 py-1 text-[10px] text-[var(--app-text-muted)] hover:text-[var(--app-text-primary)] bg-white/5 hover:bg-white/10 rounded transition"
+                      className="topbar-action"
                     >
-                      取消
+                      {t('common.cancel')}
                     </button>
                     <button
                       onClick={saveCustomSizePreset}
-                      className="flex-1 px-2 py-1 text-[10px] text-white bg-[var(--app-accent)] hover:bg-[var(--app-accent-hover)] rounded transition"
+                      className="topbar-action topbar-action-primary"
                     >
-                      保存
+                      {t('common.save')}
                     </button>
                   </div>
                 </div>
@@ -2491,86 +4829,115 @@ const App = () => {
 
         {/* Center section with language toggle - only show in screenshot mode */}
         {appMode === 'screenshot' && (
-          <div className="flex items-center gap-3 no-drag">
-            {/* Language Preview Toggle */}
-            <div className="flex bg-white/5 rounded-lg p-0.5 border border-white/10 h-8 items-center">
+          <div className="topbar-group no-drag" onMouseDown={(event) => handleTopbarBlankInteraction(event)}>
+            <div className="relative" ref={primaryLanguageMenuRef}>
               <button
-                onClick={() => setPreviewLanguage('primary')}
-                className={`h-full px-3 text-xs font-medium rounded-md transition flex items-center gap-1.5 ${previewLanguage === 'primary' ? 'bg-[var(--app-card-bg-solid)] text-[var(--app-text-primary)] shadow-sm border border-[var(--app-border)]' : 'text-[var(--app-text-secondary)] hover:text-[var(--app-text-primary)]'}`}
+                onClick={() => {
+                  setPrimaryLanguageMenuOpen(!primaryLanguageMenuOpen);
+                  setTranslationLanguageMenuOpen(false);
+                }}
+                className="topbar-pill topbar-pill-wide"
+                title={t('scenes.primaryLanguage')}
               >
-                <span className="text-[10px]">{LANGUAGES.find(l => l.code === globalSettings.primaryLang)?.flag}</span>
-                {LANGUAGES.find(l => l.code === globalSettings.primaryLang)?.nativeName}
+                <span className="text-[12px] leading-none">{primaryLanguageInfo?.flag}</span>
+                <span className="truncate flex-1 text-left">{primaryLanguageInfo?.nativeName || globalSettings.primaryLang}</span>
+                {primaryLanguageMenuOpen ? <ChevronUp className="w-3.5 h-3.5 text-[var(--app-text-muted)]" /> : <ChevronDown className="w-3.5 h-3.5 text-[var(--app-text-muted)]" />}
               </button>
-              {globalSettings.secondaryLang !== 'none' && (
-                <button
-                  onClick={() => setPreviewLanguage('secondary')}
-                  className={`h-full px-3 text-xs font-medium rounded-md transition flex items-center gap-1.5 ${previewLanguage === 'secondary' ? 'bg-[var(--app-card-bg-solid)] text-[var(--app-text-primary)] shadow-sm border border-[var(--app-border)]' : 'text-[var(--app-text-secondary)] hover:text-[var(--app-text-primary)]'}`}
+
+              {primaryLanguageMenuOpen && (
+                <div
+                  className="topbar-panel absolute top-full left-0 mt-2 w-64 z-50 p-2"
+                  onMouseDown={(event) => handleTopbarBlankInteraction(event, () => setPrimaryLanguageMenuOpen(false))}
                 >
-                  <span className="text-[10px]">{LANGUAGES.find(l => l.code === globalSettings.secondaryLang)?.flag}</span>
-                  {LANGUAGES.find(l => l.code === globalSettings.secondaryLang)?.nativeName}
-                </button>
+                  <button
+                    onClick={applySystemLanguage}
+                    className="topbar-action topbar-action-primary w-full mb-2 flex items-center justify-center gap-1.5"
+                  >
+                    <Monitor className="w-3.5 h-3.5" /> {t('scenes.followSystem')}
+                  </button>
+
+                  <div className="topbar-menu-list max-h-64 overflow-y-auto slim-scrollbar space-y-1">
+                    {LANGUAGES.filter(lang => lang.code !== 'none').map(lang => {
+                      const isActive = globalSettings.primaryLang === lang.code;
+                      return (
+                        <button
+                          key={lang.code}
+                          onClick={() => applyPrimaryLanguage(lang.code)}
+                          className={`topbar-menu-item ${isActive ? 'is-active' : ''}`}
+                        >
+                          <span className="topbar-menu-item-left">
+                            <span className="text-[12px] leading-none">{lang.flag}</span>
+                            <span className="truncate">{lang.nativeName}</span>
+                          </span>
+                          {isActive && <span className="text-[10px] text-[var(--app-accent)]">{t('common.current')}</span>}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
               )}
             </div>
 
-            {/* Language Settings Dropdown */}
-            <div className="relative" ref={langSettingsRef}>
+            <div className="flex items-center justify-center w-6 text-[var(--app-text-muted)]/80">
+              <ArrowRight className="w-4 h-4" />
+            </div>
+
+            <div className="relative" ref={translationLanguageMenuRef}>
               <button
-                onClick={() => setLangSettingsOpen(!langSettingsOpen)}
-                className="w-8 h-8 flex items-center justify-center bg-white/5 hover:bg-white/10 rounded-md text-[var(--app-text-secondary)] hover:text-[var(--app-text-primary)] transition border border-white/10"
-                title={t('scenes.languageSettings')}
+                onClick={() => {
+                  setTranslationLanguageMenuOpen(!translationLanguageMenuOpen);
+                  setPrimaryLanguageMenuOpen(false);
+                }}
+                className="topbar-pill topbar-pill-wide"
+                title={t('scenes.translationLanguage')}
               >
-                <Globe className="w-4 h-4" />
+                <span className="text-[12px] leading-none">{hasTranslationLanguages ? (translationLanguageSummaryInfo?.flag || '🌐') : '∅'}</span>
+                <span className="truncate flex-1 text-left">{hasTranslationLanguages ? (translationLanguageSummaryInfo?.nativeName || translationLanguageSummaryCode) : t('common.none')}</span>
+                {hasTranslationLanguages && (
+                  <span className="topbar-badge topbar-badge-accent">
+                    {selectedSecondaryLangs.length}
+                  </span>
+                )}
+                {translationLanguageMenuOpen ? <ChevronUp className="w-3.5 h-3.5 text-[var(--app-text-muted)]" /> : <ChevronDown className="w-3.5 h-3.5 text-[var(--app-text-muted)]" />}
               </button>
 
-              {langSettingsOpen && (
-                <div className="absolute top-full right-0 mt-1 w-72 bg-[var(--app-card-bg-solid)] backdrop-blur-xl rounded-lg border border-[var(--app-border)] shadow-2xl z-50 p-3 space-y-3">
-                  <div className="flex items-center justify-between border-b border-white/5 pb-2">
-                    <div className="text-xs text-[var(--app-text-secondary)] font-semibold flex items-center gap-2">
-                      <Globe className="w-3.5 h-3.5" /> {t('scenes.languageSettings')}
+              {translationLanguageMenuOpen && (
+                <div
+                  className="topbar-panel absolute top-full left-0 mt-2 w-[22rem] z-50 p-3"
+                  onMouseDown={(event) => handleTopbarBlankInteraction(event, () => setTranslationLanguageMenuOpen(false))}
+                >
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="topbar-panel-title">
+                        {t('scenes.translationLanguage')}
+                      </div>
+                      <span className="topbar-panel-caption">
+                        {selectedSecondaryLangs.length > 0 ? t('common.selectedCount', { n: selectedSecondaryLangs.length }) : t('common.none')}
+                      </span>
                     </div>
-                    <button
-                      onClick={() => {
-                        // Auto detect system language
-                        const sysLangCode = navigator.language;
-                        const matchedLang = LANGUAGES.find(l => l.code === sysLangCode || (sysLangCode.startsWith(l.code) && l.code !== 'none'))?.code || 'en';
-                        setGlobalSettings(s => ({ ...s, primaryLang: matchedLang }));
-                      }}
-                      className="text-[10px] text-[var(--app-accent)] hover:text-[var(--app-accent-hover)] flex items-center gap-1"
-                    >
-                      <Monitor className="w-3 h-3" /> {t('scenes.followSystem')}
-                    </button>
-                  </div>
 
-                  {/* Primary Language */}
-                  <div>
-                    <label className="text-[10px] text-[var(--app-text-secondary)] block mb-1">{t('scenes.primaryLanguage')}</label>
-                    <select
-                      value={globalSettings.primaryLang}
-                      onChange={(e) => setGlobalSettings(s => ({ ...s, primaryLang: e.target.value }))}
-                      className="w-full bg-[var(--app-input-bg)] border border-[var(--app-border)] rounded px-2 py-1.5 text-xs text-[var(--app-text-primary)]"
+                    <div
+                      className="topbar-menu-list max-h-48 overflow-y-auto slim-scrollbar space-y-1"
+                      onMouseDown={(event) => handleTopbarBlankInteraction(event, () => setTranslationLanguageMenuOpen(false))}
                     >
-                      {LANGUAGES.filter(l => l.code !== 'none').map(lang => (
-                        <option key={lang.code} value={lang.code}>{lang.flag} {lang.nativeName}</option>
+                      {LANGUAGES.filter(lang => lang.code !== 'none' && lang.code !== globalSettings.primaryLang).map(lang => (
+                        <label
+                          key={lang.code}
+                          className="topbar-menu-item"
+                        >
+                          <span className="topbar-menu-item-left">
+                            <input
+                              type="checkbox"
+                              checked={selectedSecondaryLangs.includes(lang.code)}
+                              onChange={() => toggleSecondaryLanguage(lang.code)}
+                              className="rounded bg-[var(--app-input-bg)] border-[var(--app-border)] text-[var(--app-accent)]"
+                            />
+                            <span className="text-[12px] leading-none">{lang.flag}</span>
+                            <span className="truncate">{lang.nativeName}</span>
+                          </span>
+                        </label>
                       ))}
-                    </select>
-                  </div>
-
-                  {/* Secondary Language */}
-                  <div>
-                    <label className="text-[10px] text-[var(--app-text-secondary)] block mb-1">{t('scenes.translationLanguage')}</label>
-                    <select
-                      value={globalSettings.secondaryLang}
-                      onChange={(e) => setGlobalSettings(s => ({ ...s, secondaryLang: e.target.value }))}
-                      className="w-full bg-[var(--app-input-bg)] border border-[var(--app-border)] rounded px-2 py-1.5 text-xs text-[var(--app-text-primary)]"
-                    >
-                      {LANGUAGES.map(lang => (
-                        <option key={lang.code} value={lang.code}>{lang.flag} {lang.nativeName}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="text-[9px] text-[var(--app-text-muted)] pt-2 border-t border-white/5">
-                    {t('scenes.noTranslationHint')}
+                    </div>
                   </div>
                 </div>
               )}
@@ -2579,7 +4946,7 @@ const App = () => {
         )}
 
         {/* Right section with export button - always show */}
-        <div className="flex items-center gap-3 no-drag">
+        <div className="topbar-group no-drag" onMouseDown={(event) => handleTopbarBlankInteraction(event)}>
           {/* Export Dropdown */}
           <div className="relative" ref={exportMenuRef}>
             <button
@@ -2592,33 +4959,40 @@ const App = () => {
                   setExportMenuOpen(!exportMenuOpen);
                 }
               }}
-              className="flex items-center gap-2 h-8 bg-[var(--app-accent)] hover:bg-[var(--app-accent-hover)] text-white px-4 rounded-md text-xs font-semibold transition shadow-lg shadow-[var(--app-accent)]/20 active:scale-95"
+              className="topbar-pill topbar-pill-primary"
             >
               <Download className="w-3.5 h-3.5" />
               {appMode === 'icon' ? t('header.exportIcon') : t('header.exportAll')}
-              {appMode !== 'icon' && <ChevronDown className="w-3 h-3 ml-1" />}
+              {appMode !== 'icon' && <ChevronDown className="w-3.5 h-3.5" />}
             </button>
 
             {exportMenuOpen && appMode !== 'icon' && (
-              <div className="absolute top-full right-0 mt-1 w-48 bg-[var(--app-card-bg-solid)] backdrop-blur-xl rounded-lg border border-[var(--app-border)] shadow-2xl z-50 py-1 overflow-hidden">
+              <div
+                className="topbar-panel absolute top-full right-0 mt-2 w-64 z-50 p-2 overflow-hidden space-y-1"
+                onMouseDown={(event) => handleTopbarBlankInteraction(event, () => setExportMenuOpen(false))}
+              >
                 <button
                   onClick={() => { handleExportAll(); setExportMenuOpen(false); }}
-                  className="w-full flex items-center gap-3 px-4 py-2.5 text-xs text-[var(--app-text-secondary)] hover:bg-white/5 hover:text-[var(--app-text-primary)] transition"
+                  className="topbar-menu-item"
                 >
-                  <Globe className="w-4 h-4 text-[var(--app-accent)]" />
-                  <div className="text-left">
-                    <div className="font-medium">{t?.('export.byLanguage') || '按语言导出'}</div>
-                    <div className="text-[10px] text-[var(--app-text-muted)]">{t?.('export.byLanguageDesc') || '中文/English 分文件夹'}</div>
+                  <div className="topbar-menu-item-left">
+                    <Globe className="w-4 h-4 text-[var(--app-accent)]" />
+                    <div className="text-left">
+                      <div className="font-medium">{t('export.byLanguage')}</div>
+                      <div className="topbar-menu-item-meta">{t('export.byLanguageDesc')}</div>
+                    </div>
                   </div>
                 </button>
                 <button
                   onClick={() => { handleExportByDevice(); setExportMenuOpen(false); }}
-                  className="w-full flex items-center gap-3 px-4 py-2.5 text-xs text-[var(--app-text-secondary)] hover:bg-white/5 hover:text-[var(--app-text-primary)] transition"
+                  className="topbar-menu-item"
                 >
-                  <Smartphone className="w-4 h-4 text-green-400" />
-                  <div className="text-left">
-                    <div className="font-medium">{t?.('export.byDevice') || '按设备导出'}</div>
-                    <div className="text-[10px] text-[var(--app-text-muted)]">{t?.('export.byDeviceDesc') || '每设备一套截图'}</div>
+                  <div className="topbar-menu-item-left">
+                    <Smartphone className="w-4 h-4 text-green-400" />
+                    <div className="text-left">
+                      <div className="font-medium">{t('export.byDevice')}</div>
+                      <div className="topbar-menu-item-meta">{t('export.byDeviceDesc')}</div>
+                    </div>
                   </div>
                 </button>
               </div>
@@ -2628,7 +5002,7 @@ const App = () => {
           {/* SETTINGS BUTTON */}
           <button
             onClick={() => setShowSettingsModal(true)}
-            className="w-8 h-8 flex items-center justify-center text-[var(--app-text-secondary)] hover:text-[var(--app-text-primary)] hover:bg-white/10 rounded-md transition"
+            className="topbar-pill topbar-pill-icon"
             title={t('header.settings')}
           >
             <Settings className="w-4 h-4" />
@@ -2682,7 +5056,7 @@ const App = () => {
               {/* Ollama Settings */}
               <div className="px-4 py-3 border-b border-[var(--app-border)] bg-[var(--app-bg-panel-header)]">
                 <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2 text-xs font-semibold text-[var(--app-text-secondary)] uppercase">
+                  <div className="flex items-center gap-2 text-xs font-semibold text-[var(--app-text-secondary)] tracking-[0.02em]">
                     <Cpu className="w-3 h-3" /> {t('ollama.title')}
                   </div>
                   <div className="flex items-center gap-2">
@@ -2700,10 +5074,11 @@ const App = () => {
                       placeholder="http://localhost:11434"
                     />
                     <button onClick={async () => {
-                      await checkOllamaConnection();
-                      // If still not connected after check, show guide
-                      if (!ollamaConfig.isConnected) {
+                      const connection = await checkOllamaConnection();
+                      if (!connection.ok) {
                         setShowOllamaGuide(true);
+                      } else {
+                        setShowOllamaGuide(false);
                       }
                     }}
                       className="w-full text-xs bg-[var(--app-accent-light)] hover:bg-[var(--app-accent)] hover:text-white text-[var(--app-accent)] py-1.5 rounded border border-[var(--app-accent)]/30 transition flex items-center justify-center gap-1">
@@ -2748,315 +5123,22 @@ const App = () => {
                     >
                       {ollamaConfig.availableModels.map(m => <option key={m} value={m}>{m}</option>)}
                     </select>
-                    <div className="flex items-center gap-2">
-                      <input type="checkbox" id="autoTrans" checked={ollamaConfig.autoTranslate} onChange={(e) => setOllamaConfig(s => ({ ...s, autoTranslate: e.target.checked }))}
-                      />
-                      <label htmlFor="autoTrans" className="text-xs text-[var(--app-text-secondary)]">{t('ollama.autoTranslateFilename')}</label>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Background Settings */}
-              <div className="p-4 border-b border-[var(--app-border)]">
-                <button
-                  onClick={() => setBgExpanded(!bgExpanded)}
-                  className="w-full text-xs uppercase text-[var(--app-text-secondary)] font-semibold mb-2 flex items-center gap-2 hover:text-[var(--app-text-primary)] transition"
-                >
-                  <ChevronDown className={`w-3 h-3 transition-transform ${bgExpanded ? '' : '-rotate-90'}`} />
-                  <ImageIcon className="w-4 h-4" /> {t('sidebar.globalBackground')}
-                  {uploadedBackgrounds.length > 0 && (
-                    <span className="ml-auto text-[10px] text-[var(--app-text-muted)] font-normal">
-                      {t('sidebar.imageCount').replace('{n}', uploadedBackgrounds.length)}
-                    </span>
-                  )}
-                </button>
-
-                {bgExpanded && (
-                  <>
-                    <div className="grid grid-cols-6 gap-2 mb-3">
-                      {PRESETS.map(p => (
-                        <button key={p.id} onClick={() => setGlobalSettings(s => ({ ...s, backgroundType: 'preset', backgroundValue: p.value }))}
-                          className={`w-full h-8 rounded-md transition-all ${globalSettings.backgroundValue === p.value && globalSettings.backgroundType === 'preset' ? 'ring-2 ring-blue-500 scale-110 z-10' : 'opacity-70 hover:opacity-100'}`}
-                          style={{ background: p.value }}
-                          title={p.name}
+                    <div className="flex items-center justify-between gap-3 flex-wrap">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <input type="checkbox" id="autoTrans" checked={ollamaConfig.autoTranslate} onChange={(e) => setOllamaConfig(s => ({ ...s, autoTranslate: e.target.checked }))}
                         />
-                      ))}
-                      {/* Custom Gradient Button */}
+                        <label htmlFor="autoTrans" className="text-xs text-[var(--app-text-secondary)]">{t('ollama.autoTranslateFilename')}</label>
+                      </div>
                       <button
-                        onClick={() => {
-                          setGlobalSettings(s => {
-                            let initialGradient = s.customGradient || { color1: '#FFFFFF', color2: '#9CA3AF', angle: 180, stop1: 0, stop2: 100 };
-
-                            // If switching from a preset, try to parse its values
-                            if (s.backgroundType === 'preset' && s.backgroundValue) {
-                              const val = s.backgroundValue;
-                              if (val.startsWith('#')) {
-                                // Solid color preset
-                                initialGradient = { color1: val, color2: val, angle: 180, stop1: 0, stop2: 100 };
-                              } else if (val.includes('linear-gradient')) {
-                                // Gradient preset
-                                const angleMatch = val.match(/(\d+)deg/);
-                                const angle = angleMatch ? parseInt(angleMatch[1]) : 180;
-                                const colors = val.match(/#[a-fA-F0-9]{6}/g);
-                                if (colors && colors.length >= 2) {
-                                  initialGradient = {
-                                    color1: colors[0],
-                                    color2: colors[colors.length - 1],
-                                    angle: angle,
-                                    stop1: 0,
-                                    stop2: 100
-                                  };
-                                }
-                              }
-                            }
-
-                            return {
-                              ...s,
-                              backgroundType: 'custom-gradient',
-                              customGradient: initialGradient
-                            };
-                          });
-                        }}
-                        className={`w-full h-8 rounded-md transition-all flex items-center justify-center bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 overflow-hidden ${globalSettings.backgroundType === 'custom-gradient' ? 'ring-2 ring-blue-500 scale-110 z-10' : 'opacity-70 hover:opacity-100'}`}
-                        title={t('sidebar.customGradient')}
+                        type="button"
+                        onClick={handleBatchRetranslate}
+                        disabled={isBatchRetranslating || batchTranslationTargetCount === 0 || selectedSecondaryLangs.length === 0}
+                        className={`shrink-0 text-[10px] flex items-center gap-1 px-2 py-1 rounded transition ${!isBatchRetranslating && batchTranslationTargetCount > 0 && selectedSecondaryLangs.length > 0 ? 'bg-[var(--app-accent)] text-white hover:bg-[var(--app-accent-hover)]' : 'bg-[var(--app-bg-elevated)] text-[var(--app-text-muted)] cursor-not-allowed'}`}
+                        title={batchTranslationJobCount > 0 ? t('alerts.batchTranslateSummary', { sceneCount: batchTranslationTargetCount, taskCount: batchTranslationJobCount }) : (selectedSecondaryLangs.length === 0 ? t('alerts.batchTranslateMissingTarget', '未设置翻译语言，无法执行批量翻译') : t('alerts.batchTranslateNoScenes', '没有可批量翻译的截图'))}
                       >
-                        <Palette className="w-4 h-4 text-white drop-shadow-sm" />
+                        <RefreshCw className={`w-3 h-3 ${isBatchRetranslating ? 'animate-spin' : ''}`} />
+                        {t('ollama.batchTranslateAll', '批量翻译')}
                       </button>
-                    </div>
-
-                    {/* Custom Gradient Controls */}
-                    {globalSettings.backgroundType === 'custom-gradient' && (
-                      <div className="mb-3 p-3 bg-[var(--app-card-bg)] rounded-lg border border-[var(--app-border)] space-y-3 animate-in fade-in slide-in-from-top-2">
-                        <div className="flex gap-2">
-                          <div className="flex-1">
-                            <label className="text-[10px] text-[var(--app-text-secondary)] block mb-1">{t('sidebar.gradientStartColor')}</label>
-                            <div className="flex items-center gap-2 bg-black/20 p-1 rounded border border-white/5">
-                              <div className="relative w-6 h-6 rounded overflow-hidden flex-shrink-0">
-                                <input type="color"
-                                  value={globalSettings.customGradient?.color1 || '#FFFFFF'}
-                                  onChange={(e) => setGlobalSettings(s => ({ ...s, customGradient: { ...(s.customGradient || { color1: '#FFFFFF', color2: '#9CA3AF', angle: 180 }), color1: e.target.value } }))}
-                                  className="absolute -top-1 -left-1 w-8 h-8 p-0 cursor-pointer border-0"
-                                />
-                              </div>
-                              <span className="text-[10px] font-mono text-[var(--app-text-muted)] uppercase flex-1 text-center">{globalSettings.customGradient?.color1 || '#FFFFFF'}</span>
-                            </div>
-                          </div>
-                          <div className="flex-1">
-                            <label className="text-[10px] text-[var(--app-text-secondary)] block mb-1">{t('sidebar.gradientEndColor')}</label>
-                            <div className="flex items-center gap-2 bg-black/20 p-1 rounded border border-white/5">
-                              <div className="relative w-6 h-6 rounded overflow-hidden flex-shrink-0">
-                                <input type="color"
-                                  value={globalSettings.customGradient?.color2 || '#9CA3AF'}
-                                  onChange={(e) => setGlobalSettings(s => ({ ...s, customGradient: { ...(s.customGradient || { color1: '#FFFFFF', color2: '#9CA3AF', angle: 180 }), color2: e.target.value } }))}
-                                  className="absolute -top-1 -left-1 w-8 h-8 p-0 cursor-pointer border-0"
-                                />
-                              </div>
-                              <span className="text-[10px] font-mono text-[var(--app-text-muted)] uppercase flex-1 text-center">{globalSettings.customGradient?.color2 || '#9CA3AF'}</span>
-                            </div>
-                          </div>
-                        </div>
-                        <div>
-                          <div className="flex justify-between mb-1">
-                            <label className="text-[10px] text-[var(--app-text-secondary)]">{t('sidebar.gradientAngle')}</label>
-                            <span className="text-[10px] text-[var(--app-text-muted)]">{globalSettings.customGradient?.angle ?? 180}°</span>
-                          </div>
-                          <input
-                            type="range" min="0" max="360" step="45"
-                            value={globalSettings.customGradient?.angle ?? 180}
-                            onChange={(e) => setGlobalSettings(s => ({ ...s, customGradient: { ...(s.customGradient || { color1: '#FFFFFF', color2: '#9CA3AF', angle: 180 }), angle: parseInt(e.target.value) } }))}
-                            className="w-full h-1 bg-[var(--app-control-track)] rounded-lg appearance-none cursor-pointer accent-[var(--app-accent)]"
-                          />
-                          <div className="flex justify-between text-[8px] text-[var(--app-text-muted)] mt-1 px-1">
-                            <span>0°</span>
-                            <span>90°</span>
-                            <span>180°</span>
-                            <span>270°</span>
-                          </div>
-                        </div>
-
-                        {/* Stop positions */}
-                        <div className="flex gap-2 pt-2 border-t border-white/5">
-                          <div className="flex-1">
-                            <div className="flex justify-between mb-1">
-                              <label className="text-[10px] text-[var(--app-text-secondary)]">{t('sidebar.gradientStartPos')}</label>
-                              <span className="text-[10px] text-[var(--app-text-muted)]">{globalSettings.customGradient?.stop1 ?? 0}%</span>
-                            </div>
-                            <input
-                              type="range" min="0" max="100" step="1"
-                              value={globalSettings.customGradient?.stop1 ?? 0}
-                              onChange={(e) => setGlobalSettings(s => ({ ...s, customGradient: { ...(s.customGradient || { color1: '#FFFFFF', color2: '#9CA3AF', angle: 180, stop1: 0, stop2: 100 }), stop1: parseInt(e.target.value) } }))}
-                              className="w-full h-1 bg-[var(--app-control-track)] rounded-lg appearance-none cursor-pointer accent-[var(--app-accent)]"
-                            />
-                          </div>
-                          <div className="flex-1">
-                            <div className="flex justify-between mb-1">
-                              <label className="text-[10px] text-[var(--app-text-secondary)]">{t('sidebar.gradientEndPos')}</label>
-                              <span className="text-[10px] text-[var(--app-text-muted)]">{globalSettings.customGradient?.stop2 ?? 100}%</span>
-                            </div>
-                            <input
-                              type="range" min="0" max="100" step="1"
-                              value={globalSettings.customGradient?.stop2 ?? 100}
-                              onChange={(e) => setGlobalSettings(s => ({ ...s, customGradient: { ...(s.customGradient || { color1: '#FFFFFF', color2: '#9CA3AF', angle: 180, stop1: 0, stop2: 100 }), stop2: parseInt(e.target.value) } }))}
-                              className="w-full h-1 bg-[var(--app-control-track)] rounded-lg appearance-none cursor-pointer accent-[var(--app-accent)]"
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Built-in Background Images */}
-                    <div className="mb-3">
-                      <p className="text-[10px] text-[var(--app-text-secondary)] mb-2">{t('sidebar.builtinBackgrounds')}</p>
-                      <div className="grid grid-cols-3 gap-2">
-                        {BUILTIN_BACKGROUNDS.map(bg => (
-                          <button
-                            key={bg.id}
-                            onClick={() => setGlobalSettings(s => ({ ...s, backgroundType: 'builtin', backgroundUpload: bg.src }))}
-                            className={`w-full h-12 rounded-md transition-all overflow-hidden ${globalSettings.backgroundUpload === bg.src && globalSettings.backgroundType === 'builtin' ? 'ring-2 ring-blue-500 scale-105' : 'opacity-70 hover:opacity-100'}`}
-                            title={bg.name}
-                          >
-                            <img src={bg.src} alt={bg.name} className="w-full h-full object-cover" />
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Uploaded Background Thumbnails */}
-                    {uploadedBackgrounds.length > 0 && (
-                      <div className="mb-3">
-                        <p className="text-[10px] text-[var(--app-text-secondary)] mb-2">{t('sidebar.linkedBackgrounds')}</p>
-                        <div className="grid grid-cols-5 gap-2">
-                          {uploadedBackgrounds.slice(0, 10).map((bg, idx) => (
-                            <div key={idx} className="relative group w-full h-8 rounded-md overflow-hidden">
-                              <button
-                                onClick={() => setGlobalSettings(s => ({ ...s, backgroundType: 'upload', backgroundUpload: bg.data }))}
-                                className={`w-full h-full transition-all ${globalSettings.backgroundUpload === bg.data && globalSettings.backgroundType === 'upload' ? 'ring-2 ring-blue-500 scale-110 z-10' : 'opacity-70 group-hover:opacity-100'}`}
-                                title={bg.name}
-                              >
-                                <img src={bg.data} alt={bg.name} className="w-full h-full object-cover" />
-                              </button>
-                              {isDeleteMode && (
-                                <div
-                                  onClick={(e) => deleteUploadedBackground(idx, e)}
-                                  className="absolute inset-0 bg-red-500/20 flex items-center justify-center cursor-pointer z-20"
-                                  title={t('common.delete')}
-                                >
-                                  <Trash2 className="w-4 h-4 text-white" />
-                                </div>
-                              )}
-                            </div>
-                          ))}
-                          {uploadedBackgrounds.length > 10 && (
-                            <div className="w-full h-8 rounded-md bg-[var(--app-card-bg)] flex items-center justify-center text-[10px] text-[var(--app-text-secondary)]">
-                              +{uploadedBackgrounds.length - 10}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    )}
-
-                    <div className="flex gap-2">
-                      <button
-                        onClick={handleDirectoryBgUpload}
-                        className={`flex-1 flex items-center justify-center p-2 text-xs bg-[var(--app-input-bg)] rounded cursor-pointer hover:bg-[var(--app-border-hover)] border border-[var(--app-border)] transition ${globalSettings.backgroundType === 'upload' ? 'border-[var(--app-accent)] text-[var(--app-accent)] bg-[var(--app-accent-light)]' : 'text-[var(--app-text-secondary)]'}`}
-                      >
-                        <FolderInput className="w-3 h-3 mr-2" /> {t('sidebar.linkBackgroundFolder')}
-                      </button>
-                      {uploadedBackgrounds.length > 0 && (
-                        <button
-                          onClick={() => setIsDeleteMode(!isDeleteMode)}
-                          className={`flex items-center justify-center w-8 p-2 text-xs rounded cursor-pointer border transition ${isDeleteMode ? 'bg-red-500/20 border-red-500 text-red-500 hover:bg-red-500/30' : 'bg-[var(--app-input-bg)] border-[var(--app-border)] text-[var(--app-text-secondary)] hover:text-red-400 hover:border-red-500/50'}`}
-                          title={isDeleteMode ? t('common.done') : t('common.delete')}
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </button>
-                      )}
-                    </div>
-                    {backgroundFolderPath && (
-                      <p className="text-[9px] text-[var(--app-text-muted)] mt-1 text-center font-mono truncate" title={backgroundFolderPath}>
-                        {backgroundFolderPath.split('/').slice(-2).join('/')}
-                      </p>
-                    )}
-                  </>
-                )}
-
-                {/* Background Transform Controls - ONLY for Image Backgrounds */}
-                {bgExpanded && (globalSettings.backgroundType === 'upload' || globalSettings.backgroundType === 'builtin') && (
-                  <div className="mt-3 pt-3 border-t border-[var(--app-border)] space-y-3 animate-in fade-in slide-in-from-top-2">
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="text-xs uppercase text-[var(--app-text-secondary)] font-bold">{t('sidebar.bgTransform')}</span>
-                    </div>
-
-                    <div className="space-y-3 p-3 bg-[var(--app-card-bg)] rounded-lg border border-[var(--app-border)]">
-                      {/* Scale Control */}
-                      <div className="group">
-                        <div className="flex justify-between items-center mb-1">
-                          <label className="text-[10px] text-[var(--app-text-secondary)]">{t('layout.scale')}</label>
-                          <span className="text-[10px] text-[var(--app-text-muted)] font-mono">{(globalSettings.backgroundScale || 1).toFixed(2)}x</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="range" min="0.5" max="3" step="0.05"
-                            value={globalSettings.backgroundScale || 1}
-                            onChange={(e) => setGlobalSettings(s => ({ ...s, backgroundScale: parseFloat(e.target.value) }))}
-                            className="flex-1 app-slider"
-                          />
-                          <button onClick={() => setGlobalSettings(s => ({ ...s, backgroundScale: 1.0 }))} className="p-1 text-[var(--app-text-muted)] hover:text-[var(--app-text-primary)] opacity-0 group-hover:opacity-100 transition" title={t('common.reset')}>
-                            <RotateCcw className="w-3 h-3" />
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* X Axis */}
-                      <div>
-                        <div className="flex justify-between items-center mb-1 group">
-                          <label className="text-[10px] text-[var(--app-text-secondary)]">{t('layout.horizontalPosition')}</label>
-                          <input
-                            type="number"
-                            value={globalSettings.backgroundX || 0}
-                            onChange={(e) => setGlobalSettings(s => ({ ...s, backgroundX: parseInt(e.target.value) || 0 }))}
-                            className="hidden"
-                          />
-                          <span className="text-[10px] text-[var(--app-text-muted)] font-mono">{globalSettings.backgroundX || 0}</span>
-                        </div>
-                        <div className="flex items-center gap-2 group">
-                          <input
-                            type="range" min="-1500" max="1500" step="10"
-                            value={globalSettings.backgroundX || 0}
-                            onChange={(e) => setGlobalSettings(s => ({ ...s, backgroundX: parseInt(e.target.value) || 0 }))}
-                            className="flex-1 app-slider"
-                          />
-                          <button onClick={() => setGlobalSettings(s => ({ ...s, backgroundX: 0 }))} className="p-1 text-[var(--app-text-muted)] hover:text-[var(--app-text-primary)] opacity-0 group-hover:opacity-100 transition" title={t('common.reset')}>
-                            <RotateCcw className="w-3 h-3" />
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Y Axis */}
-                      <div>
-                        <div className="flex justify-between items-center mb-1 group">
-                          <label className="text-[10px] text-[var(--app-text-secondary)]">{t('layout.verticalPosition')}</label>
-                          <input
-                            type="number"
-                            value={globalSettings.backgroundY || 0}
-                            onChange={(e) => setGlobalSettings(s => ({ ...s, backgroundY: parseInt(e.target.value) || 0 }))}
-                            className="hidden"
-                          />
-                          <span className="text-[10px] text-[var(--app-text-muted)] font-mono">{globalSettings.backgroundY || 0}</span>
-                        </div>
-                        <div className="flex items-center gap-2 group">
-                          <input
-                            type="range" min="-1500" max="1500" step="10"
-                            value={globalSettings.backgroundY || 0}
-                            onChange={(e) => setGlobalSettings(s => ({ ...s, backgroundY: parseInt(e.target.value) || 0 }))}
-                            className="flex-1 app-slider"
-                          />
-                          <button onClick={() => setGlobalSettings(s => ({ ...s, backgroundY: 0 }))} className="p-1 text-[var(--app-text-muted)] hover:text-[var(--app-text-primary)] opacity-0 group-hover:opacity-100 transition" title={t('common.reset')}>
-                            <RotateCcw className="w-3 h-3" />
-                          </button>
-                        </div>
-                      </div>
                     </div>
                   </div>
                 )}
@@ -3076,7 +5158,7 @@ const App = () => {
                         title={t('scenes.selectAll')}
                       />
                     )}
-                    <h2 className="text-xs font-semibold text-[var(--app-text-secondary)] uppercase truncate">
+                    <h2 className="text-xs font-semibold text-[var(--app-text-secondary)] tracking-[0.02em] truncate">
                       {t('scenes.sceneList')} ({scenes.filter(s => s.screenshot).length})
                     </h2>
                   </div>
@@ -3104,13 +5186,24 @@ const App = () => {
                       </button>
                     )}
 
-                    <button
-                      onClick={handleElectronBatchUpload}
-                      className="p-1.5 text-[var(--app-accent)] hover:text-white hover:bg-[var(--app-accent)] rounded transition"
-                      title={t('scenes.importScreenshots')}
-                    >
-                      <FolderInput className="w-4 h-4" />
-                    </button>
+                    <div className="relative">
+                      <button
+                        type="button"
+                        className="p-1.5 text-[var(--app-accent)] hover:text-white hover:bg-[var(--app-accent)] rounded transition"
+                        title={t('scenes.importScreenshots')}
+                      >
+                        <FolderInput className="w-4 h-4" />
+                      </button>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        onChange={handleBatchUpload}
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                        aria-label={t('scenes.importScreenshots')}
+                        title={t('scenes.importScreenshots')}
+                      />
+                    </div>
                   </div>
                 </div>
 
@@ -3135,7 +5228,7 @@ const App = () => {
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className={`text-sm font-medium truncate ${activeSceneId === scene.id ? 'text-[var(--app-text-primary)]' : 'text-[var(--app-text-secondary)]'}`}>{scene.name || t('scenes.unnamed')}</div>
-                        <div className="text-[10px] text-[var(--app-text-muted)] truncate">{scene.titleEN || '...'}</div>
+                        <div className="text-[10px] text-[var(--app-text-muted)] truncate">{getSceneTitleByLanguage(scene, sceneListPreviewLanguage) || '...'}</div>
                       </div>
                       <button onClick={(e) => { e.stopPropagation(); deleteScene(scene.id); }}
                         className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-red-500/20 hover:text-red-400 text-gray-600 rounded transition"
@@ -3172,7 +5265,10 @@ const App = () => {
                   return null;
                 })()}
                 {/* Canvas Container - Auto-fit */}
-                <div className="relative shadow-2xl ring-1 ring-[var(--app-border)] rounded-lg overflow-hidden"
+                <div
+                  className="relative shadow-2xl ring-1 ring-[var(--app-border)] rounded-lg overflow-hidden"
+                  onClick={handleCanvasClick}
+                  onPointerDown={handleCanvasPointerDown}
                   style={{
                     aspectRatio: `${globalSettings.width}/${globalSettings.height}`,
                     maxWidth: '100%',
@@ -3182,6 +5278,89 @@ const App = () => {
                   }}
                 >
                   <canvas ref={canvasRef} className="w-full h-full object-contain bg-[var(--app-bg-secondary)] block" />
+                  {selectedOverlayBounds && (
+                    <div
+                      className={`absolute canvas-selection-shell pointer-events-none ${selectedElement === 'background' ? 'canvas-selection-shell-background' : ''}`}
+                      style={getOverlayStyle(selectedOverlayBounds)}
+                    >
+                      <div
+                        className={`absolute inset-0 canvas-selection-outline ${selectedElement === 'background' ? 'canvas-selection-outline-background pointer-events-none' : 'pointer-events-auto cursor-move'}`}
+                        onPointerDown={selectedElement === 'background' ? undefined : handleSelectionOverlayPointerDown}
+                      />
+                      {(selectedElement === 'text' || selectedElement === 'screenshot' || selectedElement === 'device') && (
+                        <>
+                          <button
+                            type="button"
+                            className="absolute canvas-selection-handle canvas-selection-handle-n pointer-events-auto"
+                            onPointerDown={handleSelectionResizePointerDown}
+                            aria-label={t('layout.scale')}
+                            title={t('layout.scale')}
+                          />
+                          <button
+                            type="button"
+                            className="absolute top-0 left-0 canvas-selection-handle canvas-selection-handle-nw pointer-events-auto"
+                            onPointerDown={handleSelectionResizePointerDown}
+                            aria-label={t('layout.scale')}
+                            title={t('layout.scale')}
+                          />
+                          <button
+                            type="button"
+                            className="absolute top-0 right-0 canvas-selection-handle canvas-selection-handle-ne pointer-events-auto"
+                            onPointerDown={handleSelectionResizePointerDown}
+                            aria-label={t('layout.scale')}
+                            title={t('layout.scale')}
+                          />
+                          <button
+                            type="button"
+                            className="absolute canvas-selection-handle canvas-selection-handle-e pointer-events-auto"
+                            onPointerDown={handleSelectionResizePointerDown}
+                            aria-label={t('layout.scale')}
+                            title={t('layout.scale')}
+                          />
+                          <button
+                            type="button"
+                            className="absolute canvas-selection-handle canvas-selection-handle-s pointer-events-auto"
+                            onPointerDown={handleSelectionResizePointerDown}
+                            aria-label={t('layout.scale')}
+                            title={t('layout.scale')}
+                          />
+                          <button
+                            type="button"
+                            className="absolute bottom-0 left-0 canvas-selection-handle canvas-selection-handle-sw pointer-events-auto"
+                            onPointerDown={handleSelectionResizePointerDown}
+                            aria-label={t('layout.scale')}
+                            title={t('layout.scale')}
+                          />
+                          <button
+                            type="button"
+                            className="absolute bottom-0 right-0 canvas-selection-handle canvas-selection-handle-se pointer-events-auto"
+                            onPointerDown={handleSelectionResizePointerDown}
+                            aria-label={t('layout.scale')}
+                            title={t('layout.scale')}
+                          />
+                          <button
+                            type="button"
+                            className="absolute canvas-selection-handle canvas-selection-handle-w pointer-events-auto"
+                            onPointerDown={handleSelectionResizePointerDown}
+                            aria-label={t('layout.scale')}
+                            title={t('layout.scale')}
+                          />
+                        </>
+                      )}
+                    </div>
+                  )}
+                  {alignmentGuides.vertical && (
+                    <div className="absolute canvas-alignment-guide canvas-alignment-guide-vertical" style={{ left: '50%' }} />
+                  )}
+                  {alignmentGuides.horizontal && (
+                    <div className="absolute canvas-alignment-guide canvas-alignment-guide-horizontal" style={{ top: '50%' }} />
+                  )}
+                  {floatingPreviewBounds && (
+                    <div
+                      className="absolute canvas-drag-preview pointer-events-none"
+                      style={getOverlayStyle(floatingPreviewBounds)}
+                    />
+                  )}
                   {/* Overlay Info */}
                   <div className="absolute top-2 right-2 px-2 py-0.5 bg-black/60 backdrop-blur rounded text-[9px] text-gray-400 pointer-events-none">
                     {globalSettings.width} × {globalSettings.height}
@@ -3205,7 +5384,7 @@ const App = () => {
 
                 {/* Saved Configs */}
                 <div className="bg-[var(--app-card-bg)] rounded-lg p-3 border border-[var(--app-border)]">
-                  <label className="text-[10px] uppercase text-gray-500 font-semibold mb-2 block flex items-center gap-2">
+                  <label className="text-[10px] text-gray-500 font-semibold tracking-[0.02em] mb-2 block flex items-center gap-2">
                     <Archive className="w-3 h-3" /> {t('rightPanel.layoutPresets')}
                   </label>
                   <div className="flex gap-1 mb-2">
@@ -3229,19 +5408,109 @@ const App = () => {
                 </div>
               </div>
 
-              {/* 2. Text Settings */}
-              {/* 2. Text Settings */}
-              <div className="p-5 border-b border-[var(--app-border)]">
+              <div className="px-5 py-3 border-b border-[var(--app-border)]">
+                <div className="flex bg-[var(--app-input-bg)] rounded-xl p-1">
+                  {elementTabs.map(tab => (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      onClick={() => handleElementTabSelect(tab.id)}
+                      className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-2 rounded-lg text-[11px] font-medium transition ${activeElementTab === tab.id
+                        ? 'bg-[var(--app-accent)] text-white shadow-sm'
+                        : 'text-[var(--app-text-muted)] hover:text-[var(--app-text-primary)]'
+                        }`}
+                    >
+                      <tab.icon className="w-3.5 h-3.5" />
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
+                {mockupEnabled && activeElementTab === 'screenshot' && (
+                  <div className="mt-3 flex bg-[var(--app-card-bg)] rounded-xl p-1 border border-[var(--app-border)] element-subpanel">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedElement('screenshot')}
+                      className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-2 rounded-lg text-[11px] font-medium transition ${selectedElement === 'screenshot'
+                        ? 'bg-[var(--app-accent)] text-white shadow-sm'
+                        : 'text-[var(--app-text-muted)] hover:text-[var(--app-text-primary)]'
+                        }`}
+                    >
+                      <Monitor className="w-3.5 h-3.5" />
+                      {t('layout.screenshotControls')}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedElement('device')}
+                      className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-2 rounded-lg text-[11px] font-medium transition ${selectedElement === 'device'
+                        ? 'bg-[var(--app-accent)] text-white shadow-sm'
+                        : 'text-[var(--app-text-muted)] hover:text-[var(--app-text-primary)]'
+                        }`}
+                    >
+                      <Smartphone className="w-3.5 h-3.5" />
+                      {t('layout.deviceControls')}
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {selectedElement === 'background' && renderBackgroundSettingsPanel()}
+
+              {selectedElement === 'text' && (
+              <div className="p-5 border-b border-[var(--app-border)] element-panel">
                 <div className="bg-[var(--app-card-bg)] rounded-lg p-3 border border-[var(--app-border)]">
-                  <h3 className="text-xs uppercase text-[var(--app-text-secondary)] font-bold mb-4 flex items-center gap-2">
+                  <h3 className="text-xs text-[var(--app-text-secondary)] font-bold tracking-[0.02em] mb-4 flex items-center gap-2">
                     <Type className="w-3 h-3" /> {t('text.title')}
                   </h3>
 
                   <div className="space-y-4">
+                    <div className="pb-4 border-b border-[var(--app-border)]">
+                      <div className="flex items-center justify-between mb-3 gap-3">
+                        <span className="text-[10px] text-[var(--app-text-secondary)] font-semibold tracking-[0.02em]">
+                          {t('scenes.previewLanguage', '画布语言')}
+                        </span>
+                        <span className="text-[10px] text-[var(--app-text-muted)] truncate">
+                          {previewLanguageInfo?.nativeName || previewLanguage}
+                        </span>
+                      </div>
+                      <div className="space-y-2 max-h-44 overflow-y-auto slim-scrollbar pr-1">
+                        {previewLanguageOptions.map((languageCode, index) => {
+                          const languageInfo = getLanguageInfo(languageCode);
+                          const isActive = previewLanguage === languageCode;
+                          const isPrimaryLanguage = index === 0;
+
+                          return (
+                            <button
+                              key={`preview-language-${languageCode}`}
+                              type="button"
+                              onClick={() => setPreviewLanguage(languageCode)}
+                              className={`w-full px-3 py-2 rounded-lg border text-left transition ${isActive
+                                ? 'border-[var(--app-accent)] bg-[var(--app-accent-light)] text-[var(--app-accent)]'
+                                : 'border-[var(--app-border)] bg-[var(--app-input-bg)] text-[var(--app-text-secondary)] hover:border-[var(--app-border-strong)] hover:text-[var(--app-text-primary)]'
+                                }`}
+                            >
+                              <div className="flex items-center justify-between gap-3">
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <span className="text-[12px] leading-none">{languageInfo?.flag || '🌐'}</span>
+                                  <span className="text-xs font-medium truncate">
+                                    {languageInfo?.nativeName || languageCode}
+                                  </span>
+                                </div>
+                                <span className="text-[10px] opacity-70 shrink-0">
+                                  {isPrimaryLanguage
+                                    ? t('scenes.primaryLanguage')
+                                    : t('scenes.translationLanguage')}
+                                </span>
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
                     {/* Global Text Controls */}
                     <div className="pb-4 border-b border-[var(--app-border)]">
                       <div className="flex items-center justify-between mb-3">
-                        <span className="text-[10px] uppercase text-[var(--app-text-secondary)] font-semibold">{t('text.alignment')}</span>
+                        <span className="text-[10px] text-[var(--app-text-secondary)] font-semibold tracking-[0.02em]">{t('text.alignment')}</span>
                         <div className="flex bg-[var(--app-input-bg)] rounded-md p-0.5">
                           <button
                             onClick={() => setGlobalSettings(s => ({ ...s, textAlign: 'left' }))}
@@ -3305,7 +5574,7 @@ const App = () => {
                                   onClick={() => setGlobalSettings(s => ({ ...s, strokeColor: c.id }))}
                                   className={`w-5 h-5 rounded-md border-2 transition ${globalSettings.strokeColor === c.id ? 'border-blue-500 scale-110' : 'border-gray-600 hover:border-gray-500'}`}
                                   style={{ background: c.value }}
-                                  title={c.name}
+                                  title={getStrokeColorName(c.id, c.name)}
                                 />
                               ))}
                             </div>
@@ -3313,7 +5582,7 @@ const App = () => {
                           {/* Stroke Width & Opacity */}
                           <div className="grid grid-cols-2 gap-2">
                             <div>
-                              <div className="flex justify-between text-[10px] text-gray-400 mb-1">{t('text.strokeWidth') || 'Width'} <span>{globalSettings.strokeWidth || 4}</span></div>
+                              <div className="flex justify-between text-[10px] text-gray-400 mb-1">{t('text.strokeWidth')} <span>{globalSettings.strokeWidth || 4}</span></div>
                               <input
                                 type="range" min="1" max="15" step="1"
                                 value={globalSettings.strokeWidth || 4}
@@ -3322,7 +5591,7 @@ const App = () => {
                               />
                             </div>
                             <div>
-                              <div className="flex justify-between text-[10px] text-gray-400 mb-1">{t('text.strokeOpacity') || 'Opacity'} <span>{Math.round((globalSettings.strokeOpacity !== undefined ? globalSettings.strokeOpacity : 1) * 100)}%</span></div>
+                              <div className="flex justify-between text-[10px] text-gray-400 mb-1">{t('text.strokeOpacity')} <span>{Math.round((globalSettings.strokeOpacity !== undefined ? globalSettings.strokeOpacity : 1) * 100)}%</span></div>
                               <input
                                 type="range" min="0" max="1" step="0.1"
                                 value={globalSettings.strokeOpacity !== undefined ? globalSettings.strokeOpacity : 1}
@@ -3335,7 +5604,7 @@ const App = () => {
                       )}
                       {/* Text Fade Control */}
                       <div className="mt-3 pt-3 border-t border-[var(--app-border)] space-y-2">
-                        <div className="text-[10px] uppercase text-[var(--app-text-secondary)] font-semibold">{t('text.gradientControl')}</div>
+                        <div className="text-[10px] text-[var(--app-text-secondary)] font-semibold tracking-[0.02em]">{t('text.gradientControl')}</div>
                         <div className="group">
                           <div className="flex justify-between text-[10px] text-[var(--app-text-secondary)] mb-1">{t('text.fadePosition')} <span>{Math.round(globalSettings.fadeStart * 100)}%</span></div>
                           <div className="flex items-center gap-2">
@@ -3364,232 +5633,191 @@ const App = () => {
                     </div>
 
                     <div className="space-y-3 pb-4 border-b border-[var(--app-border)]">
-                      {/* Chinese Title */}
-                      <div>
-                        <label className="block text-[10px] text-[var(--app-text-secondary)] mb-1">
-                          {LANGUAGES.find(l => l.code === globalSettings.primaryLang)?.nativeName || t('scenes.primaryLanguage')} <span className="opacity-50">- {t('scenes.primaryLanguage')}</span>
-                        </label>
+                      <div className="relative">
+                        <div className="mb-1 flex justify-between items-center gap-2">
+                          <label
+                            htmlFor={`scene-${activeScene.id}-title-${previewLanguage}`}
+                            className="block text-[10px] text-[var(--app-text-secondary)]"
+                          >
+                            {previewLanguageInfo?.nativeName || previewLanguage} <span className="opacity-50">- {previewLanguageRoleLabel}</span>
+                          </label>
+                          {!previewLanguageIsPrimary && previewTranslationLanguage && (
+                            <button
+                              type="button"
+                              onClick={() => handleRetranslateSceneLanguage(previewTranslationLanguage)}
+                              disabled={!previewTranslationSourceText || isRetranslating}
+                              className={`shrink-0 text-[10px] flex items-center gap-1 px-1.5 py-0.5 rounded transition ${previewTranslationSourceText && !isRetranslating ? 'bg-[var(--app-accent)] text-white hover:bg-[var(--app-accent-hover)]' : 'bg-[var(--app-bg-elevated)] text-[var(--app-text-muted)] cursor-not-allowed'}`}
+                            >
+                              <RefreshCw className={`w-3 h-3 ${isRetranslating ? 'animate-spin' : ''}`} /> {t('text.reTranslate')}
+                            </button>
+                          )}
+                        </div>
                         <textarea
+                          id={`scene-${activeScene.id}-title-${previewLanguage}`}
                           rows={2}
-                          value={activeScene.titleCN}
+                          value={previewLanguageTitle}
                           onChange={(e) => {
-                            const newTitle = e.target.value;
-                            // 同步更新 name（去掉换行符显示在列表）
-                            updateScene(activeScene.id, { titleCN: newTitle, name: newTitle.replace(/\n/g, ' ') });
+                            const nextTitle = e.target.value;
+                            const titleUpdate = buildSceneTitleUpdate(activeScene, previewLanguage, nextTitle);
+                            updateScene(
+                              activeScene.id,
+                              previewLanguageIsPrimary
+                                ? { ...titleUpdate, name: nextTitle.replace(/\n/g, ' ') }
+                                : titleUpdate
+                            );
                           }}
                           className="w-full bg-[var(--app-input-bg)] border border-[var(--app-border)] rounded p-2 text-xs text-[var(--app-text-primary)] focus:border-[var(--app-accent)] outline-none resize-none transition"
-                          placeholder="支持多行文字..."
-                        />
-                      </div>
-
-                      {/* English Title */}
-                      <div className="relative">
-                        <label className="block text-[10px] text-[var(--app-text-secondary)] mb-1 flex justify-between items-center">
-                          <span>
-                            {globalSettings.secondaryLang === 'none' ? t('scenes.translationLanguage') : LANGUAGES.find(l => l.code === globalSettings.secondaryLang)?.nativeName} <span className="opacity-50">- {t('scenes.translationLanguage')}</span>
-                          </span>
-                          <button
-                            onClick={async () => {
-                              const trans = await translateText(activeScene.titleCN, globalSettings.secondaryLang);
-                              updateScene(activeScene.id, { titleEN: trans });
-                            }}
-                            disabled={!ollamaConfig.isConnected || globalSettings.secondaryLang === 'none'}
-                            className={`text-[10px] flex items-center gap-1 px-1.5 py-0.5 rounded transition ${ollamaConfig.isConnected && globalSettings.secondaryLang !== 'none' ? 'bg-[var(--app-accent)] text-white hover:bg-[var(--app-accent-hover)]' : 'bg-[var(--app-bg-elevated)] text-[var(--app-text-muted)] cursor-not-allowed'}`}
-                          >
-                            <RefreshCw className="w-3 h-3" /> {t('text.reTranslate')}
-                          </button>
-                        </label>
-                        <textarea
-                          rows={2}
-                          value={activeScene.titleEN}
-                          onChange={(e) => updateScene(activeScene.id, { titleEN: e.target.value })}
-                          className="w-full bg-[var(--app-input-bg)] border border-[var(--app-border)] rounded p-2 text-xs text-[var(--app-text-primary)] focus:border-[var(--app-accent)] outline-none resize-none transition"
-                          placeholder="Supports multiple lines..."
+                          placeholder={t('common.multilinePlaceholder')}
                         />
                       </div>
                     </div>
 
-                    {/* 主语言文字样式 - 只在预览主语言时显示 */}
-                    {previewLanguage === 'primary' && (
-                      <div className="mt-2">
-                        <h4 className="text-xs uppercase text-[var(--app-text-secondary)] font-bold mb-3">
-                          {LANGUAGES.find(l => l.code === globalSettings.primaryLang)?.nativeName || t('text.primaryStyle')} {t('text.primaryStyle')}
-                        </h4>
-                        <div className="space-y-3">
-                          {/* Font Selection */}
-                          <div>
-                            <div className="text-[10px] text-[var(--app-text-secondary)] mb-1">{t('text.font')}</div>
-                            <select
-                              value={globalSettings.fontCN}
-                              onChange={(e) => setGlobalSettings(s => ({ ...s, fontCN: e.target.value }))}
-                              className="w-full bg-[var(--app-input-bg)] border border-[var(--app-border)] rounded px-2 py-1 text-xs text-[var(--app-text-primary)]"
-                            >
-                              {FONTS_CN.map(f => <option key={f.id} value={f.value}>{getFontName(f.id, f.name)}</option>)}
-                            </select>
-                          </div>
-                          {/* Color Selection */}
-                          <div>
-                            <div className="text-[10px] text-[var(--app-text-secondary)] mb-1">{t('text.color')}</div>
-                            <div className="flex gap-1.5 flex-wrap">
-                              {TEXT_COLORS.map(c => (
-                                <button
-                                  key={c.id}
-                                  onClick={() => setGlobalSettings(s => ({ ...s, textColorCN: c.id }))}
-                                  className={`w-6 h-6 rounded-md border-2 transition ${globalSettings.textColorCN === c.id ? 'border-[var(--app-accent)] scale-110' : 'border-[var(--app-border-strong)] hover:border-[var(--app-accent)]'}`}
-                                  style={{ background: c.gradient ? `linear-gradient(135deg, ${c.gradient[0]}, ${c.gradient[1]})` : c.value }}
-                                  title={c.name}
-                                />
-                              ))}
-                            </div>
-                          </div>
-                          {/* Size */}
-                          <div className="group">
-                            <div className="flex justify-between text-[10px] text-[var(--app-text-secondary)] mb-1">{t('text.fontSize')} <span>{activeScene.settings.textSizeCN}</span></div>
-                            <div className="flex items-center gap-2">
-                              <input
-                                type="range" min="40" max="300" step="5"
-                                value={activeScene.settings.textSizeCN}
-                                onChange={(e) => updateSceneSettings('textSizeCN', parseInt(e.target.value))}
-                                className="flex-1 h-1 bg-[var(--app-control-track)] rounded-lg appearance-none cursor-pointer accent-[var(--app-accent)]"
-                              />
-                              <button onClick={() => resetSceneSetting('textSizeCN')} className="p-1 text-gray-500 hover:text-[var(--app-accent)] opacity-0 group-hover:opacity-100 transition"><RotateCcw className="w-3 h-3" /></button>
-                            </div>
-                          </div>
-                          {/* Y Position */}
-                          <div className="group">
-                            <div className="flex justify-between text-[10px] text-[var(--app-text-secondary)] mb-1">{t('layout.verticalPosition')} <span>{activeScene.settings.textYCN}</span></div>
-                            <div className="flex items-center gap-2">
-                              <input
-                                type="range" min="50" max="1000" step="10"
-                                value={activeScene.settings.textYCN}
-                                onChange={(e) => updateSceneSettings('textYCN', parseInt(e.target.value))}
-                                className="flex-1 h-1 bg-[var(--app-control-track)] rounded-lg appearance-none cursor-pointer accent-[var(--app-accent)]"
-                              />
-                              <button onClick={() => resetSceneSetting('textYCN')} className="p-1 text-gray-500 hover:text-[var(--app-accent)] opacity-0 group-hover:opacity-100 transition"><RotateCcw className="w-3 h-3" /></button>
-                            </div>
-                          </div>
+                    <div className="mt-2 text-[var(--app-text-secondary)]">
+                      <h4 className="text-xs text-[var(--app-text-secondary)] font-bold tracking-[0.02em] mb-3">
+                        {previewLanguageInfo?.nativeName || previewLanguage} {t('text.primaryStyle')}
+                      </h4>
+                      <div className="space-y-3">
+                        <div>
+                          <div className="text-[10px] text-[var(--app-text-secondary)] mb-1">{t('text.font')}</div>
+                          <select
+                            value={previewLanguageTextStyle.font}
+                            onChange={(e) => updateGlobalLanguageStyle(previewLanguage, { font: e.target.value })}
+                            className="w-full bg-[var(--app-input-bg)] border border-[var(--app-border)] rounded px-2 py-1 text-xs text-[var(--app-text-primary)]"
+                          >
+                            {getFontOptionsForLanguage(previewLanguage).map(font => (
+                              <option key={font.id} value={font.value}>{getFontName(font.id, font.name)}</option>
+                            ))}
+                          </select>
                         </div>
-                      </div>
-                    )}
 
-
-                    {/* 副语言文字样式 - 只在预览副语言时显示 */}
-                    {previewLanguage === 'secondary' && globalSettings.secondaryLang !== 'none' && (
-                      <div className="mt-2 text-[var(--app-text-secondary)]">
-                        <h4 className="text-xs uppercase text-[var(--app-text-secondary)] font-bold mb-3">
-                          {LANGUAGES.find(l => l.code === globalSettings.secondaryLang)?.nativeName || t('scenes.translationLanguage')} {t('text.primaryStyle')}
-                        </h4>
-                        <div className="space-y-3">
-                          {/* Font Selection */}
-                          <div>
-                            <div className="text-[10px] text-gray-400 mb-1">{t('text.font')}</div>
-                            <select
-                              value={globalSettings.fontEN}
-                              onChange={(e) => setGlobalSettings(s => ({ ...s, fontEN: e.target.value }))}
-                              className="w-full bg-[var(--app-input-bg)] border border-[var(--app-border)] rounded px-2 py-1 text-xs text-[var(--app-text-primary)]"
-                            >
-                              {FONTS_EN.map(f => <option key={f.id} value={f.value}>{f.name}</option>)}
-                            </select>
-                          </div>
-                          {/* Uppercase Option */}
+                        {previewLanguage !== globalSettings.primaryLang && (
                           <div>
                             <label className="flex items-center gap-2 text-[10px] text-[var(--app-text-secondary)] cursor-pointer">
                               <input
                                 type="checkbox"
-                                checked={globalSettings.textUppercase}
-                                onChange={(e) => setGlobalSettings(s => ({ ...s, textUppercase: e.target.checked }))}
+                                checked={previewLanguageTextStyle.uppercase}
+                                onChange={(e) => updateGlobalLanguageStyle(previewLanguage, { uppercase: e.target.checked })}
                                 className="rounded bg-[var(--app-input-bg)] border-[var(--app-border)] text-[var(--app-accent)]"
                               />
                               {t('text.uppercase')}
                             </label>
                           </div>
-                          {/* Color Selection */}
-                          <div>
-                            <div className="text-[10px] text-[var(--app-text-secondary)] mb-1">{t('text.color')}</div>
-                            <div className="flex gap-1.5 flex-wrap">
-                              {TEXT_COLORS.map(c => (
-                                <button
-                                  key={c.id}
-                                  onClick={() => setGlobalSettings(s => ({ ...s, textColorEN: c.id }))}
-                                  className={`w-6 h-6 rounded-md border-2 transition ${globalSettings.textColorEN === c.id ? 'border-[var(--app-accent)] scale-110' : 'border-[var(--app-border-strong)] hover:border-[var(--app-accent)]'}`}
-                                  style={{ background: c.gradient ? `linear-gradient(135deg, ${c.gradient[0]}, ${c.gradient[1]})` : c.value }}
-                                  title={c.name}
-                                />
-                              ))}
-                            </div>
-                          </div>
-                          {/* Size */}
-                          <div className="group">
-                            <div className="flex justify-between text-[10px] text-[var(--app-text-secondary)] mb-1">{t('text.fontSize')} <span>{activeScene.settings.textSizeEN}</span></div>
-                            <div className="flex items-center gap-2">
-                              <input
-                                type="range" min="40" max="300" step="5"
-                                value={activeScene.settings.textSizeEN}
-                                onChange={(e) => updateSceneSettings('textSizeEN', parseInt(e.target.value))}
-                                className="flex-1 h-1 bg-[var(--app-control-track)] rounded-lg appearance-none cursor-pointer accent-[var(--app-accent)]"
+                        )}
+
+                        <div>
+                          <div className="text-[10px] text-[var(--app-text-secondary)] mb-1">{t('text.color')}</div>
+                          <div className="flex gap-1.5 flex-wrap">
+                            {TEXT_COLORS.map(c => (
+                              <button
+                                key={c.id}
+                                onClick={() => updateGlobalLanguageStyle(previewLanguage, { textColor: c.id })}
+                                className={`w-6 h-6 rounded-md border-2 transition ${previewLanguageTextStyle.textColor === c.id ? 'border-[var(--app-accent)] scale-110' : 'border-[var(--app-border-strong)] hover:border-[var(--app-accent)]'}`}
+                                style={{ background: c.gradient ? `linear-gradient(135deg, ${c.gradient[0]}, ${c.gradient[1]})` : c.value }}
+                                title={getTextColorName(c.id, c.name)}
                               />
-                              <button onClick={() => resetSceneSetting('textSizeEN')} className="p-1 text-gray-500 hover:text-[var(--app-accent)] opacity-0 group-hover:opacity-100 transition"><RotateCcw className="w-3 h-3" /></button>
-                            </div>
+                            ))}
                           </div>
-                          {/* Y Position */}
-                          <div className="group">
-                            <div className="flex justify-between text-[10px] text-[var(--app-text-secondary)] mb-1">{t('layout.verticalPosition')} <span>{activeScene.settings.textYEN}</span></div>
-                            <div className="flex items-center gap-2">
-                              <input
-                                type="range" min="50" max="1000" step="10"
-                                value={activeScene.settings.textYEN}
-                                onChange={(e) => updateSceneSettings('textYEN', parseInt(e.target.value))}
-                                className="flex-1 h-1 bg-[var(--app-control-track)] rounded-lg appearance-none cursor-pointer accent-[var(--app-accent)]"
-                              />
-                              <button onClick={() => resetSceneSetting('textYEN')} className="p-1 text-[var(--app-text-muted)] hover:text-[var(--app-accent)] opacity-0 group-hover:opacity-100 transition"><RotateCcw className="w-3 h-3" /></button>
-                            </div>
+                        </div>
+
+                        <div className="group">
+                          <div className="flex justify-between text-[10px] text-[var(--app-text-secondary)] mb-1">{t('text.fontSize')} <span>{previewedTextStyle.textSize}</span></div>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="range" min="40" max="300" step="5"
+                              value={previewedTextStyle.textSize}
+                              onChange={(e) => queueDragPreview('text', { textSize: parseInt(e.target.value) })}
+                              onPointerUp={() => commitDragPreview('text')}
+                              onBlur={() => commitDragPreview('text')}
+                              className="flex-1 h-1 bg-[var(--app-control-track)] rounded-lg appearance-none cursor-pointer accent-[var(--app-accent)]"
+                            />
+                            <button
+                              onClick={() => {
+                                clearDragPreview();
+                                resetSceneLanguageStyle(activeScene.id, previewLanguage, 'textSize');
+                              }}
+                              className="p-1 text-[var(--app-text-muted)] hover:text-[var(--app-accent)] opacity-0 group-hover:opacity-100 transition"
+                            >
+                              <RotateCcw className="w-3 h-3" />
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="group">
+                          <div className="flex justify-between text-[10px] text-[var(--app-text-secondary)] mb-1">{t('layout.verticalPosition')} <span>{previewedTextStyle.textY}</span></div>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="range" min="50" max="1000" step="10"
+                              value={previewedTextStyle.textY}
+                              onChange={(e) => queueDragPreview('text', { textY: parseInt(e.target.value) })}
+                              onPointerUp={() => commitDragPreview('text')}
+                              onBlur={() => commitDragPreview('text')}
+                              className="flex-1 h-1 bg-[var(--app-control-track)] rounded-lg appearance-none cursor-pointer accent-[var(--app-accent)]"
+                            />
+                            <button
+                              onClick={() => {
+                                clearDragPreview();
+                                resetSceneLanguageStyle(activeScene.id, previewLanguage, 'textY');
+                              }}
+                              className="p-1 text-[var(--app-text-muted)] hover:text-[var(--app-accent)] opacity-0 group-hover:opacity-100 transition"
+                            >
+                              <RotateCcw className="w-3 h-3" />
+                            </button>
                           </div>
                         </div>
                       </div>
-                    )}
+                    </div>
                   </div>
                 </div>
               </div>
+              )}
 
               {/* 3. Screenshot & Device Controls */}
-              <div className="p-5">
+              {(selectedElement === 'screenshot' || selectedElement === 'device') && (
+              <div className="p-5 element-panel">
                 <div className="space-y-4">
                   {/* Screenshot Controls */}
+                  {selectedElement === 'screenshot' && (
                   <div className="bg-[var(--app-card-bg)] rounded-lg p-3 border border-[var(--app-border)]">
-                    <label className="text-xs uppercase text-[var(--app-text-secondary)] font-bold mb-3 block flex items-center gap-2">
+                    <label className="text-xs text-[var(--app-text-secondary)] font-bold tracking-[0.02em] mb-3 block flex items-center gap-2">
                       <Settings className="w-3 h-3" /> {t('layout.title')}
                     </label>
                     <div className="space-y-3">
                       <div className="group">
                         <div className="flex justify-between text-[10px] text-[var(--app-text-secondary)] mb-1">
-                          {t('layout.scale')} <span>{Math.round(activeScene.settings.screenshotScale * 100)}%</span>
+                          {t('layout.scale')} <span>{Math.round(previewedSceneSettings.screenshotScale * 100)}%</span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <input type="range" min="0.3" max="3.0" step="0.01" value={activeScene.settings.screenshotScale}
-                            onChange={(e) => updateSceneSettings('screenshotScale', parseFloat(e.target.value))}
+                          <input type="range" min="0.3" max="3.0" step="0.01" value={previewedSceneSettings.screenshotScale}
+                            onChange={(e) => queueDragPreview('screenshot', { screenshotScale: parseFloat(e.target.value) })}
+                            onPointerUp={() => commitDragPreview('screenshot')}
+                            onBlur={() => commitDragPreview('screenshot')}
                             className="flex-1 h-1 bg-[var(--app-control-track)] rounded-lg appearance-none cursor-pointer accent-[var(--app-accent)]"
                           />
-                          <button onClick={() => resetSceneSetting('screenshotScale')} className="p-1 text-[var(--app-text-muted)] hover:text-[var(--app-accent)] opacity-0 group-hover:opacity-100 transition"><RotateCcw className="w-3 h-3" /></button>
-                        </div>
-                      </div>
-                      <div className="group">
-                        <div className="flex justify-between text-[10px] text-[var(--app-text-secondary)] mb-1">{t('layout.verticalPosition')} <span>{activeScene.settings.screenshotY}</span></div>
-                        <div className="flex items-center gap-2">
-                          <input type="range" min="-1000" max="1000" step="10" value={activeScene.settings.screenshotY} onChange={(e) =>
-                            updateSceneSettings('screenshotY', parseInt(e.target.value))}
-                            className="flex-1 h-1 bg-[var(--app-control-track)] rounded-lg appearance-none cursor-pointer accent-[var(--app-accent)]"
-                          />
-                          <button onClick={() => resetSceneSetting('screenshotY')} className="p-1 text-[var(--app-text-muted)] hover:text-[var(--app-accent)] opacity-0 group-hover:opacity-100 transition"><RotateCcw className="w-3 h-3" /></button>
+                          <button onClick={() => { clearDragPreview(); resetSceneSetting('screenshotScale'); }} className="p-1 text-[var(--app-text-muted)] hover:text-[var(--app-accent)] opacity-0 group-hover:opacity-100 transition"><RotateCcw className="w-3 h-3" /></button>
                         </div>
                       </div>
                       <div className="group">
-                        <div className="flex justify-between text-[10px] text-[var(--app-text-secondary)] mb-1">{t('layout.horizontalPosition')} <span>{activeScene.settings.screenshotX}</span></div>
+                        <div className="flex justify-between text-[10px] text-[var(--app-text-secondary)] mb-1">{t('layout.verticalPosition')} <span>{previewedSceneSettings.screenshotY}</span></div>
                         <div className="flex items-center gap-2">
-                          <input type="range" min="-1000" max="1000" step="10" value={activeScene.settings.screenshotX}
-                            onChange={(e) => updateSceneSettings('screenshotX', parseInt(e.target.value))}
+                          <input type="range" min="-1000" max="1000" step="10" value={previewedSceneSettings.screenshotY} onChange={(e) =>
+                            queueDragPreview('screenshot', { screenshotY: parseInt(e.target.value) })}
+                            onPointerUp={() => commitDragPreview('screenshot')}
+                            onBlur={() => commitDragPreview('screenshot')}
                             className="flex-1 h-1 bg-[var(--app-control-track)] rounded-lg appearance-none cursor-pointer accent-[var(--app-accent)]"
                           />
-                          <button onClick={() => resetSceneSetting('screenshotX')} className="p-1 text-[var(--app-text-muted)] hover:text-[var(--app-accent)] opacity-0 group-hover:opacity-100 transition"><RotateCcw className="w-3 h-3" /></button>
+                          <button onClick={() => { clearDragPreview(); resetSceneSetting('screenshotY'); }} className="p-1 text-[var(--app-text-muted)] hover:text-[var(--app-accent)] opacity-0 group-hover:opacity-100 transition"><RotateCcw className="w-3 h-3" /></button>
+                        </div>
+                      </div>
+                      <div className="group">
+                        <div className="flex justify-between text-[10px] text-[var(--app-text-secondary)] mb-1">{t('layout.horizontalPosition')} <span>{previewedSceneSettings.screenshotX}</span></div>
+                        <div className="flex items-center gap-2">
+                          <input type="range" min="-1000" max="1000" step="10" value={previewedSceneSettings.screenshotX}
+                            onChange={(e) => queueDragPreview('screenshot', { screenshotX: parseInt(e.target.value) })}
+                            onPointerUp={() => commitDragPreview('screenshot')}
+                            onBlur={() => commitDragPreview('screenshot')}
+                            className="flex-1 h-1 bg-[var(--app-control-track)] rounded-lg appearance-none cursor-pointer accent-[var(--app-accent)]"
+                          />
+                          <button onClick={() => { clearDragPreview(); resetSceneSetting('screenshotX'); }} className="p-1 text-[var(--app-text-muted)] hover:text-[var(--app-accent)] opacity-0 group-hover:opacity-100 transition"><RotateCcw className="w-3 h-3" /></button>
                         </div>
                       </div>
                       {/* Screenshot Shadow Toggle */}
@@ -3597,44 +5825,55 @@ const App = () => {
                         <label className={`flex items-center gap-2 text-[10px] text-[var(--app-text-secondary)] ${mockupEnabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}>
                           <input
                             type="checkbox"
-                            checked={activeScene.settings.screenshotShadow !== false}
+                            checked={activeSceneSettings.screenshotShadow !== false}
                             onChange={(e) => updateSceneSettings('screenshotShadow', e.target.checked)}
                             disabled={mockupEnabled}
                             className="rounded bg-[var(--app-input-bg)] border-[var(--app-border)] text-[var(--app-accent)] disabled:opacity-50"
                           />
                           {t('layout.screenshotShadow')}
-                          {mockupEnabled && <span className="text-[10px] ml-auto italic opacity-70">({t('layout.disabledByMockup') || 'Disabled by Device'})</span>}
+                          {mockupEnabled && <span className="text-[10px] ml-auto italic opacity-70">({t('layout.disabledByMockup')})</span>}
                         </label>
                       </div>
                     </div>
                   </div>
+                  )}
 
                   {/* Device Mockup Controls */}
-                  <DeviceMockup
-                    enabled={mockupEnabled}
-                    setEnabled={setMockupEnabled}
-                    selectedDevice={selectedDevice}
-                    setSelectedDevice={setSelectedDevice}
-                    frameColor={deviceFrameColor}
-                    setFrameColor={setDeviceFrameColor}
-                    showLockScreen={showLockScreenUI}
-                    setShowLockScreen={setShowLockScreenUI}
-                    showShadow={showMockupShadow}
-                    setShowShadow={setShowMockupShadow}
-                    shadowOpacity={shadowOpacity}
-                    setShadowOpacity={setShadowOpacity}
-                    deviceScale={deviceScale}
-                    setDeviceScale={setDeviceScale}
-                    deviceX={deviceX}
-                    setDeviceX={setDeviceX}
-                    deviceY={deviceY}
-                    setDeviceY={setDeviceY}
-                    iPadLandscape={iPadLandscape}
-                    setiPadLandscape={setiPadLandscape}
-                    t={t}
-                  />
+                  {(selectedElement === 'device' || !mockupEnabled) && (
+                    <div className="space-y-3">
+                      <DeviceMockup
+                        enabled={mockupEnabled}
+                        setEnabled={setMockupEnabled}
+                        selectedDevice={selectedDevice}
+                        setSelectedDevice={setSelectedDevice}
+                        frameColor={deviceFrameColor}
+                        setFrameColor={setDeviceFrameColor}
+                        showLockScreen={showLockScreenUI}
+                        setShowLockScreen={setShowLockScreenUI}
+                        showShadow={showMockupShadow}
+                        setShowShadow={setShowMockupShadow}
+                        shadowOpacity={shadowOpacity}
+                        setShadowOpacity={setShadowOpacity}
+                        deviceScale={previewedDeviceState.deviceScale}
+                        setDeviceScale={(value) => queueDragPreview('device', { deviceScale: value })}
+                        deviceX={previewedDeviceState.deviceX}
+                        setDeviceX={(value) => queueDragPreview('device', { deviceX: value })}
+                        deviceY={previewedDeviceState.deviceY}
+                        setDeviceY={(value) => queueDragPreview('device', { deviceY: value })}
+                        commitDeviceTransformPreview={() => commitDragPreview('device')}
+                        resetDeviceTransformControl={(key, value) => {
+                          clearDragPreview();
+                          applyDeviceTransformPatch({ [key]: value });
+                        }}
+                        iPadLandscape={iPadLandscape}
+                        setiPadLandscape={setiPadLandscape}
+                        t={t}
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
+              )}
             </div>
           </div >
         )
@@ -3644,19 +5883,56 @@ const App = () => {
       {
         importProgress.active && (
           <div className="fixed bottom-0 left-0 right-0 bg-[var(--app-bg-header)] border-t border-[var(--app-border)] px-4 py-2 z-50">
-            <div className="flex items-center gap-3">
+            <div className="flex items-start gap-3">
               <div className="flex-1">
-                <div className="flex justify-between text-xs text-gray-400 mb-1">
-                  <span>{importProgress.message}</span>
-                  <span>{importProgress.current} / {importProgress.total}</span>
+                <div className="flex justify-between items-center text-xs text-gray-400 mb-1 gap-3">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className={`inline-flex w-2 h-2 rounded-full ${importProgress.status === 'error'
+                        ? 'bg-red-500'
+                        : importProgress.status === 'warning'
+                          ? 'bg-amber-500'
+                          : importProgress.status === 'success'
+                            ? 'bg-green-500'
+                            : 'bg-[var(--app-accent)]'
+                        }`}></span>
+                      <span className="truncate">{importProgress.message}</span>
+                    </div>
+                    {importProgress.detail && (
+                      <div className="text-[10px] text-[var(--app-text-muted)] mt-1 truncate">
+                        {importProgress.detail}
+                      </div>
+                    )}
+                  </div>
+                  <span className="shrink-0">
+                    {importProgress.total > 0 ? `${importProgress.current} / ${importProgress.total}` : `${importProgressPercent}%`}
+                  </span>
                 </div>
                 <div className="h-1.5 bg-[var(--app-bg-tertiary)] rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-[var(--app-accent)] transition-all duration-300 ease-out"
-                    style={{ width: `${(importProgress.current / importProgress.total) * 100}%` }}
+                    className={`h-full transition-all duration-300 ease-out ${importProgressBarClass}`}
+                    style={{ width: `${importProgressPercent}%` }}
                   />
                 </div>
+                {importProgress.phase === 'translate' && (importProgress.successCount > 0 || importProgress.failedCount > 0 || importProgress.skippedCount > 0) && (
+                  <div className="flex gap-3 mt-1 text-[10px] text-[var(--app-text-muted)]">
+                    <span>{t('alerts.translationSummarySuccess', '成功')}: {importProgress.successCount}</span>
+                    <span>{t('alerts.translationSummaryFailed', '失败')}: {importProgress.failedCount}</span>
+                    {importProgress.skippedCount > 0 && (
+                      <span>{t('alerts.translationSummarySkipped', '跳过')}: {importProgress.skippedCount}</span>
+                    )}
+                  </div>
+                )}
               </div>
+              <button
+                type="button"
+                onClick={handleCloseImportProgress}
+                className="shrink-0 inline-flex items-center justify-center w-7 h-7 rounded border border-[var(--app-border)] bg-[var(--app-bg-elevated)] text-[var(--app-text-muted)] hover:text-white hover:border-[var(--app-accent)] transition"
+                aria-label={t('common.closeProgress', '关闭进度')}
+                title={t('common.closeProgress', '关闭进度')}
+              >
+                <X className="w-4 h-4" />
+              </button>
             </div>
           </div>
         )
@@ -3666,4 +5942,3 @@ const App = () => {
 };
 
 export default App;
-

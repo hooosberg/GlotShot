@@ -507,7 +507,7 @@ const IconFabric = () => {
             total: 100,
             current: 0,
             status: 'exporting',
-            message: t('export.preparing') || 'Preparing export...'
+            message: t('export.preparing')
         });
 
         try {
@@ -517,7 +517,7 @@ const IconFabric = () => {
             setExportProgress(prev => ({
                 ...prev,
                 current: 20,
-                message: t('export.generating') || 'Generating images...'
+                message: t('export.generating')
             }));
 
             // Allow UI to update
@@ -583,7 +583,7 @@ const IconFabric = () => {
             setExportProgress(prev => ({
                 ...prev,
                 current: 70,
-                message: t('export.saving') || 'Saving files...'
+                message: t('export.saving')
             }));
 
             await window.electron.saveFiles({ basePath, files });
@@ -591,9 +591,9 @@ const IconFabric = () => {
             // Complete
             let successMsg = '';
             if (activePlatform === 'apple') {
-                successMsg = t('alerts.appleExportSuccess') || 'Export successful!';
+                successMsg = t('alerts.appleExportSuccess');
             } else {
-                successMsg = `${platform.name}/${platform.exportName} (${platform.exportSize}px)`;
+                successMsg = `${getPlatformLabel(activePlatform)}/${platform.exportName} (${platform.exportSize}px)`;
             }
 
             setExportProgress({
@@ -632,6 +632,7 @@ const IconFabric = () => {
 
     // === UI ===
     const platform = PLATFORMS[activePlatform];
+    const getPlatformLabel = (platformId) => t(`iconFabric.platforms.${platformId}.name`);
 
     return (
         <div className="flex flex-1 overflow-hidden" style={{ background: 'var(--app-bg-primary)' }}>
@@ -649,7 +650,7 @@ const IconFabric = () => {
                             <span className="text-xl">
                                 {ICONS[p.id] && ICONS[p.id]({ className: `w-6 h-6 ${activePlatform === p.id ? 'fill-[var(--app-accent)]' : 'fill-[var(--app-text-secondary)] group-hover:fill-[var(--app-text-primary)]'}` })}
                             </span>
-                            <span className="text-[10px] font-medium">{p.name}</span>
+                            <span className="text-[10px] font-medium">{getPlatformLabel(p.id)}</span>
                         </button>
                     ))}
                 </div>
@@ -782,7 +783,7 @@ const IconFabric = () => {
             {/* 中间：编辑器 */}
             <div className="flex-1 flex flex-col min-w-0" style={{ background: 'var(--app-bg-secondary)' }}>
                 <div className="h-10 flex items-center justify-center border-b border-[var(--app-border)]">
-                    <span className="text-xs text-[var(--app-text-secondary)]">{platform.name} {t('iconFabric.editor')} · {t(`iconFabric.platforms.${activePlatform}.guide`)}</span>
+                    <span className="text-xs text-[var(--app-text-secondary)]">{getPlatformLabel(activePlatform)} {t('iconFabric.editor')} · {t(`iconFabric.platforms.${activePlatform}.guide`)}</span>
                 </div>
                 <div className="flex-1 flex items-center justify-center overflow-hidden p-8">
                     <canvas

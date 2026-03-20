@@ -24,26 +24,26 @@ const ExportProgressModal = ({ isOpen, progress, onCancel, onClose }) => {
                                 <div className="w-5 h-5 rounded-full bg-green-500/20 flex items-center justify-center text-green-500">
                                     <Check className="w-3.5 h-3.5" />
                                 </div>
-                                {t('export.completed') || 'Export Completed'}
+                                {t('export.completed')}
                             </>
                         ) : isCancelled ? (
                             <>
                                 <div className="w-5 h-5 rounded-full bg-yellow-500/20 flex items-center justify-center text-yellow-500">
                                     <AlertTriangle className="w-3.5 h-3.5" />
                                 </div>
-                                {t('export.cancelled') || 'Export Cancelled'}
+                                {t('export.cancelled')}
                             </>
                         ) : isError ? (
                             <>
                                 <div className="w-5 h-5 rounded-full bg-red-500/20 flex items-center justify-center text-red-500">
                                     <X className="w-3.5 h-3.5" />
                                 </div>
-                                {t('export.error') || 'Export Failed'}
+                                {t('export.error')}
                             </>
                         ) : (
                             <>
                                 <Loader2 className="w-4 h-4 animate-spin text-[var(--app-accent)]" />
-                                {t('export.exporting') || 'Exporting...'}
+                                {t('export.exporting')}
                             </>
                         )}
                     </h3>
@@ -101,10 +101,10 @@ const ExportProgressModal = ({ isOpen, progress, onCancel, onClose }) => {
                                 onClick={onCancel}
                                 className="group px-6 py-1.5 bg-[var(--app-bg-elevated)] hover:bg-[var(--app-bg-tertiary)] border border-[var(--app-border)] rounded-full text-xs font-medium text-[var(--app-text-secondary)] hover:text-[var(--app-text-primary)] transition flex items-center gap-2 shadow-sm"
                             >
-                                <span className="group-hover:hidden">{t('common.processing') || 'Processing...'}</span>
+                                <span className="group-hover:hidden">{t('common.processing')}</span>
                                 <span className="hidden group-hover:inline-flex items-center gap-1 text-red-400">
                                     <X className="w-3 h-3" />
-                                    {t('common.cancel') || 'Cancel'}
+                                    {t('common.cancel')}
                                 </span>
                             </button>
                         ) : (
@@ -112,7 +112,7 @@ const ExportProgressModal = ({ isOpen, progress, onCancel, onClose }) => {
                                 onClick={onClose}
                                 className="px-8 py-2 bg-[var(--app-accent)] hover:bg-[var(--app-accent-hover)] text-white rounded-full text-sm font-medium shadow-lg shadow-[var(--app-accent)]/20 transition flex items-center gap-2"
                             >
-                                {t('common.done') || 'Done'}
+                                {t('common.done')}
                             </button>
                         )}
                     </div>

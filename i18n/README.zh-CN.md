@@ -101,11 +101,19 @@
    cd GlotShot
    npm install
    ```
-3. 运行开发模式：
+3. 启动网页开发服务器：
    ```bash
    npm run dev
    ```
-4. 构建生产版本：
+4. 启动桌面版调试：
+   ```bash
+   npm run electron:dev
+   ```
+   如果网页开发服务器已经启动，只想单独打开 Electron：
+   ```bash
+   npm run electron:open
+   ```
+5. 构建生产版本：
    ```bash
    npm run build
    npm run electron:build

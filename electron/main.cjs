@@ -2,6 +2,7 @@ const { app, BrowserWindow, ipcMain, shell, dialog, Menu } = require('electron')
 const path = require('path');
 const fs = require('fs');
 const isDev = process.env.NODE_ENV === 'development';
+const devServerUrl = process.env.ELECTRON_RENDERER_URL || 'http://127.0.0.1:5187/app.html';
 
 let mainWindow;
 
@@ -28,7 +29,8 @@ function createWindow() {
   });
 
   if (isDev) {
-    mainWindow.loadURL('http://localhost:5173/app.html');
+    console.log('Loading dev renderer:', devServerUrl);
+    mainWindow.loadURL(devServerUrl);
     mainWindow.webContents.openDevTools();
   } else {
     mainWindow.loadFile(path.join(__dirname, '../dist/app.html'));
@@ -89,7 +91,7 @@ function createWindow() {
 
   // Log when page finishes loading
   mainWindow.webContents.on('did-finish-load', () => {
-    console.log('Page loaded successfully');
+    console.log('Page loaded successfully:', mainWindow.webContents.getURL());
   });
 
   // 监听窗口关闭事件
@@ -295,6 +297,7 @@ function createMenu(labels = {}) {
 }
 
 app.whenReady().then(() => {
+  app.setName('GlotShot');
   createMenu();
   createWindow();
 
