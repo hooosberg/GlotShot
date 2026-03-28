@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>GlotShot Support</title>
+  <meta name="description" content="Support page for GlotShot.">
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #0f1220;
+      --panel: rgba(255, 255, 255, 0.08);
+      --text: #f3f4f6;
+      --muted: #b5bac8;
+      --accent: #4da3ff;
+      --border: rgba(255, 255, 255, 0.14);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", sans-serif;
+      background:
+        radial-gradient(circle at top, rgba(77, 163, 255, 0.18), transparent 35%),
+        linear-gradient(180deg, #0c1020 0%, #11162a 100%);
+      color: var(--text);
+      display: grid;
+      place-items: center;
+      padding: 32px;
+    }
+    main {
+      width: min(760px, 100%);
+      border: 1px solid var(--border);
+      background: var(--panel);
+      backdrop-filter: blur(18px);
+      border-radius: 24px;
+      padding: 32px;
+      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.28);
+    }
+    h1 { margin: 0 0 12px; font-size: clamp(2rem, 5vw, 3.4rem); line-height: 1.05; }
+    p { margin: 0 0 16px; color: var(--muted); line-height: 1.7; }
+    .card {
+      margin-top: 24px;
+      padding: 20px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .meta { margin-top: 24px; font-size: 0.95rem; color: var(--muted); }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>GlotShot Support</h1>
+    <p>If you need help with installation, purchases, or app behavior, please contact us using the details below.</p>
+    <div class="card">
+      <p><strong>Email:</strong> <a href="mailto:zikedece@proton.me">zikedece@proton.me</a></p>
+      <p><strong>Privacy Policy:</strong> <a href="/privacy.html">View Privacy Policy</a></p>
+      <p><strong>Website:</strong> <a href="https://hooosberg.github.io/GlotShot/">Official Website</a></p>
+    </div>
+    <p class="meta">GlotShot is a local desktop app. Most issues can be resolved by updating to the latest build and restarting the app.</p>
+  </main>
+</body>
+</html>

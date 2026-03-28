@@ -1,13 +1,22 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Upload, Download, Image as ImageIcon, Type, FolderInput, Plus, Trash2, Globe, Settings, Copy, RefreshCw, Cpu, Monitor, RotateCcw, Save, Archive, ChevronDown, ChevronUp, AlignLeft, AlignCenter, AlignRight, Palette, Smartphone, Layers, CheckSquare, X, ArrowRight } from 'lucide-react';
+import { Upload, Download, Image as ImageIcon, Type, FolderInput, Plus, Trash2, Globe, Settings, Copy, RefreshCw, Cpu, Monitor, RotateCcw, Save, ChevronDown, ChevronUp, AlignLeft, AlignCenter, AlignRight, Palette, Smartphone, Layers, CheckSquare, X, ArrowRight } from 'lucide-react';
 import './App.css';
 import useClickOutside from './hooks/useClickOutside';
 import IconFabric from './components/IconFabric/IconFabric';
 import SettingsModal from './components/SettingsModal';
 import ExportProgressModal from './components/ExportProgressModal';
 import DesignTips from './components/DesignTips';
-import { useTranslation, I18nProvider, detectSystemLanguage } from './locales/i18n';
+import PaywallDialog from './components/PaywallDialog';
+import { useTranslation, I18nProvider } from './locales/i18n';
 import ConfirmDialog from './components/ConfirmDialog';
+import { LicenseManager } from './services/LicenseManager';
+import {
+  buildProjectWindowTitle,
+  createProjectDocument,
+  createProjectSnapshot,
+  parseProjectDocument,
+  PROJECT_FILE_EXTENSION
+} from './services/projectDocument';
 import { translations } from './locales/translations';
 import DeviceMockup, {
   DEVICE_CONFIGS,
@@ -341,6 +350,20 @@ const DEFAULT_SCENE_SETTINGS = {
 };
 
 const CJK_LANGUAGE_CODES = ['zh-CN', 'zh-TW', 'ja', 'ko'];
+const APP_PREFERENCES_STORAGE_KEY = 'glotshot_app_preferences_v1';
+const DEFAULT_PROJECT_NAME = 'Untitled';
+const DEFAULT_MOCKUP_STATE = {
+  enabled: false,
+  selectedDevice: 'iphone-17-pro-max',
+  frameColor: '#1C1C1E',
+  showLockScreenUI: false,
+  showMockupShadow: true,
+  shadowOpacity: 0.5,
+  deviceScale: 1.0,
+  deviceX: 0,
+  deviceY: 400,
+  iPadLandscape: true,
+};
 
 const getLanguageInfo = (langCode) => LANGUAGES.find(lang => lang.code === langCode);
 
@@ -364,6 +387,104 @@ const normalizeSecondaryLangs = (primaryLang, secondaryLangs, legacySecondaryLan
   return [...new Set(
     mergedLangs.filter(lang => lang && lang !== 'none' && lang !== primaryLang)
   )];
+};
+
+const detectDefaultPrimaryLanguage = () => {
+  try {
+    const sys = navigator.language;
+    const match = LANGUAGES.find(l => l.code === sys || (sys.startsWith(l.code) && l.code !== 'none'));
+    return match ? match.code : 'zh-CN';
+  } catch {
+    return 'zh-CN';
+  }
+};
+
+const detectDefaultUiLanguage = () => {
+  try {
+    const sys = navigator.language;
+    return sys.startsWith('zh') ? 'zh-CN' : 'en';
+  } catch {
+    return 'zh-CN';
+  }
+};
+
+const getDefaultSecondaryLangs = (primaryLang) => {
+  const fallback = ['en', 'zh-CN', 'ja', 'ko'].find(lang => lang !== primaryLang);
+  return fallback ? [fallback] : [];
+};
+
+const readAppPreferences = () => {
+  try {
+    return JSON.parse(localStorage.getItem(APP_PREFERENCES_STORAGE_KEY)) || {};
+  } catch {
+    return {};
+  }
+};
+
+const pickAppPreferences = (settings = {}) => ({
+  ollamaHost: settings.ollamaHost ?? 'http://localhost:11434',
+  autoTranslate: settings.autoTranslate ?? true,
+  uiLanguage: settings.uiLanguage ?? detectDefaultUiLanguage(),
+});
+
+const pickProjectGlobalSettings = (settings = {}) => {
+  const {
+    ollamaHost,
+    autoTranslate,
+    uiLanguage,
+    ...projectSettings
+  } = settings || {};
+
+  return projectSettings;
+};
+
+const createDefaultProjectGlobalSettings = (appPreferences = {}) => {
+  const primaryLang = detectDefaultPrimaryLanguage();
+  const secondaryLangs = getDefaultSecondaryLangs(primaryLang);
+
+  return {
+    width: DEFAULT_WIDTH,
+    height: DEFAULT_HEIGHT,
+    backgroundType: 'preset',
+    backgroundValue: PRESETS[0].value,
+    backgroundUpload: null,
+    backgroundScale: 1.0,
+    backgroundX: 0,
+    backgroundY: 0,
+    textAlign: 'center',
+    fontCN: FONTS_CN[0].value,
+    fontEN: FONTS_EN[0].value,
+    textColorCN: TEXT_COLORS[0].id,
+    textColorEN: TEXT_COLORS[0].id,
+    textShadow: true,
+    textStroke: false,
+    strokeColor: STROKE_COLORS[0].id,
+    strokeWidth: 4,
+    strokeOpacity: 1.0,
+    fadeStart: 0.7,
+    fadeOpacity: 0.25,
+    textUppercase: false,
+    primaryLang,
+    secondaryLangs,
+    secondaryLang: secondaryLangs[0] || 'none',
+    ollamaHost: appPreferences.ollamaHost ?? 'http://localhost:11434',
+    autoTranslate: appPreferences.autoTranslate ?? true,
+    uiLanguage: appPreferences.uiLanguage ?? detectDefaultUiLanguage(),
+  };
+};
+
+const getProjectNameFromPath = (filePath) => {
+  if (!filePath) return DEFAULT_PROJECT_NAME;
+  const fileName = filePath.split(/[/\\]/).pop() || DEFAULT_PROJECT_NAME;
+  return fileName.replace(/\.[^.]+$/, '') || DEFAULT_PROJECT_NAME;
+};
+
+const sanitizeProjectFileName = (projectName) => {
+  const cleaned = (projectName || DEFAULT_PROJECT_NAME)
+    .replace(/[<>:"/\\|?*\u0000-\u001F]/g, '-')
+    .trim();
+
+  return cleaned || DEFAULT_PROJECT_NAME;
 };
 
 const App = () => {
@@ -561,109 +682,23 @@ const App = () => {
   // Global Settings with localStorage persistence
   const [isDeleteMode, setIsDeleteMode] = useState(false);
   const [globalSettings, setGlobalSettings] = useState(() => {
-    try {
-      const saved = localStorage.getItem('appstore_builder_global');
-      if (saved) {
-        const baseSettings = {
-          ...{
-            width: DEFAULT_WIDTH,
-            height: DEFAULT_HEIGHT,
-            backgroundType: 'preset',
-            backgroundValue: PRESETS[0].value,
-            backgroundUpload: null,
-            // Background Transform
-            backgroundScale: 1.0,
-            backgroundX: 0,
-            backgroundY: 0,
-            // Text styling
-            textAlign: 'center',
-            fontCN: FONTS_CN[0].value,
-            fontEN: FONTS_EN[0].value,
-            textColorCN: TEXT_COLORS[0].id,
-            textColorEN: TEXT_COLORS[0].id,
-            // Text effects
-            textShadow: true,
-            textStroke: false,
-            strokeColor: STROKE_COLORS[0].id,
-            strokeWidth: 4,
-            strokeOpacity: 1.0,
-            fadeStart: 0.7,
-            fadeOpacity: 0.25,
-            textUppercase: false,
-            primaryLang: (() => {
-              try {
-                const sys = navigator.language;
-                const match = LANGUAGES.find(l => l.code === sys || (sys.startsWith(l.code) && l.code !== 'none'));
-                return match ? match.code : 'zh-CN';
-              } catch { return 'zh-CN'; }
-            })(),
-            secondaryLangs: [DEFAULT_TRANSLATION_LANGUAGE],
-            secondaryLang: 'en',
-            ollamaHost: 'http://localhost:11434',
-            autoTranslate: true,
-            uiLanguage: (() => {
-              try {
-                const sys = navigator.language;
-                return sys.startsWith('zh') ? 'zh-CN' : 'en';
-              } catch { return 'zh-CN'; }
-            })(),
-          }, ...JSON.parse(saved)
-        };
+    const appPreferences = readAppPreferences();
+    const baseSettings = createDefaultProjectGlobalSettings(appPreferences);
+    const secondaryLangs = normalizeSecondaryLangs(
+      baseSettings.primaryLang,
+      baseSettings.secondaryLangs,
+      baseSettings.secondaryLang
+    );
 
-        const secondaryLangs = normalizeSecondaryLangs(
-          baseSettings.primaryLang,
-          baseSettings.secondaryLangs,
-          baseSettings.secondaryLang
-        );
-
-        return {
-          ...baseSettings,
-          secondaryLangs,
-          secondaryLang: secondaryLangs[0] || 'none'
-        };
-      }
-    } catch { }
     return {
-      width: DEFAULT_WIDTH,
-      height: DEFAULT_HEIGHT,
-      backgroundType: 'preset',
-      backgroundValue: PRESETS[0].value,
-      backgroundUpload: null,
-      // Background Transform
-      backgroundScale: 1.0,
-      backgroundX: 0,
-      backgroundY: 0,
-      // Text styling
-      textAlign: 'center',
-      fontCN: FONTS_CN[0].value,
-      fontEN: FONTS_EN[0].value,
-      textColorCN: TEXT_COLORS[0].id,
-      textColorEN: TEXT_COLORS[0].id,
-      // Text effects
-      textShadow: true,
-      textStroke: false,
-      strokeColor: STROKE_COLORS[0].id,
-      // Text fade control (bottom gradient)
-      fadeStart: 0.7,
-      fadeOpacity: 0.25,
-      // Text transform
-      textUppercase: false,
-      // Multi-language settings
-      primaryLang: 'zh-CN',
-      secondaryLangs: [DEFAULT_TRANSLATION_LANGUAGE],
-      secondaryLang: 'en',
-      ollamaHost: 'http://localhost:11434',
-      autoTranslate: true,
-      uiLanguage: 'zh-CN',
+      ...baseSettings,
+      secondaryLangs,
+      secondaryLang: secondaryLangs[0] || 'none'
     };
   });
 
-  // Uploaded backgrounds - stored in localStorage as base64
-  const [uploadedBackgrounds, setUploadedBackgrounds] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem('appstore_builder_backgrounds')) || [];
-    } catch { return []; }
-  });
+  // Uploaded backgrounds are project-level assets and no longer shared across windows.
+  const [uploadedBackgrounds, setUploadedBackgrounds] = useState([]);
 
   // Theme Settings - Dark, Light, Sepia
   const [theme, setTheme] = useState(() => {
@@ -717,9 +752,30 @@ const App = () => {
     localStorage.setItem('glotshot-app-mode', appMode);
   }, [appMode]);
 
+  useEffect(() => {
+    let isMounted = true;
+
+    LicenseManager.initialize().then((state) => {
+      if (isMounted) {
+        setIsPro(Boolean(state?.isPro));
+      }
+    });
+
+    const unsubscribe = LicenseManager.onChange((state) => {
+      setIsPro(Boolean(state?.isPro));
+    });
+
+    return () => {
+      isMounted = false;
+      unsubscribe();
+    };
+  }, []);
+
   // Modals
   // Modals
   const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [showPaywall, setShowPaywall] = useState(false);
+  const [isPro, setIsPro] = useState(false);
   const [settingsInitialTab, setSettingsInitialTab] = useState('start');
 
   // Custom Confirm Dialog State
@@ -734,61 +790,19 @@ const App = () => {
   });
 
   // Device Mockup State
-  const [mockupEnabled, setMockupEnabled] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem('appstore_builder_mockup_enabled')) || false;
-    } catch { return false; }
-  });
-  const [selectedDevice, setSelectedDevice] = useState(() => {
-    try {
-      return localStorage.getItem('appstore_builder_selected_device') || 'iphone-17-pro-max';
-    } catch { return 'iphone-17-pro-max'; }
-  });
-  const [deviceFrameColor, setDeviceFrameColor] = useState(() => {
-    try {
-      return localStorage.getItem('appstore_builder_frame_color') || '#1C1C1E';
-    } catch { return '#1C1C1E'; }
-  });
-  const [showLockScreenUI, setShowLockScreenUI] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem('appstore_builder_lockscreen_ui')) || false;
-    } catch { return false; }
-  });
-  const [showMockupShadow, setShowMockupShadow] = useState(() => {
-    try {
-      const saved = localStorage.getItem('appstore_builder_mockup_shadow');
-      return saved !== null ? JSON.parse(saved) : true;
-    } catch { return true; }
-  });
-  const [shadowOpacity, setShadowOpacity] = useState(() => {
-    try {
-      const saved = localStorage.getItem('appstore_builder_shadow_opacity');
-      return saved !== null ? parseFloat(saved) : 0.5;
-    } catch { return 0.5; }
-  });
+  const [mockupEnabled, setMockupEnabled] = useState(DEFAULT_MOCKUP_STATE.enabled);
+  const [selectedDevice, setSelectedDevice] = useState(DEFAULT_MOCKUP_STATE.selectedDevice);
+  const [deviceFrameColor, setDeviceFrameColor] = useState(DEFAULT_MOCKUP_STATE.frameColor);
+  const [showLockScreenUI, setShowLockScreenUI] = useState(DEFAULT_MOCKUP_STATE.showLockScreenUI);
+  const [showMockupShadow, setShowMockupShadow] = useState(DEFAULT_MOCKUP_STATE.showMockupShadow);
+  const [shadowOpacity, setShadowOpacity] = useState(DEFAULT_MOCKUP_STATE.shadowOpacity);
 
   // Device scale, position, and orientation
-  const [deviceScale, setDeviceScale] = useState(() => {
-    try {
-      return parseFloat(localStorage.getItem('appstore_builder_device_scale')) || 1.0;
-    } catch { return 1.0; }
-  });
-  const [deviceX, setDeviceX] = useState(() => {
-    try {
-      return parseInt(localStorage.getItem('appstore_builder_device_x')) || 0;
-    } catch { return 0; }
-  });
-  const [deviceY, setDeviceY] = useState(() => {
-    try {
-      return parseInt(localStorage.getItem('appstore_builder_device_y')) || 400;
-    } catch { return 400; }
-  });
+  const [deviceScale, setDeviceScale] = useState(DEFAULT_MOCKUP_STATE.deviceScale);
+  const [deviceX, setDeviceX] = useState(DEFAULT_MOCKUP_STATE.deviceX);
+  const [deviceY, setDeviceY] = useState(DEFAULT_MOCKUP_STATE.deviceY);
   // Screen dimensions
-  const [iPadLandscape, setiPadLandscape] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem('appstore_builder_ipad_landscape')) !== false;
-    } catch { return true; } // Default to landscape
-  });
+  const [iPadLandscape, setiPadLandscape] = useState(DEFAULT_MOCKUP_STATE.iPadLandscape);
 
   // 缓存的设备图层，避免每次绘制都重复解析 SVG 导致卡顿
   const [deviceLayers, setDeviceLayers] = useState(null);
@@ -834,35 +848,6 @@ const App = () => {
     return () => { isMounted = false; };
   }, [mockupEnabled, selectedDevice, deviceFrameColor, showLockScreenUI]); // 注意：showMockupShadow 改变不需要重新加载图层，只影响绘制可见性
 
-
-
-  // Persist Device Mockup settings
-  useEffect(() => {
-    localStorage.setItem('appstore_builder_mockup_enabled', JSON.stringify(mockupEnabled));
-  }, [mockupEnabled]);
-  useEffect(() => {
-    localStorage.setItem('appstore_builder_selected_device', selectedDevice);
-  }, [selectedDevice]);
-  useEffect(() => {
-    localStorage.setItem('appstore_builder_frame_color', deviceFrameColor);
-  }, [deviceFrameColor]);
-  useEffect(() => {
-    localStorage.setItem('appstore_builder_lockscreen_ui', JSON.stringify(showLockScreenUI));
-  }, [showLockScreenUI]);
-  useEffect(() => {
-    localStorage.setItem('appstore_builder_device_scale', deviceScale.toString());
-  }, [deviceScale]);
-  useEffect(() => {
-    localStorage.setItem('appstore_builder_device_x', deviceX.toString());
-  }, [deviceX]);
-  useEffect(() => {
-    localStorage.setItem('appstore_builder_device_y', deviceY.toString());
-  }, [deviceY]);
-  useEffect(() => {
-    localStorage.setItem('appstore_builder_mockup_shadow', JSON.stringify(showMockupShadow));
-    localStorage.setItem('appstore_builder_shadow_opacity', shadowOpacity.toString());
-  }, [showMockupShadow, shadowOpacity, deviceLayers]);
-
   // Listen for IPC events from Main Process
   useEffect(() => {
     if (window.electron) {
@@ -878,15 +863,36 @@ const App = () => {
         setShowSettingsModal(true);
       }));
 
+      unsubs.push(window.electron.on('menu-project-new', () => menuActionHandlersRef.current.handleNewProject?.()));
+      unsubs.push(window.electron.on('menu-project-open', () => { void menuActionHandlersRef.current.handleOpenProject?.(); }));
+      unsubs.push(window.electron.on('menu-project-save', () => { void menuActionHandlersRef.current.handleSaveProject?.(); }));
+      unsubs.push(window.electron.on('menu-project-save-as', () => { void menuActionHandlersRef.current.handleSaveProjectAs?.(); }));
+      unsubs.push(window.electron.on('project-save-before-close', async (payload = {}) => {
+        let success = false;
+        let error = null;
+
+        try {
+          success = Boolean(await menuActionHandlersRef.current.handleSaveProject?.());
+        } catch (saveError) {
+          error = saveError?.message || 'Save before close failed';
+        }
+
+        window.electron.respondProjectSaveBeforeClose?.({
+          requestId: payload.requestId,
+          success,
+          error,
+        });
+      }));
+
       unsubs.push(window.electron.on('menu-mode-screenshot', () => setAppMode('screenshot')));
       unsubs.push(window.electron.on('menu-mode-icon', () => setAppMode('icon')));
 
       // Import
-      unsubs.push(window.electron.on('menu-import', () => handleElectronBatchUpload()));
+      unsubs.push(window.electron.on('menu-import', () => menuActionHandlersRef.current.handleElectronBatchUpload?.()));
 
       // Export - Match the UI dropdown options
-      unsubs.push(window.electron.on('menu-export-language', () => handleExportAll()));
-      unsubs.push(window.electron.on('menu-export-device', () => handleExportByDevice()));
+      unsubs.push(window.electron.on('menu-export-language', () => menuActionHandlersRef.current.handleExportAll?.()));
+      unsubs.push(window.electron.on('menu-export-device', () => menuActionHandlersRef.current.handleExportByDevice?.()));
 
       // Cleanup
       return () => {
@@ -909,44 +915,21 @@ const App = () => {
   useEffect(() => {
     if (window.electron && translations[language] && translations[language].menu) {
       if (window.electron.updateMenuLanguage) {
-        window.electron.updateMenuLanguage(translations[language].menu);
+        window.electron.updateMenuLanguage({
+          ...(translations[language].menu || {}),
+          ...(translations[language].alerts || {}),
+        });
       }
     }
   }, [language]);
 
-  // Persist globalSettings to localStorage
+  // Persist app-level preferences only. Project-level state lives in the source file.
   useEffect(() => {
-    // 移除之前的解构，直接保存所有设置，包括 backgroundUpload
-    // 注意：如果是超大图片可能会导致 localStorage 满，但对于单张当前背景通常没问题
-    // 且已有的 uploadedBackgrounds 已经占用了空间，这里只是存一份当前引用的
-    localStorage.setItem('appstore_builder_global', JSON.stringify(globalSettings));
-  }, [globalSettings]);
+    localStorage.setItem(APP_PREFERENCES_STORAGE_KEY, JSON.stringify(pickAppPreferences(globalSettings)));
+  }, [globalSettings.ollamaHost, globalSettings.autoTranslate, globalSettings.uiLanguage]);
 
-  // Persist uploaded backgrounds to localStorage
-  useEffect(() => {
-    // Limit to last 20 backgrounds to avoid localStorage size issues
-    const toSave = uploadedBackgrounds.slice(-20);
-    try {
-      localStorage.setItem('appstore_builder_backgrounds', JSON.stringify(toSave));
-    } catch (e) {
-      console.warn('Failed to save backgrounds to localStorage', e);
-    }
-  }, [uploadedBackgrounds]);
-
-  // Config Management
-  const [savedConfigs, setSavedConfigs] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem('appstore_builder_configs')) || [];
-    } catch { return []; }
-  });
-  const [configName, setConfigName] = useState('');
-
-  // Custom Size Presets (user-defined)
-  const [customSizePresets, setCustomSizePresets] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem('appstore_builder_custom_sizes')) || [];
-    } catch { return []; }
-  });
+  // Custom Size Presets (user-defined, project-level)
+  const [customSizePresets, setCustomSizePresets] = useState([]);
   const [showSavePresetModal, setShowSavePresetModal] = useState(false);
   const [newPresetName, setNewPresetName] = useState('');
 
@@ -962,7 +945,6 @@ const App = () => {
     };
     const updated = [...customSizePresets, newPreset];
     setCustomSizePresets(updated);
-    localStorage.setItem('appstore_builder_custom_sizes', JSON.stringify(updated));
     setNewPresetName('');
     setShowSavePresetModal(false);
     setSelectedPlatform(newPreset.id);
@@ -971,7 +953,6 @@ const App = () => {
   const deleteCustomSizePreset = (id) => {
     const updated = customSizePresets.filter(p => p.id !== id);
     setCustomSizePresets(updated);
-    localStorage.setItem('appstore_builder_custom_sizes', JSON.stringify(updated));
   };
 
   const closeTopbarOverlays = useCallback(() => {
@@ -1126,14 +1107,35 @@ const App = () => {
     settings: { ...DEFAULT_SCENE_SETTINGS }
   });
 
-  // Scenes Management - stored in localStorage with base64 screenshots
+  const createDefaultProjectScene = useCallback((projectSettings = globalSettings) => {
+    const secondaryLangs = normalizeSecondaryLangs(
+      projectSettings.primaryLang,
+      projectSettings.secondaryLangs,
+      projectSettings.secondaryLang
+    );
+
+    return {
+      id: 1,
+      name: t('scenes.homeShowcase'),
+      screenshot: null,
+      titleCN: t('scenes.defaultTitle'),
+      titleEN: t('scenes.defaultTitleEN'),
+      titles: {
+        [projectSettings.primaryLang]: t('scenes.defaultTitle'),
+        ...(secondaryLangs[0] ? { [secondaryLangs[0]]: t('scenes.defaultTitleEN') } : {})
+      },
+      settings: { ...DEFAULT_SCENE_SETTINGS }
+    };
+  }, [globalSettings, t]);
+
+  // Scenes Management
   const [scenes, setScenes] = useState(() => {
-    try {
-      const saved = localStorage.getItem('appstore_builder_scenes');
-      if (saved) {
-        return JSON.parse(saved);
-      }
-    } catch { }
+    const secondaryLangs = normalizeSecondaryLangs(
+      globalSettings.primaryLang,
+      globalSettings.secondaryLangs,
+      globalSettings.secondaryLang
+    );
+
     return [{
       id: 1,
       name: t('scenes.homeShowcase'),
@@ -1142,7 +1144,7 @@ const App = () => {
       titleEN: t('scenes.defaultTitleEN'),
       titles: {
         [globalSettings.primaryLang]: t('scenes.defaultTitle'),
-        ...(selectedSecondaryLangs[0] ? { [selectedSecondaryLangs[0]]: t('scenes.defaultTitleEN') } : {})
+        ...(secondaryLangs[0] ? { [secondaryLangs[0]]: t('scenes.defaultTitleEN') } : {})
       },
       settings: { ...DEFAULT_SCENE_SETTINGS }
     }];
@@ -1152,6 +1154,9 @@ const App = () => {
   const [previewLanguage, setPreviewLanguage] = useState(() => globalSettings.primaryLang);
   const [selectedSceneIds, setSelectedSceneIds] = useState(new Set()); // 多选状态
   const [selectedElement, setSelectedElement] = useState('text');
+  const [currentProjectPath, setCurrentProjectPath] = useState(null);
+  const [currentProjectName, setCurrentProjectName] = useState(() => t('project.untitled', '未命名项目'));
+  const [isProjectDirty, setIsProjectDirty] = useState(false);
   const [dragPreview, setDragPreview] = useState(null);
   const [alignmentGuides, setAlignmentGuides] = useState({ vertical: false, horizontal: false });
   const [importProgress, setImportProgress] = useState(INITIAL_IMPORT_PROGRESS); // 导入/翻译进度
@@ -1167,6 +1172,8 @@ const App = () => {
   const translationQueueRef = useRef(Promise.resolve());
   const progressAbortControllerRef = useRef(null);
   const previousMockupEnabledRef = useRef(mockupEnabled);
+  const menuActionHandlersRef = useRef({});
+  const projectSnapshotRef = useRef(null);
   // 确保 activeScene 始终有效，并有默认 settings
   const activeScene = scenes.find(s => s.id === activeSceneId) || scenes[0] || {
     id: 1,
@@ -1366,14 +1373,23 @@ const App = () => {
     return () => clearTimeout(timeoutId);
   }, [mockupEnabled, deviceScale, deviceX, deviceY, deviceFrameColor, showLockScreenUI, showMockupShadow, shadowOpacity, saveDeviceConfig]);
 
-  // Persist scenes to localStorage
   useEffect(() => {
-    try {
-      localStorage.setItem('appstore_builder_scenes', JSON.stringify(scenes));
-    } catch (e) {
-      console.warn('Failed to save scenes to localStorage', e);
-    }
-  }, [scenes]);
+    setScenes(prev => {
+      if (
+        prev.length === 1 &&
+        prev[0].id === 1 &&
+        prev[0].name === 'Home Showcase' &&
+        !prev[0].screenshot &&
+        !prev[0].titleCN &&
+        !prev[0].titleEN &&
+        Object.keys(prev[0].titles || {}).length === 0
+      ) {
+        return [createDefaultProjectScene(globalSettings)];
+      }
+
+      return prev;
+    });
+  }, [createDefaultProjectScene, globalSettings]);
 
   // --- OLLAMA INTEGRATION ---
 
@@ -3033,6 +3049,20 @@ const App = () => {
   };
 
   const toggleSecondaryLanguage = (languageCode) => {
+    const currentLangs = normalizeSecondaryLangs(
+      globalSettings.primaryLang,
+      globalSettings.secondaryLangs,
+      globalSettings.secondaryLang
+    );
+    const isAdding = !currentLangs.includes(languageCode);
+    const access = LicenseManager.checkTranslationAccess(currentLangs.length);
+
+    if (isAdding && access.requiresPro && !isPro) {
+      setTranslationLanguageMenuOpen(false);
+      setShowPaywall(true);
+      return;
+    }
+
     setGlobalSettings(prev => {
       const nextSecondaryLangs = normalizeSecondaryLangs(prev.primaryLang, prev.secondaryLangs, prev.secondaryLang);
       const exists = nextSecondaryLangs.includes(languageCode);
@@ -3193,30 +3223,335 @@ const App = () => {
     }
   };
 
-  const saveConfig = () => {
-    if (!configName) return alert(t('alerts.enterConfigName'));
-    const newConfig = { name: configName, settings: activeScene.settings };
-    const updated = [...savedConfigs, newConfig];
-    setSavedConfigs(updated);
-    localStorage.setItem('appstore_builder_configs', JSON.stringify(updated));
-    setConfigName('');
-    alert(t('alerts.configSaved'));
+  const getUntitledProjectName = () => t('project.untitled', '未命名项目');
+
+  const buildCurrentProjectState = useCallback((overrides = {}) => ({
+    projectName: overrides.projectName ?? currentProjectName ?? getUntitledProjectName(),
+    appMode: overrides.appMode ?? 'screenshot',
+    globalSettings: overrides.globalSettings ?? pickProjectGlobalSettings(globalSettings),
+    uploadedBackgrounds: overrides.uploadedBackgrounds ?? uploadedBackgrounds,
+    backgroundFolderPath: overrides.backgroundFolderPath ?? backgroundFolderPath,
+    selectedPlatform: overrides.selectedPlatform ?? selectedPlatform,
+    customSizePresets: overrides.customSizePresets ?? customSizePresets,
+    mockup: overrides.mockup ?? {
+      enabled: mockupEnabled,
+      selectedDevice,
+      frameColor: deviceFrameColor,
+      showLockScreenUI,
+      showMockupShadow,
+      shadowOpacity,
+      deviceScale,
+      deviceX,
+      deviceY,
+      iPadLandscape,
+    },
+    scenes: overrides.scenes ?? scenes,
+    activeSceneId: overrides.activeSceneId ?? activeSceneId,
+    previewLanguage: overrides.previewLanguage ?? previewLanguage,
+    selectedElement: overrides.selectedElement ?? selectedElement,
+  }), [
+    activeSceneId,
+    backgroundFolderPath,
+    currentProjectName,
+    customSizePresets,
+    deviceFrameColor,
+    deviceScale,
+    deviceX,
+    deviceY,
+    globalSettings,
+    iPadLandscape,
+    mockupEnabled,
+    previewLanguage,
+    scenes,
+    selectedDevice,
+    selectedElement,
+    selectedPlatform,
+    shadowOpacity,
+    showLockScreenUI,
+    showMockupShadow,
+    uploadedBackgrounds
+  ]);
+
+  const markProjectClean = useCallback((projectState) => {
+    projectSnapshotRef.current = createProjectSnapshot(projectState);
+    setIsProjectDirty(false);
+  }, []);
+
+  const buildProjectGlobalSettings = (source = {}) => {
+    const appPreferences = pickAppPreferences(globalSettings);
+    const merged = {
+      ...createDefaultProjectGlobalSettings(appPreferences),
+      ...(source || {}),
+      ...appPreferences,
+    };
+
+    const normalizedSecondaryLangs = normalizeSecondaryLangs(
+      merged.primaryLang,
+      source.secondaryLangs ?? merged.secondaryLangs,
+      source.secondaryLang ?? merged.secondaryLang
+    );
+    const fallbackSecondaryLangs = normalizedSecondaryLangs.length > 0
+      ? normalizedSecondaryLangs
+      : getDefaultSecondaryLangs(merged.primaryLang);
+
+    return {
+      ...merged,
+      secondaryLangs: fallbackSecondaryLangs,
+      secondaryLang: fallbackSecondaryLangs[0] || 'none'
+    };
   };
 
-  const loadConfig = (config) => {
-    if (window.confirm(t('alerts.loadConfigConfirm', { name: config.name }))) {
-      setScenes(prev => prev.map(s => s.id === activeSceneId ? {
-        ...s,
-        settings: { ...config.settings }
-      } : s));
+  const normalizeProjectScenes = (projectScenes, projectSettings) => {
+    const projectSecondaryLangs = normalizeSecondaryLangs(
+      projectSettings.primaryLang,
+      projectSettings.secondaryLangs,
+      projectSettings.secondaryLang
+    );
+
+    if (!Array.isArray(projectScenes) || projectScenes.length === 0) {
+      return [createDefaultProjectScene(projectSettings)];
     }
+
+    return projectScenes.map((scene, index) => ({
+      id: scene.id ?? (index + 1),
+      name: scene.name || `${t('scenes.scene')} ${index + 1}`,
+      screenshot: scene.screenshot ?? null,
+      titleCN: scene.titleCN ?? '',
+      titleEN: scene.titleEN ?? '',
+      titles: scene.titles && typeof scene.titles === 'object'
+        ? scene.titles
+        : {
+          [projectSettings.primaryLang]: scene.titleCN ?? '',
+          ...(projectSecondaryLangs[0] ? { [projectSecondaryLangs[0]]: scene.titleEN ?? '' } : {})
+        },
+      settings: {
+        ...DEFAULT_SCENE_SETTINGS,
+        ...(scene.settings || {})
+      }
+    }));
   };
 
-  const deleteConfig = (index) => {
-    const updated = savedConfigs.filter((_, i) => i !== index);
-    setSavedConfigs(updated);
-    localStorage.setItem('appstore_builder_configs', JSON.stringify(updated));
-  }
+  const applyProjectDocumentToState = (documentData, filePath = null) => {
+    const project = documentData?.project || {};
+    const nextGlobalSettings = buildProjectGlobalSettings(project.globalSettings || {});
+    const nextScenes = normalizeProjectScenes(project.scenes, nextGlobalSettings);
+    const nextActiveSceneId = nextScenes.some(scene => scene.id === project.activeSceneId)
+      ? project.activeSceneId
+      : nextScenes[0].id;
+    const nextConfiguredLanguages = [
+      nextGlobalSettings.primaryLang,
+      ...normalizeSecondaryLangs(nextGlobalSettings.primaryLang, nextGlobalSettings.secondaryLangs, nextGlobalSettings.secondaryLang)
+    ];
+    const nextPreviewLanguage = nextConfiguredLanguages.includes(project.previewLanguage)
+      ? project.previewLanguage
+      : nextGlobalSettings.primaryLang;
+    const nextMockup = {
+      ...DEFAULT_MOCKUP_STATE,
+      ...(project.mockup || {})
+    };
+
+    setAppMode(project.mode || 'screenshot');
+    setGlobalSettings(nextGlobalSettings);
+    setUploadedBackgrounds(Array.isArray(project.uploadedBackgrounds) ? project.uploadedBackgrounds : []);
+    setBackgroundFolderPath(project.backgroundFolderPath || '');
+    setSelectedPlatform(project.selectedPlatform || selectedPlatform || 'mac');
+    setCustomSizePresets(Array.isArray(project.customSizePresets) ? project.customSizePresets : []);
+    setMockupEnabled(Boolean(nextMockup.enabled));
+    setSelectedDevice(nextMockup.selectedDevice || DEFAULT_MOCKUP_STATE.selectedDevice);
+    setDeviceFrameColor(nextMockup.frameColor || DEFAULT_MOCKUP_STATE.frameColor);
+    setShowLockScreenUI(Boolean(nextMockup.showLockScreenUI));
+    setShowMockupShadow(Boolean(nextMockup.showMockupShadow));
+    setShadowOpacity(nextMockup.shadowOpacity ?? DEFAULT_MOCKUP_STATE.shadowOpacity);
+    setDeviceScale(nextMockup.deviceScale ?? DEFAULT_MOCKUP_STATE.deviceScale);
+    setDeviceX(nextMockup.deviceX ?? DEFAULT_MOCKUP_STATE.deviceX);
+    setDeviceY(nextMockup.deviceY ?? DEFAULT_MOCKUP_STATE.deviceY);
+    setiPadLandscape(nextMockup.iPadLandscape ?? DEFAULT_MOCKUP_STATE.iPadLandscape);
+    setScenes(nextScenes);
+    setActiveSceneId(nextActiveSceneId);
+    setPreviewLanguage(nextPreviewLanguage);
+    setSelectedElement(project.selectedElement || 'text');
+    setSelectedSceneIds(new Set());
+    setCurrentProjectPath(filePath);
+    const nextProjectName = project.name || getProjectNameFromPath(filePath) || getUntitledProjectName();
+    setCurrentProjectName(nextProjectName);
+
+    markProjectClean({
+      projectName: nextProjectName,
+      appMode: project.mode || 'screenshot',
+      globalSettings: pickProjectGlobalSettings(nextGlobalSettings),
+      uploadedBackgrounds: Array.isArray(project.uploadedBackgrounds) ? project.uploadedBackgrounds : [],
+      backgroundFolderPath: project.backgroundFolderPath || '',
+      selectedPlatform: project.selectedPlatform || selectedPlatform || 'mac',
+      customSizePresets: Array.isArray(project.customSizePresets) ? project.customSizePresets : [],
+      mockup: nextMockup,
+      scenes: nextScenes,
+      activeSceneId: nextActiveSceneId,
+      previewLanguage: nextPreviewLanguage,
+      selectedElement: project.selectedElement || 'text',
+    });
+  };
+
+  const confirmReplaceCurrentProject = useCallback(() => {
+    if (!isProjectDirty) return true;
+    return window.confirm(
+      t(
+        'alerts.confirmReplaceProject',
+        '当前项目未保存，继续操作会覆盖当前编辑状态。是否继续？'
+      )
+    );
+  }, [isProjectDirty, t]);
+
+  useEffect(() => {
+    const nextSnapshot = createProjectSnapshot(buildCurrentProjectState());
+
+    if (projectSnapshotRef.current === null) {
+      projectSnapshotRef.current = nextSnapshot;
+      setIsProjectDirty(false);
+      return;
+    }
+
+    setIsProjectDirty(projectSnapshotRef.current !== nextSnapshot);
+  }, [buildCurrentProjectState]);
+
+  const serializeCurrentProject = useCallback(() => {
+    const documentData = createProjectDocument(buildCurrentProjectState());
+
+    return JSON.stringify(documentData, null, 2);
+  }, [buildCurrentProjectState]);
+
+  const handleNewProject = useCallback(() => {
+    if (!confirmReplaceCurrentProject()) return;
+
+    const nextGlobalSettings = buildProjectGlobalSettings({
+      primaryLang: globalSettings.primaryLang,
+      secondaryLangs: globalSettings.secondaryLangs,
+      secondaryLang: globalSettings.secondaryLang,
+    });
+
+    applyProjectDocumentToState(
+      createProjectDocument({
+        projectName: getUntitledProjectName(),
+        appMode: 'screenshot',
+        globalSettings: pickProjectGlobalSettings(nextGlobalSettings),
+        uploadedBackgrounds: [],
+        backgroundFolderPath: '',
+        selectedPlatform,
+        customSizePresets: [],
+        mockup: DEFAULT_MOCKUP_STATE,
+        scenes: [createDefaultProjectScene(nextGlobalSettings)],
+        activeSceneId: 1,
+        previewLanguage: nextGlobalSettings.primaryLang,
+        selectedElement: 'text',
+      }),
+      null
+    );
+  }, [
+    confirmReplaceCurrentProject,
+    createDefaultProjectScene,
+    currentProjectName,
+    globalSettings,
+    selectedPlatform,
+    t
+  ]);
+
+  const handleOpenProject = useCallback(async () => {
+    if (!confirmReplaceCurrentProject()) return;
+    if (!window.electron?.openProjectFile) {
+      alert(t('alerts.electronOnly', '该功能仅在 Electron 桌面应用中可用'));
+      return;
+    }
+
+    const result = await window.electron.openProjectFile();
+    if (!result || result.canceled) return;
+    if (result.error) {
+      alert(`${t('alerts.openProjectFailed', '打开源文件失败')}: ${result.error}`);
+      return;
+    }
+
+    try {
+      const parsed = parseProjectDocument(result.content);
+      applyProjectDocumentToState(parsed, result.filePath || null);
+    } catch (error) {
+      alert(`${t('alerts.invalidProjectFile', '无法读取源文件')}: ${error.message}`);
+    }
+  }, [confirmReplaceCurrentProject, t]);
+
+  const handleSaveProjectAs = useCallback(async () => {
+    if (!window.electron?.saveProjectFileAs) {
+      alert(t('alerts.electronOnly', '该功能仅在 Electron 桌面应用中可用'));
+      return false;
+    }
+
+    const result = await window.electron.saveProjectFileAs({
+      defaultPath: `${sanitizeProjectFileName(currentProjectName || getUntitledProjectName())}.${PROJECT_FILE_EXTENSION}`,
+    });
+
+    if (!result || result.canceled) return false;
+    if (!result.success) {
+      alert(`${t('alerts.saveProjectFailed', '保存源文件失败')}: ${result.error || ''}`);
+      return false;
+    }
+
+    const nextProjectPath = result.filePath;
+    const nextProjectName = getProjectNameFromPath(nextProjectPath);
+    const nextProjectState = buildCurrentProjectState({ projectName: nextProjectName });
+    const saveResult = await window.electron.saveProjectFile({
+      filePath: nextProjectPath,
+      content: JSON.stringify(createProjectDocument(nextProjectState), null, 2),
+    });
+
+    if (!saveResult?.success) {
+      alert(`${t('alerts.saveProjectFailed', '保存源文件失败')}: ${saveResult?.error || ''}`);
+      return false;
+    }
+
+    setCurrentProjectPath(nextProjectPath);
+    setCurrentProjectName(nextProjectName);
+    markProjectClean(nextProjectState);
+    return true;
+  }, [buildCurrentProjectState, currentProjectName, getUntitledProjectName, markProjectClean, t]);
+
+  const handleSaveProject = useCallback(async () => {
+    if (!window.electron?.saveProjectFile) {
+      alert(t('alerts.electronOnly', '该功能仅在 Electron 桌面应用中可用'));
+      return false;
+    }
+
+    if (!currentProjectPath) {
+      return handleSaveProjectAs();
+    }
+
+    const result = await window.electron.saveProjectFile({
+      filePath: currentProjectPath,
+      content: serializeCurrentProject(),
+    });
+
+    if (!result?.success) {
+      alert(`${t('alerts.saveProjectFailed', '保存源文件失败')}: ${result?.error || ''}`);
+      return false;
+    }
+
+    const nextProjectName = getProjectNameFromPath(result.filePath);
+    setCurrentProjectName(nextProjectName);
+    setCurrentProjectPath(result.filePath);
+    markProjectClean(buildCurrentProjectState({ projectName: nextProjectName }));
+    return true;
+  }, [buildCurrentProjectState, currentProjectPath, handleSaveProjectAs, markProjectClean, serializeCurrentProject, t]);
+
+  useEffect(() => {
+    const nextTitle = buildProjectWindowTitle(
+      currentProjectName || getUntitledProjectName(),
+      { fallbackName: getUntitledProjectName() }
+    );
+
+    document.title = nextTitle;
+    window.electron?.updateWindowState?.({
+      title: nextTitle,
+      projectName: currentProjectName || getUntitledProjectName(),
+      isDirty: isProjectDirty,
+      filePath: currentProjectPath || '',
+    });
+  }, [currentProjectName, currentProjectPath, getUntitledProjectName, isProjectDirty]);
 
 
   // --- EXPORT LOGIC ---
@@ -3446,6 +3781,26 @@ const App = () => {
       }
     }
   };
+
+  useEffect(() => {
+    menuActionHandlersRef.current = {
+      handleNewProject,
+      handleOpenProject,
+      handleSaveProject,
+      handleSaveProjectAs,
+      handleElectronBatchUpload,
+      handleExportAll,
+      handleExportByDevice,
+    };
+  }, [
+    handleElectronBatchUpload,
+    handleExportAll,
+    handleExportByDevice,
+    handleNewProject,
+    handleOpenProject,
+    handleSaveProject,
+    handleSaveProjectAs
+  ]);
 
 
 
@@ -5043,6 +5398,12 @@ const App = () => {
         onClose={closeExportModal}
       />
 
+      <PaywallDialog
+        isOpen={showPaywall && !isPro}
+        onClose={() => setShowPaywall(false)}
+        onUnlock={() => LicenseManager.purchasePro()}
+      />
+
       {/* MAIN CONTENT AREA - Conditional rendering based on mode */}
       {
         appMode === 'icon' ? (
@@ -5382,28 +5743,32 @@ const App = () => {
                   </button>
                 </div>
 
-                {/* Saved Configs */}
                 <div className="bg-[var(--app-card-bg)] rounded-lg p-3 border border-[var(--app-border)]">
-                  <label className="text-[10px] text-gray-500 font-semibold tracking-[0.02em] mb-2 block flex items-center gap-2">
-                    <Archive className="w-3 h-3" /> {t('rightPanel.layoutPresets')}
-                  </label>
-                  <div className="flex gap-1 mb-2">
-                    <input
-                      type="text"
-                      value={configName}
-                      onChange={(e) => setConfigName(e.target.value)}
-                      placeholder={t('rightPanel.newPresetName')}
-                      className="flex-1 min-w-0 bg-[var(--app-input-bg)] text-xs border border-[var(--app-border)] rounded px-2 py-1 text-[var(--app-text-primary)]"
-                    />
-                    <button onClick={saveConfig} className="p-1 bg-[var(--app-bg-elevated)] text-[var(--app-accent)] rounded border border-[var(--app-accent)]/30 hover:bg-[var(--app-bg-tertiary)]"><Save className="w-3 h-3" /></button>
+                  <div className="flex items-center justify-between gap-2 mb-1">
+                    <div className="text-[10px] text-gray-500 font-semibold tracking-[0.02em] block">
+                      {t('rightPanel.currentProject', '当前源文件')}
+                    </div>
+                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-semibold border ${
+                      isProjectDirty
+                        ? 'text-amber-700 bg-amber-100 border-amber-200'
+                        : 'text-emerald-700 bg-emerald-100 border-emerald-200'
+                    }`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${isProjectDirty ? 'bg-amber-500' : 'bg-emerald-500'}`} />
+                      {isProjectDirty
+                        ? t('rightPanel.unsavedChanges', '未保存变更')
+                        : t('rightPanel.savedProject', '已保存')}
+                    </span>
                   </div>
-                  <div className="max-h-24 overflow-y-auto space-y-1">
-                    {savedConfigs.map((config, idx) => (
-                      <div key={idx} className="flex items-center justify-between text-xs bg-[var(--app-card-bg-solid)] p-1 rounded group">
-                        <span onClick={() => loadConfig(config)} className="text-[var(--app-text-secondary)] cursor-pointer hover:text-[var(--app-text-primary)] flex-1 truncate">{config.name}</span>
-                        <button onClick={() => deleteConfig(idx)} className="text-red-500 opacity-0 group-hover:opacity-100"><Trash2 className="w-3 h-3" /></button>
-                      </div>
-                    ))}
+                  <div className="text-sm font-semibold text-[var(--app-text-primary)] truncate">
+                    {currentProjectName || t('project.untitled', '未命名项目')}
+                  </div>
+                  <div
+                    className="mt-1 text-[10px] text-[var(--app-text-muted)] truncate font-mono"
+                    title={currentProjectPath || t('rightPanel.unsavedProject', '尚未保存为源文件')}
+                  >
+                    {currentProjectPath
+                      ? currentProjectPath.split(/[/\\]/).slice(-2).join('/')
+                      : t('rightPanel.unsavedProject', '尚未保存为源文件')}
                   </div>
                 </div>
               </div>

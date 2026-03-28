@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import packageJson from './package.json'
+import { createManualChunks } from './build/viteManualChunks.mjs'
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -13,6 +14,9 @@ export default defineConfig({
     rollupOptions: {
       input: {
         app: 'app.html'
+      },
+      output: {
+        manualChunks: createManualChunks
       }
     }
   },

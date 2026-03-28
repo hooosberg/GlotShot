@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>GlotShot Privacy Policy</title>
+  <meta name="description" content="Privacy policy for GlotShot.">
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #0f1220;
+      --panel: rgba(255, 255, 255, 0.08);
+      --text: #f3f4f6;
+      --muted: #b5bac8;
+      --accent: #4da3ff;
+      --border: rgba(255, 255, 255, 0.14);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", sans-serif;
+      background:
+        radial-gradient(circle at top, rgba(77, 163, 255, 0.18), transparent 35%),
+        linear-gradient(180deg, #0c1020 0%, #11162a 100%);
+      color: var(--text);
+      display: grid;
+      place-items: center;
+      padding: 32px;
+    }
+    main {
+      width: min(860px, 100%);
+      border: 1px solid var(--border);
+      background: var(--panel);
+      backdrop-filter: blur(18px);
+      border-radius: 24px;
+      padding: 32px;
+      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.28);
+    }
+    h1 { margin: 0 0 12px; font-size: clamp(2rem, 5vw, 3.4rem); line-height: 1.05; }
+    h2 { margin: 28px 0 12px; font-size: 1.15rem; }
+    p, li { margin: 0 0 14px; color: var(--muted); line-height: 1.7; }
+    ul { margin: 0 0 14px 20px; padding: 0; }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .meta { margin-top: 24px; font-size: 0.95rem; color: var(--muted); }
+    .card {
+      margin-top: 24px;
+      padding: 20px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Privacy Policy</h1>
+    <p><strong>Last Updated:</strong> 2026-01-16</p>
+    <div class="card">
+      <h2>Data Collection</h2>
+      <p>GlotShot does not collect, store, or share personal information.</p>
+      <ul>
+        <li>Image processing and screenshot generation happen locally on your device.</li>
+        <li>No analytics or tracking tools are used.</li>
+        <li>No account is required to use the app.</li>
+      </ul>
+      <h2>Local AI Features</h2>
+      <p>If you opt into local translation features, the app connects only to your local Ollama instance. No data is sent to external cloud servers.</p>
+      <h2>Contact</h2>
+      <p>If you have questions about this policy, email <a href="mailto:zikedece@proton.me">zikedece@proton.me</a>.</p>
+    </div>
+    <p class="meta"><a href="/support.html">Support</a> | <a href="https://hooosberg.github.io/GlotShot/">Official Website</a></p>
+  </main>
+</body>
+</html>

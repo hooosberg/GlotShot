@@ -1,12 +1,22 @@
 import { useState, useEffect } from 'react';
-import { X, LayoutGrid, Monitor, Palette, Keyboard, Settings, Info, Image as ImageIcon, Layers, Github, ExternalLink, Star, Sun, Moon, Coffee } from 'lucide-react';
+import { X, LayoutGrid, Monitor, Palette, Keyboard, Settings, Info, Image as ImageIcon, Layers, Github, ExternalLink, Star, Sun, Moon, Coffee, Crown, Check } from 'lucide-react';
 import './SettingsModal.css';
 import { useTranslation, SUPPORTED_UI_LANGUAGES, detectSystemLanguage } from '../locales/i18n';
+import { LicenseManager } from '../services/LicenseManager';
 
 const appLogo = '/icon/DMG_Icon_1024x1024.png';
+const LICENSE_BENEFIT_ITEMS = [
+    { titleKey: 'paywall.benefitTranslationTitle', descKey: 'paywall.benefitTranslationDesc' },
+    { titleKey: 'paywall.benefitBatchTitle', descKey: 'paywall.benefitBatchDesc' },
+    { titleKey: 'paywall.benefitTimeTitle', descKey: 'paywall.benefitTimeDesc' },
+    { titleKey: 'paywall.benefitFutureTitle', descKey: 'paywall.benefitFutureDesc' },
+];
 
 const SettingsModal = ({ isOpen, onClose, initialTab = 'start', appMode, setAppMode, globalSettings, setGlobalSettings, theme, setTheme, glassEffect, setGlassEffect }) => {
     const [activeTab, setActiveTab] = useState(initialTab);
+    const [licenseState, setLicenseState] = useState(() => LicenseManager.getState());
+    const [licenseActionBusy, setLicenseActionBusy] = useState('idle');
+    const [licenseActionFeedback, setLicenseActionFeedback] = useState(null);
     const { t, changeLanguage } = useTranslation();
 
     // 处理语言变更
@@ -20,15 +30,126 @@ const SettingsModal = ({ isOpen, onClose, initialTab = 'start', appMode, setAppM
         if (isOpen) setActiveTab(initialTab);
     }, [isOpen, initialTab]);
 
+    useEffect(() => {
+        if (!isOpen) {
+            setLicenseActionBusy('idle');
+            setLicenseActionFeedback(null);
+            return;
+        }
+
+        let isMounted = true;
+
+        LicenseManager.initialize().then((state) => {
+            if (isMounted) {
+                setLicenseState({ isPro: Boolean(state?.isPro) });
+            }
+        });
+
+        const unsubscribe = LicenseManager.onChange((state) => {
+            setLicenseState({ isPro: Boolean(state?.isPro) });
+        });
+
+        return () => {
+            isMounted = false;
+            unsubscribe();
+        };
+    }, [isOpen]);
+
     if (!isOpen) return null;
 
     const sections = [
         { id: 'start', icon: LayoutGrid, label: t('settings.nav.start') },
-        // { id: 'appearance', icon: Palette, label: t('settings.nav.appearance') }, // Removed as per request
         { id: 'shortcuts', icon: Keyboard, label: t('settings.nav.shortcuts') },
         { id: 'general', icon: Settings, label: t('settings.nav.general') },
         { id: 'about', icon: Info, label: t('settings.nav.about') },
+        { id: 'license', icon: Crown, label: t('settings.nav.license') },
     ];
+
+    const withLicenseActionDetail = (message, result) => {
+        if (!result?.message) {
+            return message;
+        }
+
+        return `${message} ${result.message}`;
+    };
+
+    const getLicenseActionMessage = (result, action) => {
+        if (action === 'restore' && result.status === 'not_found') {
+            return t('paywall.restoreNotFound');
+        }
+
+        if (result.status === 'cancelled') {
+            return t('paywall.purchaseCancelled');
+        }
+
+        if (result.status === 'not_supported') {
+            return action === 'purchase'
+                ? withLicenseActionDetail(t('paywall.purchaseNotSupported'), result)
+                : withLicenseActionDetail(t('paywall.restoreNotSupported'), result);
+        }
+
+        return action === 'purchase'
+            ? withLicenseActionDetail(t('paywall.purchaseFailed'), result)
+            : withLicenseActionDetail(t('paywall.restoreFailed'), result);
+    };
+
+    const handleLicensePurchase = async () => {
+        setLicenseActionBusy('purchase');
+        setLicenseActionFeedback(null);
+
+        try {
+            const result = await LicenseManager.purchasePro();
+            if (result.status === 'success') {
+                setLicenseActionFeedback({
+                    kind: 'success',
+                    message: t('paywall.purchaseSuccess')
+                });
+                return;
+            }
+
+            setLicenseActionFeedback({
+                kind: 'error',
+                message: getLicenseActionMessage(result, 'purchase')
+            });
+        } catch (error) {
+            console.error('Settings purchase failed:', error);
+            setLicenseActionFeedback({
+                kind: 'error',
+                message: t('paywall.purchaseFailed')
+            });
+        } finally {
+            setLicenseActionBusy('idle');
+        }
+    };
+
+    const handleLicenseRestore = async () => {
+        setLicenseActionBusy('restore');
+        setLicenseActionFeedback(null);
+
+        try {
+            const result = await LicenseManager.restorePurchases();
+            if (result.status === 'success') {
+                setLicenseActionFeedback({
+                    kind: 'success',
+                    message: t('paywall.restoreSuccess')
+                });
+                return;
+            }
+
+            setLicenseActionFeedback({
+                kind: 'error',
+                message: getLicenseActionMessage(result, 'restore')
+            });
+        } catch (error) {
+            console.error('Settings restore failed:', error);
+            setLicenseActionFeedback({
+                kind: 'error',
+                message: t('paywall.restoreFailed')
+            });
+        } finally {
+            setLicenseActionBusy('idle');
+        }
+    };
 
     // Theme mode options
     const THEME_OPTIONS = [
@@ -309,6 +430,98 @@ const SettingsModal = ({ isOpen, onClose, initialTab = 'start', appMode, setAppM
                                         <Star size={12} className="fill-current text-white/80" />
                                         {t('settings.about.cta_desc')}
                                     </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {activeTab === 'license' && (
+                        <div className="content-section wide-section">
+                            <div className="license-section-header">
+                                <h2 className="section-title">{t('paywall.licenseStatusTitle')}</h2>
+                                <p className="license-section-hint">{t('settings.licenseTabHint')}</p>
+                            </div>
+
+                            <div className="license-overview-grid">
+                                <div className="license-status-card">
+                                    <div className="license-card-heading">
+                                        <div className="license-card-icon">
+                                            <Monitor size={22} />
+                                        </div>
+                                        <div>
+                                            <div className="license-card-label">{t('paywall.currentPlan')}</div>
+                                            <div className={`license-plan-pill ${licenseState.isPro ? 'is-pro' : 'is-free'}`}>
+                                                {licenseState.isPro ? t('paywall.planPro') : t('paywall.planFree')}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="license-card-description">
+                                        {licenseState.isPro ? t('paywall.planProDesc') : t('paywall.planFreeDesc')}
+                                    </div>
+                                </div>
+
+                                <div className="license-upgrade-card">
+                                    <div className="license-card-heading">
+                                        <div className="license-card-icon license-card-icon-gold">
+                                            <Crown size={22} />
+                                        </div>
+                                        <div>
+                                            <div className="license-card-label">{t('paywall.recommendedUpgradeTitle')}</div>
+                                            <div className="license-card-price">
+                                                {t('paywall.lifetimeBadge')} · {t('paywall.priceValue')}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="license-card-description">
+                                        {t('paywall.recommendedUpgradeDesc')}
+                                    </div>
+                                    <div className="license-action-row">
+                                        {!licenseState.isPro && (
+                                            <button
+                                                type="button"
+                                                className="license-primary-btn"
+                                                onClick={() => void handleLicensePurchase()}
+                                                disabled={licenseActionBusy !== 'idle'}
+                                            >
+                                                {licenseActionBusy === 'purchase'
+                                                    ? t('paywall.purchasing')
+                                                    : t('paywall.unlockNow')}
+                                            </button>
+                                        )}
+                                        <button
+                                            type="button"
+                                            className="license-secondary-btn"
+                                            onClick={() => void handleLicenseRestore()}
+                                            disabled={licenseActionBusy !== 'idle'}
+                                        >
+                                            {licenseActionBusy === 'restore'
+                                                ? t('paywall.restoring')
+                                                : t('paywall.restorePurchase')}
+                                        </button>
+                                    </div>
+                                    {licenseActionFeedback && (
+                                        <div className={`license-feedback ${licenseActionFeedback.kind}`}>
+                                            {licenseActionFeedback.message}
+                                        </div>
+                                    )}
+                                    <div className="license-cta-note">{t('paywall.ctaNote')}</div>
+                                </div>
+                            </div>
+
+                            <div className="license-benefits-section">
+                                <h3 className="license-benefits-title">{t('paywall.upgradeBenefitsTitle')}</h3>
+                                <div className="license-benefits-grid">
+                                    {LICENSE_BENEFIT_ITEMS.map((item) => (
+                                        <div className="license-benefit-card" key={item.titleKey}>
+                                            <div className="license-benefit-icon">
+                                                <Check size={14} />
+                                            </div>
+                                            <div>
+                                                <div className="license-benefit-name">{t(item.titleKey)}</div>
+                                                <div className="license-benefit-desc">{t(item.descKey)}</div>
+                                            </div>
+                                        </div>
+                                    ))}
                                 </div>
                             </div>
                         </div>

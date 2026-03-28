@@ -926,3 +926,282 @@ input:checked+.toggle-slider:before {
   font-size: 11px;
   opacity: 0.6;
 }
+
+/* License */
+.license-section-header {
+  margin-bottom: 24px;
+}
+
+.license-section-hint {
+  margin: -12px 0 0;
+  font-size: 14px;
+  color: var(--settings-text-secondary);
+  line-height: 1.6;
+}
+
+.license-overview-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  margin-bottom: 28px;
+}
+
+.license-status-card,
+.license-upgrade-card,
+.license-benefit-card {
+  border-radius: 24px;
+  border: 1px solid var(--settings-border);
+  background: var(--settings-card-bg);
+}
+
+.license-status-card,
+.license-upgrade-card {
+  padding: 26px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.license-status-card {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02)),
+    var(--settings-card-bg);
+}
+
+.license-upgrade-card {
+  border-color: rgba(214, 160, 23, 0.28);
+  background:
+    radial-gradient(circle at top, rgba(255, 228, 156, 0.18), transparent 55%),
+    repeating-linear-gradient(-45deg,
+      rgba(246, 196, 83, 0.045) 0,
+      rgba(246, 196, 83, 0.045) 14px,
+      rgba(255, 255, 255, 0.02) 14px,
+      rgba(255, 255, 255, 0.02) 28px),
+    linear-gradient(180deg, rgba(255, 248, 235, 0.92), rgba(255, 253, 247, 0.84));
+  box-shadow: 0 18px 42px rgba(168, 109, 0, 0.12);
+}
+
+[data-theme="dark"] .license-upgrade-card {
+  background:
+    radial-gradient(circle at top, rgba(246, 196, 83, 0.16), transparent 55%),
+    repeating-linear-gradient(-45deg,
+      rgba(246, 196, 83, 0.04) 0,
+      rgba(246, 196, 83, 0.04) 14px,
+      rgba(255, 255, 255, 0.015) 14px,
+      rgba(255, 255, 255, 0.015) 28px),
+    linear-gradient(180deg, rgba(60, 45, 24, 0.62), rgba(35, 29, 20, 0.72));
+}
+
+.license-card-heading {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.license-card-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--settings-sidebar-bg);
+  color: var(--settings-text-secondary);
+  border: 1px solid var(--settings-border);
+  flex-shrink: 0;
+}
+
+.license-card-icon-gold {
+  background: linear-gradient(180deg, rgba(255, 247, 220, 0.95), rgba(255, 238, 192, 0.9));
+  color: #b7791f;
+  border-color: rgba(214, 160, 23, 0.28);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+[data-theme="dark"] .license-card-icon-gold {
+  background: linear-gradient(180deg, rgba(92, 68, 27, 0.9), rgba(60, 44, 19, 0.88));
+  color: #ffd36b;
+}
+
+.license-card-label {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--settings-text);
+}
+
+.license-plan-pill,
+.license-card-price {
+  margin-top: 6px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.license-plan-pill {
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  border: 1px solid var(--settings-border);
+  color: var(--settings-text-secondary);
+  background: rgba(255, 255, 255, 0.4);
+}
+
+.license-plan-pill.is-pro {
+  color: #b7791f;
+  background: rgba(246, 196, 83, 0.16);
+  border-color: rgba(214, 160, 23, 0.28);
+}
+
+[data-theme="dark"] .license-plan-pill {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.license-card-price {
+  font-size: 13px;
+  font-weight: 700;
+  color: #b7791f;
+}
+
+[data-theme="dark"] .license-card-price {
+  color: #ffd36b;
+}
+
+.license-card-description {
+  font-size: 14px;
+  line-height: 1.75;
+  color: var(--settings-text-secondary);
+}
+
+.license-action-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.license-primary-btn,
+.license-secondary-btn {
+  min-height: 48px;
+  padding: 0 18px;
+  border-radius: 14px;
+  font-size: 14px;
+  font-weight: 700;
+  transition: all 0.18s ease;
+  cursor: pointer;
+}
+
+.license-primary-btn {
+  border: none;
+  color: #ffffff;
+  background: linear-gradient(135deg, #b78317, #e7b93d);
+  box-shadow: 0 14px 26px rgba(183, 131, 23, 0.22);
+}
+
+.license-primary-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 18px 32px rgba(183, 131, 23, 0.28);
+}
+
+.license-secondary-btn {
+  border: 1px solid var(--settings-border);
+  color: var(--settings-text-secondary);
+  background: rgba(255, 255, 255, 0.5);
+}
+
+[data-theme="dark"] .license-secondary-btn {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.license-secondary-btn:hover:not(:disabled) {
+  color: var(--settings-text);
+  border-color: rgba(214, 160, 23, 0.24);
+}
+
+.license-primary-btn:disabled,
+.license-secondary-btn:disabled {
+  opacity: 0.56;
+  cursor: default;
+  transform: none;
+  box-shadow: none;
+}
+
+.license-feedback {
+  font-size: 13px;
+  line-height: 1.6;
+  border-radius: 14px;
+  padding: 10px 14px;
+}
+
+.license-feedback.success {
+  background: rgba(16, 185, 129, 0.12);
+  color: #0f766e;
+}
+
+.license-feedback.error {
+  background: rgba(220, 38, 38, 0.09);
+  color: #dc2626;
+}
+
+.license-cta-note {
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--settings-text-secondary);
+}
+
+.license-benefits-section {
+  margin-top: 8px;
+}
+
+.license-benefits-title {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--settings-text);
+  margin: 0 0 16px;
+}
+
+.license-benefits-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.license-benefit-card {
+  padding: 20px;
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02)),
+    var(--settings-card-bg);
+}
+
+.license-benefit-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(34, 197, 94, 0.14);
+  color: #16a34a;
+  flex-shrink: 0;
+}
+
+.license-benefit-name {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--settings-text);
+  margin-bottom: 6px;
+}
+
+.license-benefit-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--settings-text-secondary);
+}
+
+@media (max-width: 980px) {
+  .license-overview-grid,
+  .license-benefits-grid {
+    grid-template-columns: 1fr;
+  }
+}
