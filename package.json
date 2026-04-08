@@ -8,7 +8,7 @@
     "dev": "vite",
     "test": "node --test",
     "electron:open": "wait-on http-get://127.0.0.1:5187/app.html && cross-env NODE_ENV=development ELECTRON_RUN_AS_NODE= ELECTRON_RENDERER_URL=http://127.0.0.1:5187/app.html electron .",
-    "electron:dev": "concurrently -k \"vite\" \"wait-on http-get://127.0.0.1:5187/app.html && cross-env NODE_ENV=development ELECTRON_RUN_AS_NODE= ELECTRON_RENDERER_URL=http://127.0.0.1:5187/app.html electron .\"",
+    "electron:dev": "concurrently -k \"vite\" \"wait-on http-get://127.0.0.1:5187/app.html && cross-env NODE_ENV=development ELECTRON_RUN_AS_NODE= ELECTRON_RENDERER_URL=http://127.0.0.1:5187/app.html electron . --remote-debugging-port=9222\"",
     "dev:desktop": "npm run electron:dev",
     "build": "vite build",
     "electron:build": "vite build && electron-builder",
