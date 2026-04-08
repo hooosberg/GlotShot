@@ -6,7 +6,8 @@
 ### App Store プレビュー画像ジェネレーター
 [🌐 公式サイト](https://hooosberg.github.io/GlotShot/)
 
-[![macOS版をダウンロード](https://img.shields.io/badge/ダウンロード-macOS-blue?style=for-the-badge&logo=apple)](https://github.com/hooosberg/GlotShot/releases/latest)
+[![Download on the Mac App Store](https://img.shields.io/badge/-Mac_App_Store-0D84FF?style=for-the-badge&logo=apple&logoColor=white)](https://apps.apple.com/us/app/glotshot-screenshot-maker/id6757913340?mt=12)
+[![GitHub Releases](https://img.shields.io/badge/-GitHub_Releases-333?style=for-the-badge&logo=github&logoColor=white)](https://github.com/hooosberg/GlotShot/releases/latest)
 [![公式サイト](https://img.shields.io/badge/公式サイト-GlotShot-green?style=for-the-badge)](https://hooosberg.github.io/GlotShot/)
 [![ライセンス](https://img.shields.io/badge/ライセンス-MIT-yellow.svg?style=for-the-badge)](../LICENSE)
 
@@ -27,13 +28,11 @@
 
 ## 🍎 Mac App Store と価格設定
 
-> **早期ユーザー向けの重要なお知らせ:**
-> 現在、**Mac App Store** への申請を行っています。承認され次第、GlotShot は早期ユーザーに**無料**で提供されます。
-> その後は有料アプリになりますが、**早期ユーザーは永久に無料で利用できます**。
+> **GlotShot is now available on the [Mac App Store](https://apps.apple.com/us/app/glotshot-screenshot-maker/id6757913340?mt=12)!**
 > 
-> 進捗をフォローするために、このプロジェクトに **[スター ★](https://github.com/hooosberg/GlotShot)** を付けてください！App Store に掲載された場合は、すぐに全員に通知します。
+> The App Store version is always the most up-to-date. One-time purchase, no subscription.
 > 
-> *他のバージョンのユーザーは、いつでも自分でビルドできます。*
+> *Users of other platforms can download from [GitHub Releases](https://github.com/hooosberg/GlotShot/releases/latest) or build from source.*
 
 ## 📸 スクリーンショット
 
@@ -56,6 +55,10 @@
 ## 📥 インストール
 
 ### macOS
+1. **[Download from the Mac App Store](https://apps.apple.com/us/app/glotshot-screenshot-maker/id6757913340?mt=12)** — always the latest version.
+
+Or manually via GitHub:
+
 1. [Releases](https://github.com/hooosberg/GlotShot/releases/latest) ページにアクセスしてください。
 2. 最新の `.dmg` ファイルをダウンロードします。
 3. ディスクイメージを開き、**GlotShot** をアプリケーションフォルダにドラッグしてください。

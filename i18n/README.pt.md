@@ -6,7 +6,8 @@
 ### Gerador de Imagens de Pré-visualização para App Store
 [🌐 Site Oficial](https://hooosberg.github.io/GlotShot/)
 
-[![Baixar para macOS](https://img.shields.io/badge/Baixar-macOS-blue?style=for-the-badge&logo=apple)](https://github.com/hooosberg/GlotShot/releases/latest)
+[![Download on the Mac App Store](https://img.shields.io/badge/-Mac_App_Store-0D84FF?style=for-the-badge&logo=apple&logoColor=white)](https://apps.apple.com/us/app/glotshot-screenshot-maker/id6757913340?mt=12)
+[![GitHub Releases](https://img.shields.io/badge/-GitHub_Releases-333?style=for-the-badge&logo=github&logoColor=white)](https://github.com/hooosberg/GlotShot/releases/latest)
 [![Site](https://img.shields.io/badge/Site-GlotShot-green?style=for-the-badge)](https://hooosberg.github.io/GlotShot/)
 [![Licença](https://img.shields.io/badge/Licen%C3%A7a-MIT-yellow.svg?style=for-the-badge)](../LICENSE)
 
@@ -27,13 +28,11 @@ Com suporte integrado para **localização** e **processamento em lote**, o Glot
 
 ## 🍎 Mac App Store e Preços
 
-> **Nota para os primeiros usuários:**
-> Estamos atualmente solicitando a entrada na **Mac App Store**. Uma vez aprovado, o GlotShot será **gratuito** para os primeiros usuários.
-> Mais tarde, tornar-se-á um aplicativo pago, mas **os primeiros usuários o manterão gratuito para sempre**.
->
-> Por favor, dê uma **[Estrela ★](https://github.com/hooosberg/GlotShot)** a este projeto para acompanhar nosso progresso! Se listado na App Store, notificaremos a todos imediatamente.
->
-> *Usuários de outras versões podem sempre compilá-lo por conta própria.*
+> **GlotShot is now available on the [Mac App Store](https://apps.apple.com/us/app/glotshot-screenshot-maker/id6757913340?mt=12)!**
+> 
+> The App Store version is always the most up-to-date. One-time purchase, no subscription.
+> 
+> *Users of other platforms can download from [GitHub Releases](https://github.com/hooosberg/GlotShot/releases/latest) or build from source.*
 
 ## 📸 Capturas de Tela
 
@@ -56,6 +55,10 @@ Com suporte integrado para **localização** e **processamento em lote**, o Glot
 ## 📥 Instalação
 
 ### macOS
+1. **[Download from the Mac App Store](https://apps.apple.com/us/app/glotshot-screenshot-maker/id6757913340?mt=12)** — always the latest version.
+
+Or manually via GitHub:
+
 1. Vá para a página de [Lançamentos](https://github.com/hooosberg/GlotShot/releases/latest).
 2. Baixe o último arquivo `.dmg`.
 3. Abra a imagem de disco e arraste **GlotShot** para a sua pasta Aplicativos.

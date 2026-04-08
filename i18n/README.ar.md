@@ -6,7 +6,8 @@
 ### مـوَلِّد صور المعاينة لمتجر التطبيقات
 [🌐 الموقع الرسمي](https://hooosberg.github.io/GlotShot/)
 
-[![تنزيل لنظام macOS](https://img.shields.io/badge/%D8%AA%D9%86%D8%B2%D9%8A%D9%84-macOS-blue?style=for-the-badge&logo=apple)](https://github.com/hooosberg/GlotShot/releases/latest)
+[![Download on the Mac App Store](https://img.shields.io/badge/-Mac_App_Store-0D84FF?style=for-the-badge&logo=apple&logoColor=white)](https://apps.apple.com/us/app/glotshot-screenshot-maker/id6757913340?mt=12)
+[![GitHub Releases](https://img.shields.io/badge/-GitHub_Releases-333?style=for-the-badge&logo=github&logoColor=white)](https://github.com/hooosberg/GlotShot/releases/latest)
 [![الموقع الإلكتروني](https://img.shields.io/badge/%D8%A7%D9%84%D9%85%D9%88%D9%82%D8%B9-GlotShot-green?style=for-the-badge)](https://hooosberg.github.io/GlotShot/)
 [![الرخصة](https://img.shields.io/badge/%D8%A7%D9%84%D8%B1%D8%AE%D8%B5%D8%A9-MIT-yellow.svg?style=for-the-badge)](../LICENSE)
 
@@ -27,13 +28,11 @@
 
 ## 🍎 متجر تطبيقات Mac والأسعار
 
-> **ملاحظة للمستخدمين الأوائل:**
-> نحن نتقدم حاليًا بطلب لمتجر **Mac App Store**. بمجرد الموافقة، سيكون GlotShot **مجانيًا** للمستخدمين الأوائل.
-> لاحقًا سيصبح تطبيقًا مدفوعًا، لكن **سيحتفظ المستخدمون الأوائل به مجانًا إلى الأبد**.
->
-> يرجى منح **[نجمة ★](https://github.com/hooosberg/GlotShot)** لهذا المشروع لمتابعة تقدمنا! إذا تم إدراجه في App Store، سنقوم بإخطار الجميع على الفور.
->
-> *يمكن لمستخدمي الإصدارات الأخرى بناؤه بأنفسهم دائمًا.*
+> **GlotShot is now available on the [Mac App Store](https://apps.apple.com/us/app/glotshot-screenshot-maker/id6757913340?mt=12)!**
+> 
+> The App Store version is always the most up-to-date. One-time purchase, no subscription.
+> 
+> *Users of other platforms can download from [GitHub Releases](https://github.com/hooosberg/GlotShot/releases/latest) or build from source.*
 
 ## 📸 لقطات الشاشة
 
@@ -56,6 +55,10 @@
 ## 📥 التثبيت
 
 ### macOS
+1. **[Download from the Mac App Store](https://apps.apple.com/us/app/glotshot-screenshot-maker/id6757913340?mt=12)** — always the latest version.
+
+Or manually via GitHub:
+
 1. انتقل إلى صفحة [الإصدارات](https://github.com/hooosberg/GlotShot/releases/latest).
 2. قم بتنزيل أحدث ملف `.dmg`.
 3. افتح صورة القرص واسحب **GlotShot** إلى مجلد التطبيقات.

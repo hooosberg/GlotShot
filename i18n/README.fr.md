@@ -6,7 +6,8 @@
 ### Générateur d'Images d'Aperçu pour l'App Store
 [🌐 Site Officiel](https://hooosberg.github.io/GlotShot/)
 
-[![Télécharger pour macOS](https://img.shields.io/badge/T%C3%A9l%C3%A9charger-macOS-blue?style=for-the-badge&logo=apple)](https://github.com/hooosberg/GlotShot/releases/latest)
+[![Download on the Mac App Store](https://img.shields.io/badge/-Mac_App_Store-0D84FF?style=for-the-badge&logo=apple&logoColor=white)](https://apps.apple.com/us/app/glotshot-screenshot-maker/id6757913340?mt=12)
+[![GitHub Releases](https://img.shields.io/badge/-GitHub_Releases-333?style=for-the-badge&logo=github&logoColor=white)](https://github.com/hooosberg/GlotShot/releases/latest)
 [![Site Web](https://img.shields.io/badge/Site%20Web-GlotShot-green?style=for-the-badge)](https://hooosberg.github.io/GlotShot/)
 [![Licence](https://img.shields.io/badge/Licence-MIT-yellow.svg?style=for-the-badge)](../LICENSE)
 
@@ -27,13 +28,11 @@ Avec une prise en charge intégrée de la **localisation** et du **traitement pa
 
 ## 🍎 Mac App Store et Tarification
 
-> **Note pour les premiers utilisateurs :**
-> Nous demandons actuellement l'accès au **Mac App Store**. Une fois approuvé, GlotShot sera **gratuit** pour les premiers utilisateurs.
-> Plus tard, elle deviendra une application payante, mais **les premiers utilisateurs la garderont gratuite pour toujours**.
->
-> Veuillez donner une **[Étoile ★](https://github.com/hooosberg/GlotShot)** à ce projet pour suivre nos progrès ! Si elle est listée sur l'App Store, nous informerons tout le monde immédiatement.
->
-> *Les utilisateurs d'autres versions peuvent toujours la compiler eux-mêmes.*
+> **GlotShot is now available on the [Mac App Store](https://apps.apple.com/us/app/glotshot-screenshot-maker/id6757913340?mt=12)!**
+> 
+> The App Store version is always the most up-to-date. One-time purchase, no subscription.
+> 
+> *Users of other platforms can download from [GitHub Releases](https://github.com/hooosberg/GlotShot/releases/latest) or build from source.*
 
 ## 📸 Captures d'écran
 
@@ -56,6 +55,10 @@ Avec une prise en charge intégrée de la **localisation** et du **traitement pa
 ## 📥 Installation
 
 ### macOS
+1. **[Download from the Mac App Store](https://apps.apple.com/us/app/glotshot-screenshot-maker/id6757913340?mt=12)** — always the latest version.
+
+Or manually via GitHub:
+
 1. Allez sur la page des [Releases](https://github.com/hooosberg/GlotShot/releases/latest).
 2. Téléchargez le dernier fichier `.dmg`.
 3. Ouvrez l'image disque et faites glisser **GlotShot** dans votre dossier Applications.

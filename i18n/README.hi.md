@@ -6,7 +6,8 @@
 ### ऐप स्टोर पूर्वावलोकन छवि जनरेटर
 [🌐 आधिकारिक वेबसाइट](https://hooosberg.github.io/GlotShot/)
 
-[![macOS के लिए डाउनलोड करें](https://img.shields.io/badge/%E0%A4%A1%E0%A4%BE%E0%A4%89%E0%A4%A8%E0%A4%B2%E0%A5%8B%E0%A4%A1-macOS-blue?style=for-the-badge&logo=apple)](https://github.com/hooosberg/GlotShot/releases/latest)
+[![Download on the Mac App Store](https://img.shields.io/badge/-Mac_App_Store-0D84FF?style=for-the-badge&logo=apple&logoColor=white)](https://apps.apple.com/us/app/glotshot-screenshot-maker/id6757913340?mt=12)
+[![GitHub Releases](https://img.shields.io/badge/-GitHub_Releases-333?style=for-the-badge&logo=github&logoColor=white)](https://github.com/hooosberg/GlotShot/releases/latest)
 [![वेबसाइट](https://img.shields.io/badge/%E0%A4%B5%E0%A5%87%E0%A4%AC%E0%A4%B8%E0%A4%BE%E0%A4%87%E0%A4%9F-GlotShot-green?style=for-the-badge)](https://hooosberg.github.io/GlotShot/)
 [![लाइसेंस](https://img.shields.io/badge/%E0%A4%B2%E0%A4%BE%E0%A4%87%E0%A4%B8%E0%A5%87%E0%A4%82%E0%A4%B8-MIT-yellow.svg?style=for-the-badge)](../LICENSE)
 
@@ -27,13 +28,11 @@
 
 ## 🍎 Mac App Store और मूल्य निर्धारण
 
-> **शुरुआती उपयोगकर्ताओं के लिए नोट:**
-> हम वर्तमान में **Mac App Store** के लिए आवेदन कर रहे हैं। एक बार स्वीकृत होने के बाद, GlotShot शुरुआती उपयोगकर्ताओं के लिए **मुफ़्त** होगा।
-> बाद में यह एक सशुल्क ऐप बन जाएगा, लेकिन **शुरुआती उपयोगकर्ता इसे हमेशा के लिए मुफ़्त रखेंगे**।
->
-> हमारी प्रगति का पालन करने के लिए कृपया इस परियोजना को **[Star ★](https://github.com/hooosberg/GlotShot)** दें! यदि ऐप स्टोर पर सूचीबद्ध किया जाता है, तो हम तुरंत सभी को सूचित करेंगे।
->
-> *अन्य संस्करणों के उपयोगकर्ता इसे हमेशा स्वयं बना सकते हैं.*
+> **GlotShot is now available on the [Mac App Store](https://apps.apple.com/us/app/glotshot-screenshot-maker/id6757913340?mt=12)!**
+> 
+> The App Store version is always the most up-to-date. One-time purchase, no subscription.
+> 
+> *Users of other platforms can download from [GitHub Releases](https://github.com/hooosberg/GlotShot/releases/latest) or build from source.*
 
 ## 📸 स्क्रीनशॉट
 
@@ -56,6 +55,10 @@
 ## 📥 स्थापना
 
 ### macOS
+1. **[Download from the Mac App Store](https://apps.apple.com/us/app/glotshot-screenshot-maker/id6757913340?mt=12)** — always the latest version.
+
+Or manually via GitHub:
+
 1. [Releases](https://github.com/hooosberg/GlotShot/releases/latest) पृष्ठ पर जाएं।
 2. नवीनतम `.dmg` फ़ाइल डाउनलोड करें।
 3. डिस्क इमेज खोलें और **GlotShot** को अपने एप्लिकेशन फ़ोल्डर में खींचें।

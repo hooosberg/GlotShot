@@ -6,9 +6,10 @@
 ### Create Perfect App Store Preview Images
 [🌐 Official Website](https://hooosberg.github.io/GlotShot/)
 
-[![macOS](https://img.shields.io/badge/-macOS-black?style=for-the-badge&logo=apple)](https://github.com/hooosberg/GlotShot/releases/latest)
-[![Windows](https://img.shields.io/badge/-Windows-0078D6?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/hooosberg/GlotShot/releases/latest)
-[![Linux](https://img.shields.io/badge/-Linux-FCC624?style=for-the-badge&logo=linux&logoColor=black)](https://github.com/hooosberg/GlotShot/releases/latest)
+[![Download on the Mac App Store](https://img.shields.io/badge/-Mac_App_Store-0D84FF?style=for-the-badge&logo=apple&logoColor=white)](https://apps.apple.com/us/app/glotshot-screenshot-maker/id6757913340?mt=12)
+[![GitHub Releases](https://img.shields.io/badge/-GitHub_Releases-333?style=for-the-badge&logo=github&logoColor=white)](https://github.com/hooosberg/GlotShot/releases/latest)
+
+> **Mac App Store is always the latest version.** GitHub Releases also available for Windows & Linux.
 
 [![Electron](https://img.shields.io/badge/-Electron-47848F?style=flat-square&logo=electron&logoColor=white)](https://electronjs.org/)
 [![React](https://img.shields.io/badge/-React-61DAFB?style=flat-square&logo=react&logoColor=black)](https://reactjs.org/)
@@ -30,14 +31,13 @@ With built-in support for **localization** and **batch processing**, GlotShot he
 
 
 
-## 🍎 Mac App Store & Pricing
+## 🍎 Mac App Store
 
-> **Note for Early Adopters:**
-> We are currently applying for the **Mac App Store**. Once approved, GlotShot will be free for early users. Later it will become a paid app, but **early users will keep it for free forever**.
+> **GlotShot is now available on the [Mac App Store](https://apps.apple.com/us/app/glotshot-screenshot-maker/id6757913340?mt=12)!**
 > 
-> Please **[Star ★](https://github.com/hooosberg/GlotShot)** this project to follow our progress! If listed on the App Store, we will notify everyone immediately.
+> The App Store version is always the most up-to-date. One-time purchase, no subscription.
 > 
-> *Users of other platforms or versions can always build it themselves from source.*
+> *Users of other platforms can download from [GitHub Releases](https://github.com/hooosberg/GlotShot/releases/latest) or build from source.*
 
 ## 📸 Screenshots
 
@@ -58,7 +58,10 @@ With built-in support for **localization** and **batch processing**, GlotShot he
 
 ## 📥 Installation
 
-### macOS
+### macOS (Recommended)
+1. **[Download from the Mac App Store](https://apps.apple.com/us/app/glotshot-screenshot-maker/id6757913340?mt=12)** — always the latest version.
+
+Or manually via GitHub:
 1. Go to the [Releases](https://github.com/hooosberg/GlotShot/releases/latest) page.
 2. Download the latest `.dmg` file.
 3. Open the disk image and drag **GlotShot** to your Applications folder.

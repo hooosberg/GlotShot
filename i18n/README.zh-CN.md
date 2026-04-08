@@ -6,7 +6,8 @@
 ### 打造完美的 App Store 预览图
 [🌐 官方网站](https://hooosberg.github.io/GlotShot/)
 
-[![下载 macOS 版本](https://img.shields.io/badge/下载-macOS-blue?style=for-the-badge&logo=apple)](https://github.com/hooosberg/GlotShot/releases/latest)
+[![Download on the Mac App Store](https://img.shields.io/badge/-Mac_App_Store-0D84FF?style=for-the-badge&logo=apple&logoColor=white)](https://apps.apple.com/us/app/glotshot-screenshot-maker/id6757913340?mt=12)
+[![GitHub Releases](https://img.shields.io/badge/-GitHub_Releases-333?style=for-the-badge&logo=github&logoColor=white)](https://github.com/hooosberg/GlotShot/releases/latest)
 [![官网](https://img.shields.io/badge/官网-万语图-green?style=for-the-badge)](https://hooosberg.github.io/GlotShot/)
 [![许可证](https://img.shields.io/badge/许可证-MIT-yellow.svg?style=for-the-badge)](../LICENSE)
 [![平台](https://img.shields.io/badge/平台-macOS%20%7C%20Windows-lightgrey?style=for-the-badge)](https://electronjs.org/)
@@ -27,13 +28,11 @@
 
 ## 🍎 Mac App Store 及定价策略
 
-> **早期用户特别说明：**
-> 我们目前正在申请登录 **Mac App Store**。通过审核后，GlotShot 将对早期用户**免费**开放。
-> 后期虽然会转为收费模式，但**早期用户将永久免费**。
+> **GlotShot 现已上架 [Mac App Store](https://apps.apple.com/us/app/glotshot-screenshot-maker/id6757913340?mt=12)！**
 > 
-> 请大家点击 **[Star ★](https://github.com/hooosberg/GlotShot)** 关注这个项目！如果成功上架苹果商店，我们会立刻通知大家。
+> App Store 版本始终为最新版。一次性买断，无订阅。
 > 
-> *其他版本的用户可以随时自行构建项目。*
+> *其他平台用户可从 [GitHub Releases](https://github.com/hooosberg/GlotShot/releases/latest) 下载或自行编译。*
 
 ## 📸 软件截图
 
@@ -56,6 +55,10 @@
 ## 📥 安装指南
 
 ### macOS 用户
+1. **[从 Mac App Store 下载](https://apps.apple.com/us/app/glotshot-screenshot-maker/id6757913340?mt=12)** — 始终为最新版本。
+
+或从 GitHub 手动下载：
+
 1. 访问 [Releases](https://github.com/hooosberg/GlotShot/releases/latest) 页面。
 2. 下载最新的 `.dmg` 安装包。
 3. 打开安装包并将 **万语图** 拖入应用程序文件夹即可。

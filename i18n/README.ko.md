@@ -6,7 +6,8 @@
 ### 앱 스토어 미리보기 이미지 생성기
 [🌐 공식 웹사이트](https://hooosberg.github.io/GlotShot/)
 
-[![macOS용 다운로드](https://img.shields.io/badge/다운로드-macOS-blue?style=for-the-badge&logo=apple)](https://github.com/hooosberg/GlotShot/releases/latest)
+[![Download on the Mac App Store](https://img.shields.io/badge/-Mac_App_Store-0D84FF?style=for-the-badge&logo=apple&logoColor=white)](https://apps.apple.com/us/app/glotshot-screenshot-maker/id6757913340?mt=12)
+[![GitHub Releases](https://img.shields.io/badge/-GitHub_Releases-333?style=for-the-badge&logo=github&logoColor=white)](https://github.com/hooosberg/GlotShot/releases/latest)
 [![웹사이트](https://img.shields.io/badge/웹사이트-GlotShot-green?style=for-the-badge)](https://hooosberg.github.io/GlotShot/)
 [![라이선스](https://img.shields.io/badge/라이선스-MIT-yellow.svg?style=for-the-badge)](../LICENSE)
 
@@ -27,13 +28,11 @@
 
 ## 🍎 Mac App Store 및 가격 책정
 
-> **초기 사용자를 위한 중요 알림:**
-> 현재 **Mac App Store** 등록을 신청 중입니다. 승인되면 GlotShot은 초기 사용자에게 **무료**로 제공됩니다.
-> 나중에 유료 앱으로 전환되지만, **초기 사용자는 영구적으로 무료로 사용할 수 있습니다**.
+> **GlotShot is now available on the [Mac App Store](https://apps.apple.com/us/app/glotshot-screenshot-maker/id6757913340?mt=12)!**
 > 
-> 진행 상황을 확인하려면 이 프로젝트에 **[스타 ★](https://github.com/hooosberg/GlotShot)**를 눌러주세요! App Store에 등록되면 즉시 모두에게 알리겠습니다.
+> The App Store version is always the most up-to-date. One-time purchase, no subscription.
 > 
-> *다른 버전 사용자는 언제든지 직접 빌드할 수 있습니다.*
+> *Users of other platforms can download from [GitHub Releases](https://github.com/hooosberg/GlotShot/releases/latest) or build from source.*
 
 ## 📸 스크린샷
 
@@ -56,6 +55,10 @@
 ## 📥 설치
 
 ### macOS
+1. **[Download from the Mac App Store](https://apps.apple.com/us/app/glotshot-screenshot-maker/id6757913340?mt=12)** — always the latest version.
+
+Or manually via GitHub:
+
 1. [Releases](https://github.com/hooosberg/GlotShot/releases/latest) 페이지로 이동합니다.
 2. 최신 `.dmg` 파일을 다운로드합니다.
 3. 디스크 이미지를 열고 **GlotShot**을 응용 프로그램 폴더로 드래그합니다.

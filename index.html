@@ -237,6 +237,29 @@
             overflow: hidden;
         }
 
+        .btn-appstore {
+            background: linear-gradient(135deg, #0d84ff, #bf5af2);
+            color: #fff;
+            padding: 16px 40px;
+            font-size: 18px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            box-shadow: 0 4px 20px rgba(13, 132, 255, 0.4);
+            border: none;
+        }
+
+        .btn-appstore:hover {
+            box-shadow: 0 6px 30px rgba(13, 132, 255, 0.6);
+            transform: translateY(-2px);
+        }
+
+        .store-hint {
+            color: #8e8e93;
+            font-size: 13px;
+            margin-top: 16px;
+            font-weight: 400;
+        }
+
         .btn-glass::before {
             content: '';
             position: absolute;
@@ -551,13 +574,12 @@
             <p id="hero-subtitle">The ultimate tool for designing App Store, Google Play, Steam, and Windows Store
                 assets. Fast, localized, and beautiful.</p>
             <div class="cta-buttons">
+                <a href="https://apps.apple.com/us/app/glotshot-screenshot-maker/id6757913340?mt=12" class="btn btn-appstore"
+                    id="btn-download"> App Store</a>
                 <a href="https://github.com/hooosberg/GlotShot/releases/latest" class="btn btn-glass"
-                    id="btn-download">macOS</a>
-                <a href="https://github.com/hooosberg/GlotShot/releases/latest" class="btn btn-glass"
-                    id="btn-download-win">Windows</a>
-                <a href="https://github.com/hooosberg/GlotShot/releases/latest" class="btn btn-glass"
-                    id="btn-download-linux">Linux</a>
+                    id="btn-source">GitHub Releases</a>
             </div>
+            <p class="store-hint" id="store-hint"> App Store has the latest version. GitHub releases are also available for Windows & Linux.</p>
         </section>
 
         <section class="showcase">
@@ -625,13 +647,12 @@
             <p data-i18n="install_desc">Download the latest version for macOS (Apple Silicon & Intel), Windows, and
                 Linux.</p>
             <div class="cta-buttons" style="margin-top: 30px;">
+                <a href="https://apps.apple.com/us/app/glotshot-screenshot-maker/id6757913340?mt=12" class="btn btn-appstore"
+                    id="btn-download-2"> App Store</a>
                 <a href="https://github.com/hooosberg/GlotShot/releases/latest" class="btn btn-glass"
-                    id="btn-download-2">macOS</a>
-                <a href="https://github.com/hooosberg/GlotShot/releases/latest" class="btn btn-glass"
-                    id="btn-download-win-2">Windows</a>
-                <a href="https://github.com/hooosberg/GlotShot/releases/latest" class="btn btn-glass"
-                    id="btn-download-linux-2">Linux</a>
+                    id="btn-source-2">GitHub Releases</a>
             </div>
+            <p class="store-hint" id="store-hint-2"> App Store has the latest version. GitHub releases are also available for Windows & Linux.</p>
             <br>
             <span class="os-badge">macOS 11.0+ • Windows 10+ • Ubuntu 20.04+</span>
         </section>
@@ -689,8 +710,9 @@
                 nav_download: "Download",
                 hero_title: "Create Perfect <br><span>App Store Images</span>",
                 hero_subtitle: "The ultimate tool for designing App Store, Google Play, Steam, and Windows Store assets. Fast, localized, and beautiful.",
-                btn_download: "macOS",
-                btn_source: "View Source",
+                btn_download: " App Store",
+                btn_source: "GitHub Releases",
+                store_hint: " App Store has the latest version. GitHub releases are also available for Windows & Linux.",
                 features_title: "Why GlotShot?",
                 feat_batch_title: "Batch Processing",
                 feat_batch_desc: "Create screenshots for multiple devices and languages in one go. Save hours of manual work.",
@@ -706,12 +728,9 @@
                 feat_privacy_desc: "All processing happens locally on your machine. No data is sent to the cloud.",
                 install_title: "Ready to Design?",
                 install_desc: "Download the latest version for macOS, Windows, and Linux.",
-                btn_download: "macOS",
-                btn_download_win: "Windows",
-                btn_download_linux: "Linux",
-                btn_download_2: "macOS",
-                btn_download_win_2: "Windows",
-                btn_download_linux_2: "Linux",
+                btn_download_2: " App Store",
+                btn_source_2: "GitHub Releases",
+                store_hint_2: " App Store has the latest version. GitHub releases are also available for Windows & Linux.",
                 showcase_poster: "Poster Design",
                 showcase_icon: "Icon Design",
                 feat_frames_title: "Device Frames",
@@ -728,13 +747,13 @@
                 hero_title: "打造完美的 <br><span>App Store 预览图</span>",
                 hero_subtitle: "专为 App Store 和 Google Play 设计的截图生成工具。快速、本地化、美观。",
                 install_title: "准备好开始设计了吗？",
+                btn_download: " App Store",
+                btn_source: "GitHub 下载",
+                store_hint: " App Store 为最新版本，GitHub 同时提供 Windows 和 Linux 版本。",
                 install_desc: "下载适用于 macOS、Windows 和 Linux 的最新版本。",
-                btn_download: "macOS",
-                btn_download_win: "Windows",
-                btn_download_linux: "Linux",
-                btn_download_2: "macOS",
-                btn_download_win_2: "Windows",
-                btn_download_linux_2: "Linux",
+                btn_download_2: " App Store",
+                btn_source_2: "GitHub 下载",
+                store_hint_2: " App Store 为最新版本，GitHub 同时提供 Windows 和 Linux 版本。",
                 showcase_poster: "海报/截图设计",
                 showcase_icon: "图标/Logo 设计",
                 feat_frames_title: "多设备边框",
@@ -764,8 +783,8 @@
                 nav_download: "Descargar",
                 hero_title: "Crea Imágenes <br><span>Perfectas</span>",
                 hero_subtitle: "La herramienta definitiva para capturas de App Store y Google Play.",
-                btn_download: "macOS",
-                btn_source: "Ver Código",
+                btn_download: " App Store",
+                btn_source: "GitHub",
                 features_title: "¿Por qué GlotShot?",
                 feat_batch_title: "Procesamiento Lotes",
                 feat_batch_desc: "Crea capturas para múltiples dispositivos e idiomas a la vez.",
@@ -781,7 +800,8 @@
                 feat_privacy_desc: "Todo es local. Sin datos en la nube.",
                 install_title: "¿Listo para Diseñar?",
                 install_desc: "Descarga para macOS.",
-                btn_download_2: "Descargar Ahora",
+                btn_download_2: " App Store",
+                btn_source_2: "GitHub",
                 showcase_poster: "Diseño de Póster",
                 showcase_icon: "Diseño de Ícono",
                 feat_frames_title: "Marcos de Dispositivo",
@@ -792,8 +812,8 @@
                 nav_download: "DL",
                 hero_title: "完璧な <br><span>ストア画像</span>",
                 hero_subtitle: "App StoreとGoogle Playのための究極のデザインツール。",
-                btn_download: "macOS",
-                btn_source: "ソース",
+                btn_download: " App Store",
+                btn_source: "GitHub",
                 features_title: "選ばれる理由",
                 feat_batch_title: "バッチ処理",
                 feat_batch_desc: "複数デバイス・言語の画像を一度に作成。",
@@ -809,7 +829,8 @@
                 feat_privacy_desc: "全てローカル処理。クラウド送信なし。",
                 install_title: "準備はいいですか？",
                 install_desc: "最新版をダウンロード。",
-                btn_download_2: "今すぐDL",
+                btn_download_2: " App Store",
+                btn_source_2: "GitHub",
                 showcase_poster: "ポスターデザイン",
                 showcase_icon: "アイコンデザイン",
                 feat_frames_title: "デバイスフレーム",
@@ -820,8 +841,8 @@
                 nav_download: "다운로드",
                 hero_title: "완벽한 <br><span>스토어 이미지</span>",
                 hero_subtitle: "App Store 및 Google Play 스크린샷 디자인 도구.",
-                btn_download: "macOS",
-                btn_source: "소스 보기",
+                btn_download: " App Store",
+                btn_source: "GitHub",
                 features_title: "왜 GlotShot인가?",
                 feat_batch_title: "일괄 처리",
                 feat_batch_desc: "여러 기기와 언어의 스크린샷을 한 번에 생성.",
@@ -837,7 +858,8 @@
                 feat_privacy_desc: "모든 처리는 로컬에서 수행됩니다.",
                 install_title: "시작할까요?",
                 install_desc: "최신 버전을 다운로드하세요.",
-                btn_download_2: "지금 다운로드",
+                btn_download_2: " App Store",
+                btn_source_2: "GitHub",
                 showcase_poster: "포스터 디자인",
                 showcase_icon: "아이콘 디자인",
                 feat_frames_title: "디바이스 프레임",
@@ -848,8 +870,8 @@
                 nav_download: "Télécharger",
                 hero_title: "Images <br><span>Parfaites</span>",
                 hero_subtitle: "L'outil ultime pour vos screenshots d'App Store.",
-                btn_download: "macOS",
-                btn_source: "Source",
+                btn_download: " App Store",
+                btn_source: "GitHub",
                 features_title: "Pourquoi GlotShot ?",
                 feat_batch_title: "Traitement Lots",
                 feat_batch_desc: "Créez tout en une seule fois.",
@@ -865,7 +887,8 @@
                 feat_privacy_desc: "Traitement 100% local.",
                 install_title: "Prêt ?",
                 install_desc: "Téléchargez la dernière version.",
-                btn_download_2: "Télécharger",
+                btn_download_2: " App Store",
+                btn_source_2: "GitHub",
                 showcase_poster: "Design d'Affiche",
                 showcase_icon: "Design d'Icône",
                 feat_frames_title: "Cadres d'Appareil",
@@ -876,8 +899,8 @@
                 nav_download: "Download",
                 hero_title: "Perfekte <br><span>Bilder</span>",
                 hero_subtitle: "Das Tool für App Store Screenshots.",
-                btn_download: "macOS",
-                btn_source: "Source",
+                btn_download: " App Store",
+                btn_source: "GitHub",
                 features_title: "Warum GlotShot?",
                 feat_batch_title: "Stapelverarbeitung",
                 feat_batch_desc: "Alles auf einmal erstellen.",
@@ -893,7 +916,8 @@
                 feat_privacy_desc: "Alles lokal. Keine Cloud.",
                 install_title: "Bereit?",
                 install_desc: "Laden Sie die neuste Version.",
-                btn_download_2: "Download",
+                btn_download_2: " App Store",
+                btn_source_2: "GitHub",
                 showcase_poster: "Poster-Design",
                 showcase_icon: "Icon-Design",
                 feat_frames_title: "Geräterahmen",
@@ -904,8 +928,8 @@
                 nav_download: "Scarica",
                 hero_title: "Immagini <br><span>Perfette</span>",
                 hero_subtitle: "Lo strumento per screenshot App Store.",
-                btn_download: "macOS",
-                btn_source: "Codice",
+                btn_download: " App Store",
+                btn_source: "GitHub",
                 features_title: "Perché GlotShot?",
                 feat_batch_title: "Batch",
                 feat_batch_desc: "Crea tutto in una volta.",
@@ -921,7 +945,8 @@
                 feat_privacy_desc: "Tutto locale.",
                 install_title: "Pronto?",
                 install_desc: "Scarica ora.",
-                btn_download_2: "Scarica",
+                btn_download_2: " App Store",
+                btn_source_2: "GitHub",
                 showcase_poster: "Design Poster",
                 showcase_icon: "Design Icone",
                 feat_frames_title: "Cornici Dispositivo",
@@ -932,8 +957,8 @@
                 nav_download: "Baixar",
                 hero_title: "Imagens <br><span>Perfeitas</span>",
                 hero_subtitle: "A ferramenta para capturas de tela.",
-                btn_download: "macOS",
-                btn_source: "Código",
+                btn_download: " App Store",
+                btn_source: "GitHub",
                 features_title: "Por que GlotShot?",
                 feat_batch_title: "Lote",
                 feat_batch_desc: "Crie tudo de uma vez.",
@@ -949,7 +974,8 @@
                 feat_privacy_desc: "Tudo local.",
                 install_title: "Pronto?",
                 install_desc: "Baixe agora.",
-                btn_download_2: "Baixar",
+                btn_download_2: " App Store",
+                btn_source_2: "GitHub",
                 showcase_poster: "Design de Pôster",
                 showcase_icon: "Design de Ícone",
                 feat_frames_title: "Molduras de Dispositivo",
@@ -960,8 +986,8 @@
                 nav_download: "Скачать",
                 hero_title: "Идеальные <br><span>Скриншоты</span>",
                 hero_subtitle: "Инструмент для App Store и Google Play.",
-                btn_download: "macOS",
-                btn_source: "Код",
+                btn_download: " App Store",
+                btn_source: "GitHub",
                 features_title: "Почему GlotShot?",
                 feat_batch_title: "Пакетная",
                 feat_batch_desc: "Создавайте всё сразу.",
@@ -977,7 +1003,8 @@
                 feat_privacy_desc: "Всё локально.",
                 install_title: "Готовы?",
                 install_desc: "Скачивайте.",
-                btn_download_2: "Скачать",
+                btn_download_2: " App Store",
+                btn_source_2: "GitHub",
                 showcase_poster: "Дизайн Постеров",
                 showcase_icon: "Дизайн Иконок",
                 feat_frames_title: "Рамки Устройств",
@@ -988,8 +1015,8 @@
                 nav_download: "تحميل",
                 hero_title: "صور <br><span>مثالية</span>",
                 hero_subtitle: "أداة لقطات الشاشة.",
-                btn_download: "macOS",
-                btn_source: "الكود",
+                btn_download: " App Store",
+                btn_source: "GitHub",
                 features_title: "لماذا GlotShot؟",
                 feat_batch_title: "دفعات",
                 feat_batch_desc: "إنشاء الكل دفعة واحدة.",
@@ -1005,7 +1032,8 @@
                 feat_privacy_desc: "محلياً فقط.",
                 install_title: "جاهز؟",
                 install_desc: "حمل الآن.",
-                btn_download_2: "macOS",
+                btn_download_2: " App Store",
+                btn_source_2: "GitHub",
                 showcase_poster: "تصميم الملصقات",
                 showcase_icon: "تصميم الأيقونات",
                 feat_frames_title: "إطارات الأجهزة",
@@ -1016,8 +1044,8 @@
                 nav_download: "डाउनलोड",
                 hero_title: "परफेक्ट <br><span>इमेज</span>",
                 hero_subtitle: "ऐप स्टोर स्क्रीनशॉट टूल।",
-                btn_download: "macOS",
-                btn_source: "कोड",
+                btn_download: " App Store",
+                btn_source: "GitHub",
                 features_title: "GlotShot क्यों?",
                 feat_batch_title: "बैच",
                 feat_batch_desc: "एक बार में सब बनाएं।",
@@ -1033,7 +1061,8 @@
                 feat_privacy_desc: "सब कुछ स्थानीय।",
                 install_title: "तैयार?",
                 install_desc: "अभी डाउनलोड करें।",
-                btn_download_2: "macOS",
+                btn_download_2: " App Store",
+                btn_source_2: "GitHub",
                 showcase_poster: "पोस्टर डिज़ाइन",
                 showcase_icon: "आइकन डिज़ाइन",
                 feat_frames_title: "डिवाइस फ्रेम्स",
@@ -1105,12 +1134,11 @@
             if (t.hero_title) document.getElementById('hero-title').innerHTML = t.hero_title;
             if (t.hero_subtitle) document.getElementById('hero-subtitle').textContent = t.hero_subtitle;
             if (t.btn_download) document.getElementById('btn-download').textContent = t.btn_download;
-            if (t.btn_download_win) document.getElementById('btn-download-win').textContent = t.btn_download_win;
-            if (t.btn_download_linux) document.getElementById('btn-download-linux').textContent = t.btn_download_linux;
             if (t.btn_source) document.getElementById('btn-source').textContent = t.btn_source;
+            if (t.store_hint) document.getElementById('store-hint').textContent = t.store_hint;
             if (t.btn_download_2) document.getElementById('btn-download-2').textContent = t.btn_download_2;
-            if (t.btn_download_win_2) document.getElementById('btn-download-win-2').textContent = t.btn_download_win_2;
-            if (t.btn_download_linux_2) document.getElementById('btn-download-linux-2').textContent = t.btn_download_linux_2;
+            if (t.btn_source_2) document.getElementById('btn-source-2').textContent = t.btn_source_2;
+            if (t.store_hint_2) document.getElementById('store-hint-2').textContent = t.store_hint_2;
             if (t.features_title) document.getElementById('features-title').textContent = t.features_title;
 
             // Update Screenshot
