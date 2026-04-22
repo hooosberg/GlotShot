@@ -433,40 +433,18 @@
 
         .projects-container {
             display: flex;
-            justify-content: center;
-            gap: 60px;
-        }
-
-        .siblings-list {
-            display: flex;
             flex-wrap: wrap;
             justify-content: center;
-            gap: 10px 20px;
-            max-width: 840px;
+            gap: 32px 40px;
+            max-width: 880px;
             margin: 0 auto;
         }
 
-        .sibling-link {
+        .projects-subtitle {
             font-size: 14px;
-            color: #a1a1a6;
-            text-decoration: none;
-            padding: 8px 16px;
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 99px;
-            background: rgba(255, 255, 255, 0.02);
-            transition: all 0.2s;
-        }
-
-        .sibling-link b {
-            color: #fff;
-            font-weight: 600;
-            margin-right: 4px;
-        }
-
-        .sibling-link:hover {
-            border-color: rgba(255, 255, 255, 0.25);
-            background: rgba(255, 255, 255, 0.05);
-            color: #fff;
+            color: #666;
+            margin-top: -24px;
+            margin-bottom: 40px;
         }
 
         .project-card {
@@ -482,18 +460,20 @@
         }
 
         .project-icon {
-            width: 80px;
-            height: 80px;
-            border-radius: 22px;
-            margin-bottom: 16px;
+            width: 72px;
+            height: 72px;
+            border-radius: 18px;
+            margin-bottom: 14px;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-            /* border: 1px solid rgba(255,255,255,0.1); */
             transition: box-shadow 0.3s ease;
-            /* background: #fff; */
-            /* Ensure icon has bg if transparent */
-            /* padding: 10px; */
-            /* Slight padding for non-full-bleed icons? No, user icons seem full bleed or close. Let's inspect user request again. WitNote icon checks out. */
             padding: 0;
+            background: #fff;
+            object-fit: contain;
+        }
+
+        a[href*="uixskills.com"] .project-icon,
+        a[href*="agentlimb.com"] .project-icon {
+            padding: 4px;
         }
 
         .project-card:hover .project-icon {
@@ -690,15 +670,37 @@
         </section>
 
         <section class="projects-section">
-            <h3 class="projects-title">Built by <a href="https://github.com/hooosberg" target="_blank" rel="noopener" style="color:#aaa;text-decoration:none;border-bottom:1px dashed #555;">hooosberg</a></h3>
-            <div class="siblings-list">
-                <a href="https://agentlimb.com" target="_blank" rel="noopener" class="sibling-link"><b>AgentLimb</b> · teach AI to control your browser</a>
-                <a href="https://hooosberg.github.io/BeRaw/" target="_blank" rel="noopener" class="sibling-link"><b>BeRaw</b> · Behance raw-image grabber</a>
-                <a href="https://hooosberg.github.io/Packpour/" target="_blank" rel="noopener" class="sibling-link"><b>Packpour</b> · App Store Connect locale filler</a>
-                <a href="https://hooosberg.github.io/WitNote/" target="_blank" rel="noopener" class="sibling-link"><b>WitNote</b> · local-first AI writing companion</a>
-                <a href="https://hooosberg.github.io/TrekReel/" target="_blank" rel="noopener" class="sibling-link"><b>TrekReel</b> · outdoor trails, cinematic reels</a>
-                <a href="https://hooosberg.github.io/DOMPrompter/" target="_blank" rel="noopener" class="sibling-link"><b>DOMPrompter</b> · visualize DOM for AI code</a>
-                <a href="https://uixskills.com" target="_blank" rel="noopener" class="sibling-link"><b>UIXskills</b> · AI → JSON → Whiteboard → UI</a>
+            <h3 class="projects-title">More Works</h3>
+            <p class="projects-subtitle">Creative tools from the same developer</p>
+            <div class="projects-container">
+                <a href="https://agentlimb.com" target="_blank" rel="noopener" class="project-card">
+                    <img src="https://agentlimb.com/icons/icon.svg" alt="AgentLimb" class="project-icon" loading="lazy">
+                    <span class="project-name">AgentLimb</span>
+                </a>
+                <a href="https://hooosberg.github.io/BeRaw/" target="_blank" rel="noopener" class="project-card">
+                    <img src="https://hooosberg.github.io/BeRaw/assets/icon-128.png" alt="BeRaw" class="project-icon" loading="lazy">
+                    <span class="project-name">BeRaw</span>
+                </a>
+                <a href="https://hooosberg.github.io/Packpour/" target="_blank" rel="noopener" class="project-card">
+                    <img src="https://hooosberg.github.io/Packpour/assets/icon-128.png" alt="Packpour" class="project-icon" loading="lazy">
+                    <span class="project-name">Packpour</span>
+                </a>
+                <a href="https://hooosberg.github.io/WitNote/" target="_blank" rel="noopener" class="project-card">
+                    <img src="https://hooosberg.github.io/WitNote/assets/icon.png" alt="WitNote" class="project-icon" loading="lazy">
+                    <span class="project-name">WitNote</span>
+                </a>
+                <a href="https://hooosberg.github.io/TrekReel/" target="_blank" rel="noopener" class="project-card">
+                    <img src="https://hooosberg.github.io/TrekReel/Apple/icon-128.png" alt="TrekReel" class="project-icon" loading="lazy">
+                    <span class="project-name">TrekReel</span>
+                </a>
+                <a href="https://hooosberg.github.io/DOMPrompter/" target="_blank" rel="noopener" class="project-card">
+                    <img src="https://hooosberg.github.io/DOMPrompter/pages/img/icon-128.png" alt="DOMPrompter" class="project-icon" loading="lazy">
+                    <span class="project-name">DOMPrompter</span>
+                </a>
+                <a href="https://uixskills.com" target="_blank" rel="noopener" class="project-card">
+                    <img src="https://uixskills.com/icons/icon.png" alt="UIXskills" class="project-icon" loading="lazy">
+                    <span class="project-name">UIXskills</span>
+                </a>
             </div>
         </section>
 
