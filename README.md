@@ -144,6 +144,18 @@ Interested in how GlotShot is built? Check out our development logs and technica
 - **License**: This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 - **Privacy**: We respect your privacy. See our [Privacy Policy](PRIVACY.md).
 
+## Sibling projects
+
+Built by [hooosberg](https://github.com/hooosberg):
+
+- [AgentLimb](https://agentlimb.com) — teach AI to control your browser
+- [BeRaw](https://hooosberg.github.io/BeRaw/) — Behance raw-image grabber
+- [Packpour](https://hooosberg.github.io/Packpour/) — App Store Connect locale filler
+- [WitNote](https://hooosberg.github.io/WitNote/) — local-first AI writing companion
+- [TrekReel](https://hooosberg.github.io/TrekReel/) — outdoor trails, cinematic reels
+- [DOMPrompter](https://hooosberg.github.io/DOMPrompter/) — visualize DOM for AI code
+- [UIXskills](https://uixskills.com) — AI → JSON → Whiteboard → UI
+
 ---
 
 <div align="center">

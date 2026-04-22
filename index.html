@@ -437,6 +437,38 @@
             gap: 60px;
         }
 
+        .siblings-list {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px 20px;
+            max-width: 840px;
+            margin: 0 auto;
+        }
+
+        .sibling-link {
+            font-size: 14px;
+            color: #a1a1a6;
+            text-decoration: none;
+            padding: 8px 16px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 99px;
+            background: rgba(255, 255, 255, 0.02);
+            transition: all 0.2s;
+        }
+
+        .sibling-link b {
+            color: #fff;
+            font-weight: 600;
+            margin-right: 4px;
+        }
+
+        .sibling-link:hover {
+            border-color: rgba(255, 255, 255, 0.25);
+            background: rgba(255, 255, 255, 0.05);
+            color: #fff;
+        }
+
         .project-card {
             display: flex;
             flex-direction: column;
@@ -658,16 +690,15 @@
         </section>
 
         <section class="projects-section">
-            <h3 class="projects-title" data-i18n="projects_title">Our Projects</h3>
-            <div class="projects-container">
-                <a href="https://hooosberg.github.io/WitNote/" target="_blank" class="project-card">
-                    <img src="public/icon/WitNote.png" alt="WitNote" class="project-icon">
-                    <span class="project-name">WitNote</span>
-                </a>
-                <a href="https://hooosberg.github.io/GlotShot/" target="_blank" class="project-card">
-                    <img src="public/icon/DMG_Icon_1024x1024.png" alt="GlotShot" class="project-icon">
-                    <span class="project-name" data-i18n="project_glotshot">GlotShot</span>
-                </a>
+            <h3 class="projects-title">Built by <a href="https://github.com/hooosberg" target="_blank" rel="noopener" style="color:#aaa;text-decoration:none;border-bottom:1px dashed #555;">hooosberg</a></h3>
+            <div class="siblings-list">
+                <a href="https://agentlimb.com" target="_blank" rel="noopener" class="sibling-link"><b>AgentLimb</b> · teach AI to control your browser</a>
+                <a href="https://hooosberg.github.io/BeRaw/" target="_blank" rel="noopener" class="sibling-link"><b>BeRaw</b> · Behance raw-image grabber</a>
+                <a href="https://hooosberg.github.io/Packpour/" target="_blank" rel="noopener" class="sibling-link"><b>Packpour</b> · App Store Connect locale filler</a>
+                <a href="https://hooosberg.github.io/WitNote/" target="_blank" rel="noopener" class="sibling-link"><b>WitNote</b> · local-first AI writing companion</a>
+                <a href="https://hooosberg.github.io/TrekReel/" target="_blank" rel="noopener" class="sibling-link"><b>TrekReel</b> · outdoor trails, cinematic reels</a>
+                <a href="https://hooosberg.github.io/DOMPrompter/" target="_blank" rel="noopener" class="sibling-link"><b>DOMPrompter</b> · visualize DOM for AI code</a>
+                <a href="https://uixskills.com" target="_blank" rel="noopener" class="sibling-link"><b>UIXskills</b> · AI → JSON → Whiteboard → UI</a>
             </div>
         </section>
 
