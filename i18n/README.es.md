@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="../public/icon/DMG_Icon_1024x1024.png" width="128" height="128" alt="Logo de GlotShot">
+<img src="../public/icon/icon-128.png" width="128" height="128" alt="Logo de GlotShot">
 
 # GlotShot
 ### Generador de Imágenes de Vista Previa para App Store

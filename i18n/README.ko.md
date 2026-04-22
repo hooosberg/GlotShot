@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="../public/icon/DMG_Icon_1024x1024.png" width="128" height="128" alt="GlotShot Logo">
+<img src="../public/icon/icon-128.png" width="128" height="128" alt="GlotShot Logo">
 
 # GlotShot
 ### 앱 스토어 미리보기 이미지 생성기
