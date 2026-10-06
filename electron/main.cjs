@@ -252,7 +252,7 @@ function createMenu(labels = menuLabels) {
       focusWindow(win);
     },
     onVisitWebsite: async () => {
-      await shell.openExternal('https://hooosberg.github.io/GlotShot/');
+      await shell.openExternal('https://hooosberg.com/apps/glotshot/');
     },
     onVisitGithub: async () => {
       await shell.openExternal('https://github.com/hooosberg/GlotShot');

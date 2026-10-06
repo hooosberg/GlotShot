@@ -4,11 +4,11 @@
 
 # 万语图
 ### 打造完美的 App Store 预览图
-[🌐 官方网站](https://hooosberg.github.io/GlotShot/)
+[🌐 官方网站](https://hooosberg.com/apps/glotshot/)
 
 [![Download on the Mac App Store](https://img.shields.io/badge/-Mac_App_Store-0D84FF?style=for-the-badge&logo=apple&logoColor=white)](https://apps.apple.com/us/app/glotshot-screenshot-maker/id6757913340?mt=12)
 [![GitHub Releases](https://img.shields.io/badge/-GitHub_Releases-333?style=for-the-badge&logo=github&logoColor=white)](https://github.com/hooosberg/GlotShot/releases/latest)
-[![官网](https://img.shields.io/badge/官网-万语图-green?style=for-the-badge)](https://hooosberg.github.io/GlotShot/)
+[![官网](https://img.shields.io/badge/官网-万语图-green?style=for-the-badge)](https://hooosberg.com/apps/glotshot/)
 [![许可证](https://img.shields.io/badge/许可证-MIT-yellow.svg?style=for-the-badge)](../LICENSE)
 [![平台](https://img.shields.io/badge/平台-macOS%20%7C%20Windows-lightgrey?style=for-the-badge)](https://electronjs.org/)
 

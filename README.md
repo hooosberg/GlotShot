@@ -4,7 +4,7 @@
 
 # GlotShot
 ### Create Perfect App Store Preview Images
-[🌐 Official Website](https://hooosberg.github.io/GlotShot/)
+[🌐 Official Website](https://hooosberg.com/apps/glotshot/)
 
 [![Download on the Mac App Store](https://img.shields.io/badge/-Mac_App_Store-0D84FF?style=for-the-badge&logo=apple&logoColor=white)](https://apps.apple.com/us/app/glotshot-screenshot-maker/id6757913340?mt=12)
 [![GitHub Releases](https://img.shields.io/badge/-GitHub_Releases-333?style=for-the-badge&logo=github&logoColor=white)](https://github.com/hooosberg/GlotShot/releases/latest)
@@ -149,11 +149,11 @@ Interested in how GlotShot is built? Check out our development logs and technica
 Built by [hooosberg](https://github.com/hooosberg):
 
 - [AgentLimb](https://agentlimb.com) — teach AI to control your browser
-- [BeRaw](https://hooosberg.github.io/BeRaw/) — Behance raw-image grabber
-- [Packpour](https://hooosberg.github.io/Packpour/) — App Store Connect locale filler
-- [WitNote](https://hooosberg.github.io/WitNote/) — local-first AI writing companion
-- [TrekReel](https://hooosberg.github.io/TrekReel/) — outdoor trails, cinematic reels
-- [DOMPrompter](https://hooosberg.github.io/DOMPrompter/) — visualize DOM for AI code
+- [BeRaw](https://hooosberg.com/apps/beraw/) — Behance raw-image grabber
+- [Packpour](https://hooosberg.com/apps/packpour/) — App Store Connect locale filler
+- [WitNote](https://hooosberg.com/apps/witnote/) — local-first AI writing companion
+- [TrekReel](https://hooosberg.com/apps/trekreel/) — outdoor trails, cinematic reels
+- [DOMPrompter](https://hooosberg.com/apps/domprompter/) — visualize DOM for AI code
 - [UIXskills](https://uixskills.com) — AI → JSON → Whiteboard → UI
 
 ---

@@ -26,11 +26,11 @@
     "react-i18next": "^16.5.1"
   },
   "description": "App Store Preview Image Generator",
-  "author": "Maohuhu",
+  "author": "Hooosberg",
   "masReview": {
     "productId": "com.maohuhu.glotshot.pro.lifetime",
-    "supportUrl": "https://hooosberg.github.io/GlotShot/support.html",
-    "privacyUrl": "https://hooosberg.github.io/GlotShot/privacy.html"
+    "supportUrl": "https://hooosberg.com/apps/glotshot/",
+    "privacyUrl": "https://hooosberg.com/privacy/"
   },
   "build": {
     "appId": "com.maohuhu.appstorebuilder",
@@ -59,7 +59,7 @@
       "hardenedRuntime": false,
       "gatekeeperAssess": false,
       "provisioningProfile": "build/embedded.provisionprofile",
-      "identity": "hu Huambo (STWPBZG6S7)"
+      "identity": "Apple Distribution"
     },
     "pkg": {
       "identity": "79D525387C81F7E0CC16A21EDCEFB5CD320E5146"
@@ -112,7 +112,7 @@
       ],
       "icon": "build/icon.png",
       "category": "Graphics",
-      "maintainer": "Maohuhu <huyuanbo412004038@gmail.com>",
+      "maintainer": "Hooosberg <hello@hooosberg.com>",
       "artifactName": "${productName}-${version}-${arch}.${ext}"
     },
     "files": [

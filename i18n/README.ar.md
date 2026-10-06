@@ -4,11 +4,11 @@
 
 # GlotShot
 ### مـوَلِّد صور المعاينة لمتجر التطبيقات
-[🌐 الموقع الرسمي](https://hooosberg.github.io/GlotShot/)
+[🌐 الموقع الرسمي](https://hooosberg.com/apps/glotshot/)
 
 [![Download on the Mac App Store](https://img.shields.io/badge/-Mac_App_Store-0D84FF?style=for-the-badge&logo=apple&logoColor=white)](https://apps.apple.com/us/app/glotshot-screenshot-maker/id6757913340?mt=12)
 [![GitHub Releases](https://img.shields.io/badge/-GitHub_Releases-333?style=for-the-badge&logo=github&logoColor=white)](https://github.com/hooosberg/GlotShot/releases/latest)
-[![الموقع الإلكتروني](https://img.shields.io/badge/%D8%A7%D9%84%D9%85%D9%88%D9%82%D8%B9-GlotShot-green?style=for-the-badge)](https://hooosberg.github.io/GlotShot/)
+[![الموقع الإلكتروني](https://img.shields.io/badge/%D8%A7%D9%84%D9%85%D9%88%D9%82%D8%B9-GlotShot-green?style=for-the-badge)](https://hooosberg.com/apps/glotshot/)
 [![الرخصة](https://img.shields.io/badge/%D8%A7%D9%84%D8%B1%D8%AE%D8%B5%D8%A9-MIT-yellow.svg?style=for-the-badge)](../LICENSE)
 
 [English](../README.md) | [简体中文](README.zh-CN.md) | [Español](README.es.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [Français](README.fr.md) <br> [Deutsch](README.de.md) | [Italiano](README.it.md) | [Português](README.pt.md) | [Русский](README.ru.md) | [العربية](README.ar.md) | [हिन्दी](README.hi.md)

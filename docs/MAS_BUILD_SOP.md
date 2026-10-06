@@ -416,7 +416,7 @@ key 'com.apple.developer.in-app-purchase' in '...' is not supported
     "provisioningProfile": "build/embedded.provisionprofile",
     "category": "public.app-category.productivity",
     "minimumSystemVersion": "12.0",
-    "identity": "hu Huambo (STWPBZG6S7)",  // MAS 分发证书
+    "identity": "Apple Distribution",  // MAS 分发证书
     "binaries": [],                    // 无额外二进制
     "extraResources": [
       { "from": "build/zh_CN.lproj", "to": "zh_CN.lproj" },

@@ -4,11 +4,11 @@
 
 # GlotShot
 ### Генератор изображений для App Store
-[🌐 Официальный сайт](https://hooosberg.github.io/GlotShot/)
+[🌐 Официальный сайт](https://hooosberg.com/apps/glotshot/)
 
 [![Download on the Mac App Store](https://img.shields.io/badge/-Mac_App_Store-0D84FF?style=for-the-badge&logo=apple&logoColor=white)](https://apps.apple.com/us/app/glotshot-screenshot-maker/id6757913340?mt=12)
 [![GitHub Releases](https://img.shields.io/badge/-GitHub_Releases-333?style=for-the-badge&logo=github&logoColor=white)](https://github.com/hooosberg/GlotShot/releases/latest)
-[![Веб-сайт](https://img.shields.io/badge/%D0%92%D0%B5%D0%B1--%D1%81%D0%B0%D0%B9%D1%82-GlotShot-green?style=for-the-badge)](https://hooosberg.github.io/GlotShot/)
+[![Веб-сайт](https://img.shields.io/badge/%D0%92%D0%B5%D0%B1--%D1%81%D0%B0%D0%B9%D1%82-GlotShot-green?style=for-the-badge)](https://hooosberg.com/apps/glotshot/)
 [![Лицензия](https://img.shields.io/badge/%D0%9B%D0%B8%D1%86%D0%B5%D0%BD%D0%B7%D0%B8%D1%8F-MIT-yellow.svg?style=for-the-badge)](../LICENSE)
 
 [English](../README.md) | [简体中文](README.zh-CN.md) | [Español](README.es.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [Français](README.fr.md) <br> [Deutsch](README.de.md) | [Italiano](README.it.md) | [Português](README.pt.md) | [Русский](README.ru.md) | [العربية](README.ar.md) | [हिन्दी](README.hi.md)
